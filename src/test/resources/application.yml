@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:runout;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost.invalid

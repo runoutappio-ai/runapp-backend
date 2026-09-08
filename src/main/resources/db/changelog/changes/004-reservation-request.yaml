@@ -1,0 +1,36 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-reservation-request
+      author: runout
+      changes:
+        - createTable:
+            tableName: reservation
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_reservation_user, references: app_user(id) } }
+              - column: { name: reservation_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: party_size, type: integer, constraints: { nullable: false } }
+              - column: { name: budget_per_person, type: "numeric(12,2)", constraints: { nullable: false } }
+              - column: { name: total_budget, type: "numeric(12,2)", constraints: { nullable: false } }
+              - column: { name: currency, type: varchar(3), constraints: { nullable: false } }
+              - column: { name: latitude, type: "numeric(9,6)", constraints: { nullable: false } }
+              - column: { name: longitude, type: "numeric(9,6)", constraints: { nullable: false } }
+              - column: { name: radius_meters, type: integer, constraints: { nullable: false } }
+              - column: { name: payment_reference, type: varchar(160), constraints: { nullable: false } }
+              - column: { name: payment_status, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: idempotency_key, type: varchar(160), constraints: { nullable: false } }
+              - column: { name: status, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - addUniqueConstraint:
+            tableName: reservation
+            columnNames: user_id, idempotency_key
+            constraintName: uk_reservation_user_idempotency
+        - createTable:
+            tableName: reservation_excluded_cuisine
+            columns:
+              - column: { name: reservation_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_reservation_cuisine, references: reservation(id) } }
+              - column: { name: cuisine_type, type: varchar(40), constraints: { nullable: false } }
+        - addPrimaryKey:
+            tableName: reservation_excluded_cuisine
+            columnNames: reservation_id, cuisine_type
+            constraintName: pk_reservation_excluded_cuisine

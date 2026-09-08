@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-user-identity-provider-subject
+      author: runout
+      changes:
+        - addColumn:
+            tableName: app_user
+            columns:
+              - column:
+                  name: identity_provider_subject
+                  type: varchar(255)
+        - addUniqueConstraint:
+            tableName: app_user
+            columnNames: identity_provider_subject
+            constraintName: uk_app_user_identity_provider_subject

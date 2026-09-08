@@ -1,0 +1,27 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-development-data
+      author: runout
+      context: dev,test
+      changes:
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: 10000000-0000-0000-0000-000000000001 }
+              - column: { name: display_name, value: Ana }
+              - column: { name: email, value: ana@example.com }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: app_user
+            columns:
+              - column: { name: id, value: 10000000-0000-0000-0000-000000000002 }
+              - column: { name: display_name, value: Omar }
+              - column: { name: email, value: omar@example.com }
+              - column: { name: active, valueBoolean: true }
+        - insert:
+            tableName: restaurant
+            columns:
+              - column: { name: id, value: 20000000-0000-0000-0000-000000000001 }
+              - column: { name: name, value: Runout Test Kitchen }
+              - column: { name: phone, value: '+971500000000' }
+              - column: { name: active, valueBoolean: true }

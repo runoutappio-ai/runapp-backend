@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_DB: runout
+      POSTGRES_USER: runout
+      POSTGRES_PASSWORD: runout
+    ports: ["5432:5432"]
+    # PostgreSQL 18 uses a major-version-specific data directory.
+    volumes: ["runout-postgres:/var/lib/postgresql"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U runout"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.3
+    command: start-dev --import-realm
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KEYCLOAK_REGISTRATION_CLIENT_SECRET: ${KEYCLOAK_REGISTRATION_CLIENT_SECRET:-runout-registration-secret-change-me}
+      KEYCLOAK_AUTHENTICATION_CLIENT_SECRET: ${KEYCLOAK_AUTHENTICATION_CLIENT_SECRET:-runout-auth-secret-change-me}
+    ports:
+      - "8081:8080"
+    volumes:
+      - keycloak-data:/opt/keycloak/data
+      - ./keycloak/realm:/opt/keycloak/data/import:ro
+volumes:
+  runout-postgres:
+  keycloak-data:

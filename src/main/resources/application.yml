@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: runout-backend
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/runout}
+    username: ${DATABASE_USERNAME:runout}
+    password: ${DATABASE_PASSWORD:runout}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8081/realms/runout}
+          audiences: ${OIDC_AUDIENCE:runout-api}
+  modulith:
+    republish-outstanding-events-on-restart: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,modulith
+  endpoint:
+    health:
+      probes:
+        enabled: true
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    display-request-duration: true
+    operations-sorter: method
+runout:
+  payments:
+    provider: ${PAYMENT_PROVIDER:mock}
+  identity:
+    keycloak:
+      base-url: ${KEYCLOAK_BASE_URL:http://localhost:8081}
+      realm: ${KEYCLOAK_REALM:runout}
+      registration-client-id: ${KEYCLOAK_REGISTRATION_CLIENT_ID:runout-registration-service}
+      registration-client-secret: ${KEYCLOAK_REGISTRATION_CLIENT_SECRET:runout-registration-secret-change-me}
+      authentication-client-id: ${KEYCLOAK_AUTHENTICATION_CLIENT_ID:runout-auth-service}
+      authentication-client-secret: ${KEYCLOAK_AUTHENTICATION_CLIENT_SECRET:runout-auth-secret-change-me}

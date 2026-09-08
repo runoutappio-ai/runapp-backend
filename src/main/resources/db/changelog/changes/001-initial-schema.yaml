@@ -1,0 +1,77 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-initial-schema
+      author: runout
+      changes:
+        - createTable:
+            tableName: app_user
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: display_name, type: varchar(120), constraints: { nullable: false } }
+              - column: { name: email, type: varchar(320), constraints: { nullable: false, unique: true } }
+              - column: { name: active, type: boolean, constraints: { nullable: false } }
+        - createTable:
+            tableName: restaurant
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(160), constraints: { nullable: false } }
+              - column: { name: phone, type: varchar(40) }
+              - column: { name: active, type: boolean, constraints: { nullable: false } }
+        - createTable:
+            tableName: experience
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: title, type: varchar(200), constraints: { nullable: false } }
+              - column: { name: starts_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: capacity, type: integer, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(30), constraints: { nullable: false } }
+        - createTable:
+            tableName: match_group
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: experience_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_group_experience, references: experience(id) } }
+        - createTable:
+            tableName: match_group_participant
+            columns:
+              - column: { name: group_id, type: uuid, constraints: { nullable: false, primaryKey: true, primaryKeyName: pk_group_participant, foreignKeyName: fk_participant_group, references: match_group(id) } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false, primaryKey: true, primaryKeyName: pk_group_participant, foreignKeyName: fk_participant_user, references: app_user(id) } }
+        - createTable:
+            tableName: booking
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: experience_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_booking_experience, references: experience(id) } }
+              - column: { name: restaurant_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_booking_restaurant, references: restaurant(id) } }
+              - column: { name: group_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_booking_group, references: match_group(id) } }
+              - column: { name: external_reference, type: varchar(160), constraints: { nullable: false } }
+              - column: { name: reserved_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: status, type: varchar(30), constraints: { nullable: false } }
+        - createTable:
+            tableName: payment
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: booking_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_payment_booking, references: booking(id) } }
+              - column: { name: status, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - createTable:
+            tableName: event_publication
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: listener_id, type: text, constraints: { nullable: false } }
+              - column: { name: event_type, type: text, constraints: { nullable: false } }
+              - column: { name: serialized_event, type: text, constraints: { nullable: false } }
+              - column: { name: publication_date, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: completion_date, type: timestamptz }
+              - column: { name: status, type: text }
+              - column: { name: completion_attempts, type: integer }
+              - column: { name: last_resubmission_date, type: timestamptz }
+        - createIndex:
+            tableName: event_publication
+            indexName: event_publication_serialized_event_hash_idx
+            using: hash
+            columns:
+              - column: { name: serialized_event }
+        - createIndex:
+            tableName: event_publication
+            indexName: event_publication_by_completion_date_idx
+            columns:
+              - column: { name: completion_date }
