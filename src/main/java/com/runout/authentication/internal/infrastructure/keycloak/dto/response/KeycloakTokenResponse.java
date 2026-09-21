@@ -1,7 +1,9 @@
 package com.runout.authentication.internal.infrastructure.keycloak.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Builder;
 
+@Builder
 public record KeycloakTokenResponse(
         @JsonProperty("access_token") String accessToken,
         @JsonProperty("expires_in") long expiresIn,

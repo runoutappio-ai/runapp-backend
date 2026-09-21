@@ -9,10 +9,7 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, AbstractAuthenticationToken> {
@@ -25,7 +22,7 @@ public class KeycloakJwtAuthenticationConverter implements Converter<Jwt, Abstra
         authorities.addAll(scopeAuthorities(jwt));
         authorities.addAll(realmRoleAuthorities(jwt));
 
-        return new JwtAuthenticationToken(jwt, authorities, jwt.getSubject());
+        return new JwtAuthenticationToken(jwt, authorities, Objects.requireNonNull(jwt.getSubject()));
     }
 
     private Collection<GrantedAuthority> scopeAuthorities(Jwt jwt) {

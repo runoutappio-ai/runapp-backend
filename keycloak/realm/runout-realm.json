@@ -2,6 +2,7 @@
   "realm": "runout",
   "enabled": true,
   "displayName": "Run Out",
+  "sslRequired": "none",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,
@@ -17,9 +18,32 @@
   "roles": {
     "realm": [
       { "name": "USER" },
-      { "name": "ADMIN" }
+      { "name": "SUPER_ADMIN" },
+      { "name": "MANAGER" },
+      { "name": "WORKER" }
     ]
   },
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": true,
+      "trustEmail": true,
+      "storeToken": false,
+      "addReadTokenRoleOnCreate": false,
+      "authenticateByDefault": false,
+      "linkOnly": false,
+      "firstBrokerLoginFlowAlias": "first broker login",
+      "config": {
+        "clientId": "${KEYCLOAK_GOOGLE_CLIENT_ID}",
+        "clientSecret": "${KEYCLOAK_GOOGLE_CLIENT_SECRET}",
+        "defaultScope": "openid email profile",
+        "syncMode": "IMPORT",
+        "useJwksUrl": "true"
+      }
+    }
+  ],
   "clients": [
     {
       "clientId": "runout-api",
@@ -38,9 +62,14 @@
       "directAccessGrantsEnabled": false,
       "redirectUris": [
         "runout://oauth/callback",
-        "exp://127.0.0.1:*/*"
+        "exp://127.0.0.1:*/*",
+        "http://localhost:5175/*",
+        "http://127.0.0.1:5175/*"
       ],
-      "webOrigins": [],
+      "webOrigins": [
+        "http://localhost:5175",
+        "http://127.0.0.1:5175"
+      ],
       "protocolMappers": [
         {
           "name": "runout-api-audience",
@@ -131,7 +160,8 @@
       "serviceAccountClientId": "runout-registration-service",
       "clientRoles": {
         "realm-management": [
-          "manage-users"
+          "manage-users",
+          "view-realm"
         ]
       }
     }

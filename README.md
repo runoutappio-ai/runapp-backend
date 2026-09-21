@@ -13,7 +13,6 @@ com.runout
 ├── administration  REST endpoints and manual operations
 ├── bookings        manual restaurant reservations
 ├── experiences     events offered to customers
-├── matching        manual/automatic group formation
 ├── notifications   notification reactions
 ├── payments        payment workflow
 ├── restaurants     restaurant catalogue
@@ -23,13 +22,11 @@ com.runout
 
 ## Communication examples
 
-Synchronous calls are used when an answer is required to finish the current transaction. `BookingManagement`, for example, calls the public `Experiences` and `Restaurants` interfaces before recording a booking. `MatchingManagement` similarly calls `Experiences` and `Users`.
+Synchronous calls are used when an answer is required to finish the current transaction. Reservation operations, for example, call the public restaurant and payment contracts before persisting or confirming a reservation.
 
 Asynchronous events are used for consequences that do not need to hold up the originating transaction:
 
 ```text
-Experiences -- ExperiencePublished --> Matching
-Matching    -- GroupFormed ---------> Bookings + Notifications
 Bookings    -- BookingConfirmed ----> Payments + Notifications
 Payments    -- PaymentCaptured -----> Notifications
 ```
@@ -49,7 +46,25 @@ Docker Compose starts PostgreSQL and Keycloak. The local Keycloak console is ava
 
 The imported `runout` realm enables self-registration and defines public clients for the mobile app (`runout-mobile`) and admin panel (`runout-admin`). Both use Authorization Code with PKCE and request tokens for the `runout-api` audience. Access tokens last five minutes; refresh tokens are rotated and governed by the Keycloak session limits.
 
-The API is an OAuth2 resource server. It validates the JWT signature, issuer, audience and timestamps on every protected request. Realm roles are mapped to Spring Security `ROLE_*` authorities, so JWTs used with `/api/admin/**` need the Keycloak `ADMIN` realm role. Production must use HTTPS, secure administrator credentials and a production Keycloak database/configuration.
+The API is an OAuth2 resource server. It validates the JWT signature, issuer, audience and timestamps on every protected request. Realm roles are mapped to Spring Security `ROLE_*` authorities. The administration roles are `SUPER_ADMIN` (full access), `MANAGER` (restaurant management) and `WORKER` (reservation operations through confirmation). Production must use HTTPS, secure administrator credentials and a production Keycloak database/configuration.
+
+After Spring Security validates a bearer token, a once-per-request filter replaces any client-supplied identity headers with trusted values obtained from the JWT. Internal handlers can read `X-Authenticated-User-Id` (the Keycloak subject), `X-Authenticated-User-Email`, `X-Authenticated-Username`, `X-Authenticated-User-Name`, `X-Authenticated-User-Roles`, `X-Authenticated-Token-Issued-At` and `X-Authenticated-Token-Expires-At`. These headers are intended only for processing inside the trusted application or gateway boundary and must not be echoed back to clients.
+
+Social login is handled by Keycloak identity providers. The public prototype frontend lives in `public-frontend` and runs on `http://localhost:5175`:
+
+```bash
+./start-public-frontend.sh
+```
+
+Configure Google in the `runout` realm with this redirect URI:
+
+```text
+http://localhost:8081/realms/runout/broker/google/endpoint
+```
+
+The browser uses Authorization Code with PKCE against the public `runout-mobile` client. After receiving a Keycloak token, the frontend calls `POST /api/v1/users/me/provision` so Run Out creates the local `app_user` row from trusted JWT claims when it does not exist yet. Existing Keycloak volumes do not automatically re-import changed realm JSON; recreate the Keycloak volume or update the `runout-mobile` client redirect URIs/web origins manually.
+
+Google Places restaurant import is handled server-side so the browser never receives the Maps API key. Configure `GOOGLE_MAPS_API_KEY` before starting the backend. The admin panel uses `GET /api/admin/restaurants/google-places/search?query=...` to search Places and `POST /api/admin/restaurants/google-places/import` to persist the selected restaurant metadata.
 
 Liquibase owns the database schema. The master changelog is `src/main/resources/db/changelog/db.changelog-master.yaml`; versioned schema and development-data changesets live under `db/changelog/changes`. Development seed data is guarded by the `dev,test` contexts.
 
@@ -61,12 +76,14 @@ GET  /actuator/modulith
 GET  /swagger-ui.html
 GET  /v3/api-docs
 POST /api/v1/users/registrations
+POST /api/v1/users/me/provision
+GET  /api/v1/users/me/profile
+PATCH /api/v1/users/me/profile
 POST /api/v1/auth/login
 POST /api/v1/auth/refresh
 POST /api/v1/bookings
 POST /api/admin/experiences
 POST /api/admin/experiences/{id}/publication
-POST /api/admin/groups
 POST /api/admin/bookings
 POST /api/admin/bookings/{id}/confirmation
 ```
@@ -119,11 +136,7 @@ Create an authenticated reservation request with a unique `Idempotency-Key` head
 ```
 
 ```json
-{"experienceId":"<uuid>","participantIds":["10000000-0000-0000-0000-000000000001","10000000-0000-0000-0000-000000000002"]}
-```
-
-```json
-{"experienceId":"<uuid>","restaurantId":"20000000-0000-0000-0000-000000000001","groupId":"<uuid>","externalReference":"PHONE-1234","reservedAt":"2026-10-02T18:30:00Z"}
+{"restaurantId":"20000000-0000-0000-0000-000000000001","externalReference":"PHONE-1234","reservedAt":"2026-10-02T18:30:00Z"}
 ```
 
 ## Verify the architecture

@@ -1,0 +1,735 @@
+{
+  "info": {
+    "_postman_id": "f1aa41bf-9f87-48c1-b211-611ddf760001",
+    "name": "Run Out - Flujo simplificado",
+    "description": "Flujo local completo. Ejecuta las peticiones en orden. Los scripts guardan tokens e IDs automáticamente.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{accessToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const now = new Date();",
+          "const reservation = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);",
+          "const start = new Date(reservation.getTime() - 30 * 60 * 1000);",
+          "const end = new Date(reservation.getTime() + 30 * 60 * 1000);",
+          "pm.collectionVariables.set('reservationAt', reservation.toISOString());",
+          "pm.collectionVariables.set('timeWindowStartAt', start.toISOString());",
+          "pm.collectionVariables.set('timeWindowEndAt', end.toISOString());",
+          "pm.collectionVariables.set('idempotencyKey', pm.variables.replaceIn('{{$guid}}'));"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "pm.test('Respuesta sin error de servidor', () => pm.expect(pm.response.code).to.be.below(500));",
+          "if (pm.response.code >= 400) console.warn(pm.response.text());"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "keycloakUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "realm",
+      "value": "runout"
+    },
+    {
+      "key": "userEmail",
+      "value": ""
+    },
+    {
+      "key": "userPassword",
+      "value": "RunoutDemo123!",
+      "type": "secret"
+    },
+    {
+      "key": "keycloakAdminUsername",
+      "value": "admin"
+    },
+    {
+      "key": "keycloakAdminPassword",
+      "value": "admin",
+      "type": "secret"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "keycloakAdminToken",
+      "value": "",
+      "type": "secret"
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "keycloakUserId",
+      "value": ""
+    },
+    {
+      "key": "adminRoleJson",
+      "value": ""
+    },
+    {
+      "key": "restaurantId",
+      "value": ""
+    },
+    {
+      "key": "reservationId",
+      "value": ""
+    },
+    {
+      "key": "reservationAt",
+      "value": ""
+    },
+    {
+      "key": "timeWindowStartAt",
+      "value": ""
+    },
+    {
+      "key": "timeWindowEndAt",
+      "value": ""
+    },
+    {
+      "key": "idempotencyKey",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "00 - Comprobación",
+      "item": [
+        {
+          "name": "Health check",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "url": "{{baseUrl}}/actuator/health"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Backend disponible', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "01 - Crear usuario y login",
+      "item": [
+        {
+          "name": "1. Registrar usuario nuevo",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "pm.collectionVariables.set('userEmail', `postman.${Date.now()}@runout.local`);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario creado', () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('userId', body.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"displayName\": \"Usuario Postman\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/users/registrations"
+          }
+        },
+        {
+          "name": "2. Login de usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Login correcto', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "3. Consultar mi usuario",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Identidad autenticada', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('userId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/users/me"
+          }
+        },
+        {
+          "name": "4. Consultar profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile consultado', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/users/me/profile"
+          }
+        },
+        {
+          "name": "5. Actualizar profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile actualizado', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"+971501234567\",\n  \"birthDate\": \"1990-01-01\",\n  \"dietaryPreferences\": [\"HIGH_PROTEIN\"],\n  \"allergyNotes\": \"Sin cacahuetes\",\n  \"marketingNotificationsEnabled\": true,\n  \"reservationNotificationsEnabled\": true,\n  \"address\": {\n    \"label\": \"Casa\",\n    \"formattedAddress\": \"Dubai Marina, Dubai\",\n    \"latitude\": 25.0805,\n    \"longitude\": 55.1403\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/users/me/profile"
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Preparar administrador local",
+      "description": "Solo para desarrollo local. Usa admin/admin de Keycloak para asignar SUPER_ADMIN al usuario creado.",
+      "item": [
+        {
+          "name": "1. Login del administrador de Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Admin de Keycloak autenticado', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('keycloakAdminToken', pm.response.json().access_token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/x-www-form-urlencoded"
+              }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "grant_type",
+                  "value": "password"
+                },
+                {
+                  "key": "client_id",
+                  "value": "admin-cli"
+                },
+                {
+                  "key": "username",
+                  "value": "{{keycloakAdminUsername}}"
+                },
+                {
+                  "key": "password",
+                  "value": "{{keycloakAdminPassword}}"
+                }
+              ]
+            },
+            "url": "{{keycloakUrl}}/realms/master/protocol/openid-connect/token"
+          }
+        },
+        {
+          "name": "2. Buscar usuario en Keycloak",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Usuario encontrado en Keycloak', () => { const users = pm.response.json(); pm.expect(users).to.have.lengthOf(1); });",
+                  "pm.collectionVariables.set('keycloakUserId', pm.response.json()[0].id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{keycloakAdminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{keycloakUrl}}/admin/realms/{{realm}}/users?username={{userEmail}}&exact=true"
+          }
+        },
+        {
+          "name": "3. Obtener rol SUPER_ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rol SUPER_ADMIN encontrado', () => pm.response.to.have.status(200));",
+                  "pm.collectionVariables.set('adminRoleJson', JSON.stringify([pm.response.json()]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{keycloakAdminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "url": "{{keycloakUrl}}/admin/realms/{{realm}}/roles/SUPER_ADMIN"
+          }
+        },
+        {
+          "name": "4. Asignar rol SUPER_ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rol SUPER_ADMIN asignado', () => pm.expect(pm.response.code).to.be.oneOf([204, 409]));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{keycloakAdminToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{{adminRoleJson}}"
+            },
+            "url": "{{keycloakUrl}}/admin/realms/{{realm}}/users/{{keycloakUserId}}/role-mappings/realm"
+          }
+        },
+        {
+          "name": "5. Login de nuevo para obtener rol SUPER_ADMIN",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Nuevo token obtenido', () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/login"
+          }
+        },
+        {
+          "name": "6. Sincronizar rol SUPER_ADMIN en Run Out",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Rol local sincronizado', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"SUPER_ADMIN\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/users/{{userId}}/role"
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Restaurante",
+      "item": [
+        {
+          "name": "1. Crear restaurante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Restaurante creado', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('restaurantId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Casa Run Out\",\n  \"phone\": \"+971501234567\",\n  \"cuisine\": \"Mediterránea\",\n  \"priceTier\": 2,\n  \"description\": \"Restaurante creado desde Postman\",\n  \"openingHours\": \"18:00-23:30\",\n  \"tags\": [\"casual\", \"dinner\"],\n  \"formattedAddress\": \"Dubai Marina, Dubai\",\n  \"latitude\": 25.0805,\n  \"longitude\": 55.1403,\n  \"menus\": [\n    {\n      \"id\": 1,\n      \"entries\": {\n        \"starter\": \"Hummus con pan pita\",\n        \"main\": \"Salmón a la parrilla\",\n        \"dessert\": \"Baklava\"\n      }\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/restaurants"
+          }
+        },
+        {
+          "name": "2. Activar restaurante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Restaurante activado', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/admin/restaurants/{{restaurantId}}/activation"
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Reserva completa",
+      "item": [
+        {
+          "name": "1. Crear reserva",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Reserva creada', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('reservationId', pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotencyKey}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reservationAt\": \"{{reservationAt}}\",\n  \"timeWindowStartAt\": \"{{timeWindowStartAt}}\",\n  \"timeWindowEndAt\": \"{{timeWindowEndAt}}\",\n  \"excludedCuisineTypes\": [\"FAST_FOOD\"],\n  \"vibe\": \"SOCIAL\",\n  \"dietaryPreferences\": [\"HIGH_PROTEIN\"],\n  \"allergyNotes\": \"Sin cacahuetes\",\n  \"locationLabel\": \"Dubai Marina\",\n  \"partySize\": 2,\n  \"budgetPerPerson\": {\"amount\": 150, \"currency\": \"AED\"},\n  \"searchArea\": {\"latitude\": 25.0805, \"longitude\": 55.1403, \"radiusMeters\": 5000}\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/reservations"
+          }
+        },
+        {
+          "name": "2. Pagar reserva (mock)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Reserva pagada', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().status).to.eql('PAID');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{$guid}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethodToken\": \"pm_mock_visa\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/reservations/{{reservationId}}/payments"
+          }
+        },
+        {
+          "name": "3. Admin asigna la reserva",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/admin/reservations/{{reservationId}}/assignment"
+          }
+        },
+        {
+          "name": "4. Admin empieza la búsqueda",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/admin/reservations/{{reservationId}}/start"
+          }
+        },
+        {
+          "name": "5. Admin confirma restaurante",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Reserva confirmada', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"restaurantId\": \"{{restaurantId}}\",\n  \"externalReference\": \"PHONE-POSTMAN-001\",\n  \"reservedAt\": \"{{reservationAt}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/reservations/{{reservationId}}/confirmation"
+          }
+        },
+        {
+          "name": "6. Admin envía la reserva al usuario",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/admin/reservations/{{reservationId}}/delivery"
+          }
+        },
+        {
+          "name": "7. Usuario revela restaurante y menú",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Reserva revelada', () => pm.response.to.have.status(200));",
+                  "pm.expect(pm.response.json().available).to.eql(true);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/v1/reservations/{{reservationId}}/reveal"
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Utilidades de sesión",
+      "item": [
+        {
+          "name": "Refrescar token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const body = pm.response.json();",
+                  "pm.collectionVariables.set('accessToken', body.accessToken);",
+                  "pm.collectionVariables.set('refreshToken', body.refreshToken);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": "{{baseUrl}}/api/v1/auth/refresh"
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "POST",
+            "url": "{{baseUrl}}/api/v1/auth/logout"
+          }
+        }
+      ]
+    }
+  ]
+}

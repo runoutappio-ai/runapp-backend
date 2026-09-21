@@ -9,12 +9,12 @@ public final class KeycloakAuthenticationMapper {
     }
 
     public static AuthenticationTokens toAuthenticationTokens(KeycloakTokenResponse response) {
-        return new AuthenticationTokens(
-                response.accessToken(),
-                response.expiresIn(),
-                response.refreshToken(),
-                response.refreshExpiresIn(),
-                response.tokenType()
-        );
+        return AuthenticationTokens.builder()
+                .accessToken(response.accessToken())
+                .expiresIn(response.expiresIn())
+                .refreshToken(response.refreshToken())
+                .refreshExpiresIn(response.refreshExpiresIn())
+                .tokenType(response.tokenType())
+                .build();
     }
 }

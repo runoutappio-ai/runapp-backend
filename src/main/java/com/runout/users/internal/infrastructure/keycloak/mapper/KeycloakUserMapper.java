@@ -12,18 +12,22 @@ public final class KeycloakUserMapper {
     }
 
     public static KeycloakUserRequest toRequest(RegisterUserCommand command) {
-        var credential = new KeycloakCredentialRequest("password", command.password(), false);
+        var credential = KeycloakCredentialRequest.builder()
+                .type("password")
+                .value(command.password())
+                .temporary(false)
+                .build();
         var name = splitDisplayName(command.displayName());
 
-        return new KeycloakUserRequest(
-                command.email(),
-                command.email(),
-                name.firstName(),
-                name.lastName(),
-                true,
-                false,
-                List.of(credential)
-        );
+        return KeycloakUserRequest.builder()
+                .username(command.email())
+                .email(command.email())
+                .firstName(name.firstName())
+                .lastName(name.lastName())
+                .enabled(true)
+                .emailVerified(false)
+                .credentials(List.of(credential))
+                .build();
     }
 
     private static KeycloakName splitDisplayName(String displayName) {

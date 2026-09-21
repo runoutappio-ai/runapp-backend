@@ -1,7 +1,6 @@
 package com.runout.notifications.internal.application;
 
-import com.runout.bookings.api.BookingConfirmed;
-import com.runout.matching.api.GroupFormed;
+import com.runout.bookings.api.ReservationConfirmed;
 import com.runout.payments.api.PaymentCaptured;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -15,13 +14,8 @@ class IntegrationNotificationListener {
     private static final Logger log = LoggerFactory.getLogger(IntegrationNotificationListener.class);
 
     @ApplicationModuleListener
-    void on(GroupFormed event) {
-        log.info("Queue group-formed notification for {} users", event.participantIds().size());
-    }
-
-    @ApplicationModuleListener
-    void on(BookingConfirmed event) {
-        log.info("Queue booking-confirmed notification for booking {}", event.bookingId());
+    void on(ReservationConfirmed event) {
+        log.info("Queue reservation-confirmed notification for reservation {}", event.reservationId());
     }
 
     @ApplicationModuleListener

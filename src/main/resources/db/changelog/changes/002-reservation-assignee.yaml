@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-reservation-assignee
+      author: runout
+      comment: Tracks the worker responsible for a reservation.
+      changes:
+        - addColumn:
+            tableName: reservation
+            columns:
+              - column:
+                  name: assigned_employee_id
+                  type: uuid
+                  constraints:
+                    foreignKeyName: fk_reservation_assigned_employee
+                    references: app_user(id)

@@ -3,9 +3,11 @@ package com.runout.administration.internal.infrastructure.web.dto.request;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import lombok.Builder;
 
 import java.time.Instant;
 
+@Builder
 public record CreateExperienceRequest(
         @NotBlank String title,
         @Future Instant startsAt,

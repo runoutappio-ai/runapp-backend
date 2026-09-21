@@ -1,7 +1,10 @@
 package com.runout.payments.api;
 
+import lombok.Builder;
+
 import java.time.Instant;
 import java.util.UUID;
 
-public record PaymentCaptured(UUID paymentId, UUID bookingId, Instant occurredAt) {
+@Builder
+public record PaymentCaptured(UUID paymentId, UUID reservationId, Instant occurredAt) {
 }

@@ -2,6 +2,7 @@ databaseChangeLog:
   - changeSet:
       id: 001-initial-schema
       author: runout
+      comment: Complete Run Out schema for a fresh database.
       changes:
         - createTable:
             tableName: app_user
@@ -9,14 +10,35 @@ databaseChangeLog:
               - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
               - column: { name: display_name, type: varchar(120), constraints: { nullable: false } }
               - column: { name: email, type: varchar(320), constraints: { nullable: false, unique: true } }
-              - column: { name: active, type: boolean, constraints: { nullable: false } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: role, type: varchar(20), defaultValue: USER, constraints: { nullable: false } }
+              - column: { name: profile, type: jsonb }
+
         - createTable:
             tableName: restaurant
             columns:
               - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
               - column: { name: name, type: varchar(160), constraints: { nullable: false } }
               - column: { name: phone, type: varchar(40) }
-              - column: { name: active, type: boolean, constraints: { nullable: false } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+              - column: { name: cuisine, type: varchar(80) }
+              - column: { name: price_tier, type: integer }
+              - column: { name: description, type: varchar(500) }
+              - column: { name: opening_hours, type: varchar(200) }
+              - column: { name: tags, type: text }
+              - column: { name: google_place_id, type: varchar(120) }
+              - column: { name: formatted_address, type: varchar(500) }
+              - column: { name: latitude, type: double precision }
+              - column: { name: longitude, type: double precision }
+              - column: { name: rating, type: double precision }
+              - column: { name: user_rating_count, type: integer }
+              - column: { name: website_uri, type: varchar(500) }
+              - column: { name: google_maps_uri, type: varchar(500) }
+              - column: { name: primary_type, type: varchar(80) }
+              - column: { name: types, type: text }
+              - column: { name: menus, type: jsonb }
+        - addUniqueConstraint: { tableName: restaurant, columnNames: google_place_id, constraintName: uk_restaurant_google_place_id }
+
         - createTable:
             tableName: experience
             columns:
@@ -25,33 +47,56 @@ databaseChangeLog:
               - column: { name: starts_at, type: timestamptz, constraints: { nullable: false } }
               - column: { name: capacity, type: integer, constraints: { nullable: false } }
               - column: { name: status, type: varchar(30), constraints: { nullable: false } }
+
         - createTable:
-            tableName: match_group
+            tableName: reservation
             columns:
               - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
-              - column: { name: experience_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_group_experience, references: experience(id) } }
-        - createTable:
-            tableName: match_group_participant
-            columns:
-              - column: { name: group_id, type: uuid, constraints: { nullable: false, primaryKey: true, primaryKeyName: pk_group_participant, foreignKeyName: fk_participant_group, references: match_group(id) } }
-              - column: { name: user_id, type: uuid, constraints: { nullable: false, primaryKey: true, primaryKeyName: pk_group_participant, foreignKeyName: fk_participant_user, references: app_user(id) } }
-        - createTable:
-            tableName: booking
-            columns:
-              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
-              - column: { name: experience_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_booking_experience, references: experience(id) } }
-              - column: { name: restaurant_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_booking_restaurant, references: restaurant(id) } }
-              - column: { name: group_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_booking_group, references: match_group(id) } }
-              - column: { name: external_reference, type: varchar(160), constraints: { nullable: false } }
-              - column: { name: reserved_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: user_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_reservation_user, references: app_user(id) } }
+              - column: { name: reservation_at, type: timestamptz, constraints: { nullable: false } }
+              - column: { name: time_window_start_at, type: timestamptz }
+              - column: { name: time_window_end_at, type: timestamptz }
+              - column: { name: vibe, type: varchar(40) }
+              - column: { name: allergy_notes, type: varchar(500) }
+              - column: { name: location_label, type: varchar(240) }
+              - column: { name: party_size, type: integer, constraints: { nullable: false } }
+              - column: { name: budget_per_person, type: "numeric(12,2)", constraints: { nullable: false } }
+              - column: { name: total_budget, type: "numeric(12,2)", constraints: { nullable: false } }
+              - column: { name: currency, type: varchar(3), constraints: { nullable: false } }
+              - column: { name: latitude, type: "numeric(9,6)", constraints: { nullable: false } }
+              - column: { name: longitude, type: "numeric(9,6)", constraints: { nullable: false } }
+              - column: { name: radius_meters, type: integer, constraints: { nullable: false } }
+              - column: { name: payment_reference, type: varchar(160) }
+              - column: { name: payment_status, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: idempotency_key, type: uuid, constraints: { nullable: false } }
+              - column: { name: restaurant_id, type: uuid, constraints: { foreignKeyName: fk_reservation_restaurant, references: restaurant(id) } }
+              - column: { name: external_reference, type: varchar(160) }
+              - column: { name: confirmed_reservation_at, type: timestamptz }
               - column: { name: status, type: varchar(30), constraints: { nullable: false } }
+              - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+        - addUniqueConstraint: { tableName: reservation, columnNames: "user_id, idempotency_key", constraintName: uk_reservation_user_idempotency }
+
+        - createTable:
+            tableName: reservation_excluded_cuisine
+            columns:
+              - column: { name: reservation_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_reservation_cuisine, references: reservation(id) } }
+              - column: { name: cuisine_type, type: varchar(40), constraints: { nullable: false } }
+        - addPrimaryKey: { tableName: reservation_excluded_cuisine, columnNames: "reservation_id, cuisine_type", constraintName: pk_reservation_excluded_cuisine }
+        - createTable:
+            tableName: reservation_dietary_preference
+            columns:
+              - column: { name: reservation_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_reservation_diet, references: reservation(id) } }
+              - column: { name: preference, type: varchar(40), constraints: { nullable: false } }
+        - addPrimaryKey: { tableName: reservation_dietary_preference, columnNames: "reservation_id, preference", constraintName: pk_reservation_dietary_preference }
+
         - createTable:
             tableName: payment
             columns:
               - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
-              - column: { name: booking_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_payment_booking, references: booking(id) } }
+              - column: { name: reservation_id, type: uuid, constraints: { nullable: false, foreignKeyName: fk_payment_reservation, references: reservation(id) } }
               - column: { name: status, type: varchar(30), constraints: { nullable: false } }
               - column: { name: created_at, type: timestamptz, constraints: { nullable: false } }
+
         - createTable:
             tableName: event_publication
             columns:

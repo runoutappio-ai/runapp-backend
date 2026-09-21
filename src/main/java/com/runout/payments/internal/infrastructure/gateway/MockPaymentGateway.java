@@ -8,9 +8,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.nio.charset.StandardCharsets;
-import java.util.UUID;
-
 @Component
 @ConditionalOnProperty(name = "runout.payments.provider", havingValue = "mock", matchIfMissing = true)
 class MockPaymentGateway implements PaymentGateway {
@@ -21,9 +18,6 @@ class MockPaymentGateway implements PaymentGateway {
             throw new ResponseStatusException(HttpStatus.PAYMENT_REQUIRED, "Payment was declined");
         }
 
-        var reference = UUID.nameUUIDFromBytes(
-                (command.userId() + ":" + command.idempotencyKey()).getBytes(StandardCharsets.UTF_8)
-        );
-        return new PaymentReceipt("mock_" + reference, "CAPTURED");
+        return MockPaymentMapper.toCapturedReceipt(command);
     }
 }

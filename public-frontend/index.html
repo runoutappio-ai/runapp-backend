@@ -1,0 +1,1637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>Run Out</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+:root{
+  --bg:#0a0908; --bg2:#160f0e; --card:#171312; --ink:#f6f1ee; --muted:#a8a19d; --line:#241d1b; --line-strong:#332a27;
+  --accent:#e6362c; --accent-hover:#c92a21; --accent-ink:#fff; --accent-soft:#3a1814;
+  --gold:#ff9d42; --gold-soft:#3a2412;
+  --ok:#3ddc84; --ok-soft:#123322; --bad:#ff6b5e; --bad-soft:#3a1a16; --warn:#ffb020; --warn-soft:#3a2b0c;
+  --paper:#241c19; --paper-dark:#1a1412; --paper-line:#4a3a32; --letter:#f7f1e6;
+  --shadow:0 24px 60px -20px rgba(0,0,0,.65), 0 2px 8px rgba(0,0,0,.35);
+  --r:22px; --rs:12px;
+  --font: "Plus Jakarta Sans", ui-rounded, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --serif: "Space Grotesk", "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;font-family:var(--font);color:var(--ink);line-height:1.45;
+  background:radial-gradient(1200px 700px at 50% -20%, var(--bg2), var(--bg) 70%);}
+.app{max-width:560px;margin:0 auto;padding:28px 16px calc(96px + env(safe-area-inset-bottom))}
+.screen{display:none}
+.screen.active{display:block;animation:fadeUp .3s ease}
+.static-card{padding:28px 26px 26px}
+.static-card h2{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.2;margin:0 0 8px;letter-spacing:-.01em}
+.auth-screen{display:none;max-width:560px;margin:0 auto;padding:28px 16px}
+body:not(.is-authenticated) .auth-screen{display:block}
+body:not(.is-authenticated) .app,body:not(.is-authenticated) .tabbar{display:none}
+.auth-card{text-align:center;padding:34px 26px}
+.brand-lockup{display:flex;align-items:center;justify-content:center;gap:14px;margin:0 0 28px}
+.brand-mark{display:grid;place-items:center;width:58px;height:58px;border-radius:18px;background:var(--accent);color:#fff;font-family:var(--serif);font-weight:700;font-size:28px;box-shadow:0 14px 28px -16px rgba(230,54,44,.9)}
+.brand-word{font-family:var(--serif);font-size:38px;font-weight:700;letter-spacing:-.03em}
+.login-actions{display:grid;gap:10px;margin-top:24px}
+.login-btn{width:100%;justify-content:center}
+.login-status{border-radius:14px;padding:12px 14px;font-size:14px;margin-top:16px;background:var(--bad-soft);color:var(--bad)}
+.login-status.ok{background:var(--ok-soft);color:var(--ok)}
+.auth-form{text-align:left;margin-top:20px}
+.auth-form .actions{margin-top:20px}
+
+/* bottom tab bar */
+.tabbar{position:fixed;left:50%;bottom:0;transform:translateX(-50%);width:100%;max-width:560px;
+  display:flex;background:rgba(23,19,18,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  border-top:1px solid var(--line);padding:8px 10px calc(10px + env(safe-area-inset-bottom));z-index:20}
+.tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;border:0;background:transparent;color:var(--muted);
+  font:inherit;font-size:11.5px;font-weight:600;padding:6px 4px;border-radius:12px;cursor:pointer;transition:color .2s}
+.tab-ico{font-size:19px;line-height:1;display:inline-grid;place-items:center;width:34px;height:26px;border-radius:10px;transition:background .2s}
+.tab-btn.on{color:var(--ink)}
+.tab-btn.on .tab-ico{background:var(--accent-soft)}
+.tab-btn:not(.on):hover{color:var(--ink)}
+
+/* profile */
+.profile-head{display:flex;align-items:center;gap:14px;margin:14px 0 22px}
+.avatar{display:inline-grid;place-items:center;width:54px;height:54px;border-radius:50%;background:var(--accent);color:#fff;font-weight:700;font-size:17px;flex:none}
+.profile-list{display:flex;flex-direction:column;gap:8px}
+.profile-row{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:1px solid var(--line);background:var(--bg2);
+  color:var(--ink);font:inherit;font-size:14.5px;font-weight:600;padding:13px 14px;border-radius:14px;cursor:pointer;transition:all .2s}
+.profile-row:hover{border-color:var(--line-strong)}
+.profile-row .ico{font-size:17px;width:22px;text-align:center;flex:none}
+.profile-row .chev{margin-left:auto;color:var(--muted);font-size:18px}
+.profile-row.danger{color:var(--bad)}
+
+
+/* card + slides */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);overflow:hidden}
+.stage{position:relative;overflow:hidden;transition:height .5s cubic-bezier(.2,.75,.2,1)}
+.slide{position:absolute;top:0;left:0;width:100%;padding:28px 26px 26px;transform:translateX(0);opacity:1;visibility:visible;
+  transition:transform .55s cubic-bezier(.2,.75,.2,1),opacity .45s ease}
+.slide:not(.active){opacity:0;visibility:hidden;pointer-events:none;transition:transform .55s cubic-bezier(.2,.75,.2,1),opacity .4s ease,visibility 0s .55s}
+.slide.left{transform:translateX(-100%)}
+.slide.right{transform:translateX(100%)}
+.slide h2{font-family:var(--serif);font-weight:600;font-size:26px;line-height:1.2;margin:0 0 8px;letter-spacing:-.01em;outline:none}
+.slide h2 em{font-style:italic;color:var(--accent)}
+.hint{color:var(--muted);margin:0 0 20px}
+.eyebrow{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 8px}
+@media (prefers-reduced-motion:reduce){.stage,.slide{transition:none!important}.env-wrap{animation:none!important}}
+
+/* form controls */
+.field{display:block;margin:0 0 14px}
+.field>span{display:block;font-size:13px;font-weight:600;color:var(--muted);margin-bottom:6px}
+select,input[type=text],input[type=email],input[type=password],textarea{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line-strong);border-radius:var(--rs);padding:12px 14px;outline:none;transition:border-color .2s,box-shadow .2s}
+select{appearance:none;-webkit-appearance:none;padding-right:42px;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'><path d='M4 6l4 4 4-4' fill='none' stroke='%23999' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/></svg>");background-repeat:no-repeat;background-position:right 14px center;cursor:pointer}
+select:focus,input[type=text]:focus,input[type=email]:focus,input[type=password]:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+textarea{resize:vertical;min-height:72px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;min-height:10px;margin:4px 0 8px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--accent);background:var(--accent-soft);color:var(--ink);border-radius:999px;padding:7px 10px 7px 13px;font:inherit;font-size:14px;cursor:pointer;animation:pop .25s ease}
+.chip .x{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:13px;line-height:1}
+.chip:hover .x{background:var(--accent-hover)}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.subtle{color:var(--muted);font-size:14px;margin:0 0 20px}
+.sub-h{font-family:var(--serif);font-weight:600;font-size:20px;margin:22px 0 4px;padding-top:18px;border-top:1px dashed var(--line-strong)}
+.range-wrap{margin:6px 0 18px}
+.joke{position:relative;margin:18px auto 0;max-width:420px;background:var(--gold-soft);color:var(--ink);border-radius:16px;padding:12px 16px;text-align:center;font-size:15px;line-height:1.4;font-style:italic;font-family:var(--serif)}
+.joke::before{content:"";position:absolute;top:-8px;left:50%;transform:translateX(-50%);border:8px solid transparent;border-top:0;border-bottom-color:var(--gold-soft)}
+.joke .em{font-style:normal;margin-right:6px}
+.range-out{font-family:var(--serif);font-size:44px;line-height:1;text-align:center;margin:8px 0 12px}
+.range-out small{font-family:var(--font);font-size:15px;color:var(--muted);display:block;margin-top:6px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:3px;margin:12px 0;cursor:pointer;outline:none;
+  background:linear-gradient(90deg,var(--accent) var(--pct,0%),var(--line-strong) var(--pct,0%))}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:var(--accent);border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab}
+input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;background:var(--accent);border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);cursor:grab}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--line-strong)}
+input[type=range]::-moz-range-progress{height:6px;border-radius:3px;background:var(--accent)}
+input[type=range]:focus-visible{box-shadow:0 0 0 4px var(--accent-soft)}
+.quick{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:10px 0 0}
+.quick button{font:inherit;font-size:13px;border:1.5px solid var(--line-strong);background:transparent;color:var(--ink);border-radius:999px;padding:6px 12px;cursor:pointer}
+.quick button.on,.quick button:hover{border-color:var(--gold);background:var(--gold-soft)}
+/* outing vibe picks — the primary selector, so bolder than a secondary quick-pick */
+#quickVibe{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin:8px 0 0}
+#quickVibe button{font:inherit;font-size:13.5px;font-weight:600;border:1.5px solid var(--line-strong);background:var(--card);color:var(--muted);border-radius:999px;padding:9px 14px;cursor:pointer;transition:all .2s}
+#quickVibe button:hover{border-color:var(--accent)}
+#quickVibe button.on{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+/* yes/no segmented toggle */
+.segmented{display:flex;border:1.5px solid var(--line-strong);border-radius:999px;padding:3px;gap:3px}
+.segmented button{flex:1;border:0;background:transparent;color:var(--muted);font:inherit;font-weight:600;font-size:13.5px;padding:10px 6px;border-radius:999px;cursor:pointer;transition:all .2s}
+.segmented button.on{background:var(--accent);color:#fff}
+.taste-reveal{margin:12px 0 0;padding:14px;border:1px solid var(--line);border-radius:16px;background:var(--bg2);animation:fadeUp .3s ease}
+/* date picks */
+.days{display:flex;gap:8px;flex-wrap:nowrap;margin:0 0 12px}
+.day{flex:1 1 0;min-width:0;border:1.5px solid var(--line-strong);background:var(--card);border-radius:14px;padding:9px 4px;font:inherit;color:var(--ink);cursor:pointer;text-align:center;transition:all .2s;line-height:1.15}
+.day b{display:block;font-size:12.5px;letter-spacing:-.01em}
+.day small{display:block;color:var(--muted);font-size:11.5px;margin-top:2px}
+.day:hover:not(:disabled){border-color:var(--accent)}
+.day.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px var(--accent-soft)}
+.day:disabled{opacity:.4;cursor:not-allowed}
+.date-field{margin-bottom:8px}
+input[type=date]{width:100%;font:inherit;color:var(--ink);background:var(--card);border:1.5px solid var(--line-strong);border-radius:var(--rs);padding:11px 14px;outline:none}
+input[type=date]:focus{border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+.t-past{position:absolute;top:0;left:0;height:6px;border-radius:3px 0 0 3px;background:repeating-linear-gradient(90deg,var(--line-strong) 0 4px,transparent 4px 8px);opacity:.9}
+/* time slider: fixed one-hour window on a 24h dial */
+.tslider{margin:4px 0 22px;user-select:none}
+.t-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:6px}
+.t-label{font-family:var(--serif);font-size:34px;font-variant-numeric:tabular-nums;letter-spacing:.01em}
+.t-sub{font-size:13px;color:var(--muted)}
+.t-area{position:relative;padding:46px 14px 0}
+.t-track{position:relative;height:6px;border-radius:3px;background:var(--line-strong);cursor:grab;touch-action:none;outline:none}
+.t-track:active{cursor:grabbing}
+.t-track:focus-visible{box-shadow:0 0 0 4px var(--accent-soft)}
+.t-window{position:absolute;top:0;height:6px;background:var(--accent);border-radius:3px;transition:left .08s linear}
+.knob{position:absolute;top:50%;width:26px;height:26px;border-radius:50%;background:var(--accent);border:3px solid var(--card);box-shadow:0 2px 8px rgba(0,0,0,.25);transform:translate(-50%,-50%)}
+.knob{left:50%}
+.t-pill{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap;background:var(--pill,var(--ink));color:#fff;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:7px 13px;border-radius:999px;pointer-events:none;transition:left .08s linear,background .3s;box-shadow:0 6px 16px -6px rgba(0,0,0,.35)}
+.t-pill::after{content:"";position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--pill,var(--ink))}
+.t-ticks{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin:16px 2px 0;font-variant-numeric:tabular-nums}
+/* party size */
+.party{display:flex;align-items:center;justify-content:center;gap:22px;margin:10px 0 6px}
+.party-btn{width:56px;height:56px;border-radius:50%;border:1.5px solid var(--line-strong);background:var(--card);color:var(--accent);font:inherit;font-size:30px;line-height:1;cursor:pointer;transition:all .2s;display:grid;place-items:center}
+.party-btn:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.party-btn:disabled{opacity:.35;cursor:not-allowed}
+.party-num{text-align:center;min-width:110px}
+.party-num b{display:block;font-family:var(--serif);font-weight:600;font-size:64px;line-height:1}
+.party-num small{display:block;color:var(--muted);font-size:14px;margin-top:2px}
+.party-icons{text-align:center;font-size:30px;letter-spacing:4px;min-height:40px;margin:2px 0 6px}
+.party-icons span{display:inline-block;animation:pop .25s ease}
+/* location */
+.or{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;letter-spacing:.12em;text-transform:uppercase;margin:2px 0 12px}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line-strong)}
+.loc-btn{width:100%;justify-content:center;text-align:center}
+.loc-status{border-radius:12px;padding:10px 14px;font-size:14px;margin:10px 0 0;background:var(--ok-soft);color:var(--ok)}
+.loc-status.bad{background:var(--bad-soft);color:var(--bad)}
+/* payment */
+.order{background:var(--bg2);border-radius:14px;padding:10px 14px;margin:0 0 16px}
+.order-row{display:flex;justify-content:space-between;gap:12px;padding:5px 0}
+.order-row.muted{color:var(--muted);font-size:13.5px}
+.order-row.total{border-top:1px solid var(--line-strong);margin-top:4px;padding-top:9px;font-size:16px}
+.fee-waived{text-decoration:line-through;opacity:.55}
+.pay-methods{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:0 0 16px}
+.pay-method{border:1.5px solid var(--line-strong);background:var(--card);border-radius:14px;padding:14px 8px 12px;font:inherit;font-weight:600;font-size:14px;color:var(--ink);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;transition:all .2s}
+.pay-method:hover{border-color:var(--accent)}
+.pay-method.on{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px var(--accent-soft)}
+.pay-method svg{width:26px;height:26px;fill:currentColor}
+.pm-ico{font-size:24px;line-height:26px}
+.card-form{animation:fadeUp .3s ease}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.field{position:relative}
+.cc-brand{position:absolute;right:14px;bottom:14px;font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.04em}
+.wallet-hint{text-align:center;margin:0 0 6px}
+.btn.wallet{background:#000;color:#fff;border-color:#000;box-shadow:none}
+.btn.wallet:hover{background:#222}
+.btn.wallet svg{width:18px;height:18px;fill:#fff}
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:0 0 16px}
+.check{display:flex;align-items:center;gap:10px;border:1.5px solid var(--line-strong);border-radius:14px;padding:12px;cursor:pointer;transition:all .2s;user-select:none}
+.check:hover{border-color:var(--accent)}
+.check input{width:18px;height:18px;accent-color:var(--accent);margin:0;flex:none}
+.check .ico{font-size:18px}
+.check.on{border-color:var(--accent);background:var(--accent-soft)}
+.check.gate{padding:14px 16px;margin:4px 0 6px;line-height:1.3}
+.check.gate small{color:var(--muted);font-weight:400;font-size:12.5px}
+.reveal-box{border-left:3px solid var(--accent-soft);padding-left:14px;margin:10px 0 6px;animation:fadeUp .35s ease}
+.sub-h em{font-style:italic;color:var(--accent)}
+/* tastes — compact rule-out chips */
+.taste-chips{display:flex;flex-wrap:wrap;gap:7px;margin:2px 0 2px}
+.taste-chip{font:inherit;font-size:12.5px;font-weight:600;border:1.5px solid var(--line-strong);background:var(--card);color:var(--muted);border-radius:999px;padding:7px 13px;cursor:pointer;transition:all .2s}
+.taste-chip:hover{border-color:var(--accent)}
+.taste-chip.excluded{border-color:var(--accent);background:var(--accent-soft);color:var(--ink);text-decoration:line-through;text-decoration-color:var(--accent)}
+.check.gate.compact{padding:10px 14px}
+.check.gate.compact small{display:none}
+
+/* buttons */
+.actions{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-top:8px}
+.actions .spacer{flex:1}
+.btn{font:inherit;font-weight:600;font-size:15px;border-radius:999px;padding:13px 22px;cursor:pointer;border:1.5px solid transparent;transition:all .2s;display:inline-flex;align-items:center;gap:8px}
+.btn.primary{background:var(--accent);color:var(--accent-ink);box-shadow:0 10px 24px -10px rgba(226,58,46,.7)}
+.btn.primary:hover{background:var(--accent-hover);transform:translateY(-1px)}
+.btn.primary:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line-strong)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.linkish{background:none;border:0;padding:6px;font:inherit;font-size:13px;color:var(--muted);text-decoration:underline;cursor:pointer}
+.linkish:hover{color:var(--accent)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+
+/* envelope */
+.env-slide{text-align:center}
+.env-wrap{width:min(300px,100%);margin:6px auto 4px;animation:float 4s ease-in-out infinite}
+.env-wrap.open{animation:none}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.env{width:100%;height:auto;overflow:visible;filter:drop-shadow(0 18px 24px rgba(60,30,10,.22))}
+.env .flap-front{transform-origin:160px 62px;transform-box:view-box;transition:transform .8s cubic-bezier(.4,0,.2,1),opacity 0s linear .8s}
+.env .flap-back{opacity:0;transition:opacity 0s linear .8s}
+.env .letter{transition:transform .9s cubic-bezier(.2,.8,.2,1) .85s}
+.env .seal{transform-origin:160px 150px;transform-box:view-box;transition:transform .35s ease,opacity .35s ease}
+.env-wrap.open .flap-front{transform:scaleY(-1);opacity:0}
+.env-wrap.open .flap-back{opacity:1}
+.env-wrap.open .letter{transform:translateY(-84px)}
+.env-wrap.open .seal{transform:scale(.2) rotate(40deg);opacity:0}
+.timer-ring{position:relative;width:132px;height:132px;margin:8px auto 10px}
+.timer-ring svg{width:100%;height:100%;transform:rotate(-90deg)}
+.timer-ring .track{fill:none;stroke:var(--line);stroke-width:8}
+.timer-ring .prog{fill:none;stroke:var(--accent);stroke-width:8;stroke-linecap:round;stroke-dasharray:345.6;stroke-dashoffset:0;transition:stroke-dashoffset .3s linear}
+.timer{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1;font-variant-numeric:tabular-nums;font-family:var(--serif);font-size:30px;font-weight:600;letter-spacing:.02em}
+.timer small{display:block;font-family:var(--font);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+.lead{font-family:var(--serif);font-size:21px;margin:4px 0 6px}
+.state-ready .lead{color:var(--ok)}
+.summary{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:14px 0 4px}
+.tag{font-size:12.5px;padding:5px 10px;border-radius:999px;background:var(--bg2);color:var(--muted);border:1px solid var(--line)}
+.tag.accent{background:var(--accent-soft);color:var(--ink);border-color:transparent}
+.tag.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.tag.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.tag.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent}
+
+/* reveal */
+.reveal-head{text-align:center;margin-bottom:8px}
+.resto-name{font-family:var(--serif);font-size:32px;font-weight:600;line-height:1.1;margin:6px 0 6px;letter-spacing:-.01em}
+.meta{display:flex;flex-wrap:wrap;gap:6px 14px;justify-content:center;color:var(--muted);font-size:14px}
+.meta b{color:var(--ink)}
+.stars{color:#e0a100;letter-spacing:1px}
+.blurb{text-align:center;color:var(--muted);margin:12px 0 10px;font-style:italic;font-family:var(--serif);font-size:16.5px}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:16px 0 8px}
+.info{background:var(--bg2);border-radius:14px;padding:12px 14px}
+.info small{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:3px}
+.notice{border-radius:14px;padding:12px 14px;font-size:14px;margin:12px 0}
+.notice.warn{background:var(--warn-soft);color:var(--warn)}
+.notice.info{background:var(--ok-soft);color:var(--ok)}
+.menu-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin:22px 0 4px;padding-top:18px;border-top:1px dashed var(--line-strong)}
+.menu-bar h3{font-family:var(--serif);font-size:24px;margin:0;font-weight:600}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--accent);width:16px;height:16px;margin:0}
+.diet-line{font-size:13.5px;color:var(--muted);margin:2px 0 6px}
+.diet-line b{color:var(--ink)}
+.menu-section{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:20px 0 6px}
+.menu{list-style:none;padding:0;margin:0}
+.dish{padding:12px 0;border-bottom:1px solid var(--line)}
+.dish:last-child{border-bottom:0}
+.dish-head{display:flex;justify-content:space-between;gap:12px;align-items:baseline}
+.dish-name{font-weight:600;font-size:15.5px}
+.dish-price{font-family:var(--serif);color:var(--muted);white-space:nowrap}
+.dish-desc{margin:2px 0 6px;color:var(--muted);font-size:14px}
+.dish-meta{display:flex;flex-wrap:wrap;gap:6px}
+.dish-meta .tag{font-size:11.5px;padding:3px 8px}
+.dish.nofit{opacity:.5}
+.dish.nofit .dish-name{text-decoration:line-through;text-decoration-color:var(--bad);text-decoration-thickness:1.5px}
+.menu-wrap.only-fit .dish.nofit{display:none}
+.reveal-actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:24px;padding-top:18px;border-top:1px dashed var(--line-strong)}
+.reveal-actions a{text-decoration:none}
+.foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:22px}
+.foot a{color:inherit}
+.fade-up{animation:fadeUp .6s ease both}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+/* mobile mode (?mobile=1): just the step content, edge to edge, with room for a phone status bar + home indicator */
+html.mobile,html.mobile body{background:var(--card)}
+html.mobile .foot{display:none}
+html.mobile .app{max-width:none;padding:0 0 calc(96px + env(safe-area-inset-bottom));min-height:100vh;display:flex;flex-direction:column}
+html.mobile .tabbar{max-width:none}
+html.mobile .card{border:0;border-radius:0;box-shadow:none;flex:1}
+html.mobile .stage{transition:none}
+html.mobile .slide{padding:64px 20px 44px}
+html.mobile .slide h2{font-size:24px}
+html.mobile .eyebrow{font-size:11px}
+html.mobile .range-out{font-size:40px}
+html.mobile .btn{padding:12px 18px}
+html.mobile .actions{position:sticky;bottom:0;padding:12px 0 0;background:linear-gradient(to top,var(--card) 70%,transparent)}
+</style>
+</head>
+<body>
+<section class="auth-screen" id="authScreen">
+  <article class="card auth-card">
+    <div class="brand-lockup" aria-label="Run Out">
+      <div class="brand-mark">R</div>
+      <div class="brand-word">Run Out</div>
+    </div>
+    <p class="eyebrow">Dinner without overthinking</p>
+    <h2>Let the night <em style="color:var(--accent);font-style:normal">pick you.</em></h2>
+    <p class="hint">Create your account with Google or your email, then start your mystery dinner request.</p>
+    <div id="authChoices">
+      <div class="login-actions">
+        <button class="btn primary login-btn" id="googleLogin" type="button">Continue with Google</button>
+        <button class="btn ghost login-btn" id="emailRegistration" type="button">Create account with email</button>
+      </div>
+      <button class="linkish" id="emailLogin" type="button">Already have an account? Sign in with email</button>
+    </div>
+    <form class="auth-form" id="emailRegistrationForm" hidden>
+      <label class="field">
+        <span>Full name</span>
+        <input id="registrationName" type="text" autocomplete="name" maxlength="120" required>
+      </label>
+      <label class="field">
+        <span>Email</span>
+        <input id="registrationEmail" type="email" autocomplete="email" maxlength="320" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input id="registrationPassword" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      </label>
+      <label class="field">
+        <span>Confirm password</span>
+        <input id="registrationPasswordConfirmation" type="password" autocomplete="new-password" minlength="12" maxlength="128" required>
+      </label>
+      <div class="actions">
+        <button class="btn ghost" id="cancelEmailRegistration" type="button">Back</button>
+        <button class="btn primary" id="submitEmailRegistration" type="submit">Create account</button>
+      </div>
+    </form>
+    <form class="auth-form" id="emailLoginForm" hidden>
+      <label class="field">
+        <span>Email</span>
+        <input id="loginEmail" type="email" autocomplete="email" maxlength="320" required>
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input id="loginPassword" type="password" autocomplete="current-password" maxlength="128" required>
+      </label>
+      <div class="actions">
+        <button class="btn ghost" id="cancelEmailLogin" type="button">Back</button>
+        <button class="btn primary" id="submitEmailLogin" type="submit">Sign in</button>
+      </div>
+    </form>
+    <p class="login-status" id="loginStatus" hidden></p>
+  </article>
+</section>
+<main class="app">
+  <div class="screen active" id="screen-home">
+  <section class="card">
+    <div class="stage" id="stage">
+
+      <!-- 1 · Party & Time -->
+      <section class="slide active" data-step="0" aria-label="Party and time">
+        <p class="eyebrow">Your table</p>
+        <h2 tabindex="-1">Who, and when?</h2>
+        <p class="hint">Tables for two to six. We'll size everything else to your party.</p>
+        <div class="party">
+          <button type="button" class="party-btn" id="peopleMinus" aria-label="Fewer people">−</button>
+          <div class="party-num" aria-live="polite"><b id="peopleNum">2</b><small id="peopleWord">people</small></div>
+          <button type="button" class="party-btn" id="peoplePlus" aria-label="More people">+</button>
+        </div>
+        <div class="party-icons" id="peopleIcons" aria-hidden="true"></div>
+
+        <h3 class="sub-h" style="margin-top:22px">When?</h3>
+        <div class="days" id="dayPicks" role="radiogroup" aria-label="Which day"></div>
+        <label class="field date-field">
+          <span>Or choose another date</span>
+          <input type="date" id="dateInput" aria-label="Date">
+        </label>
+        <p class="subtle" id="dateNote" hidden style="margin:-4px 0 12px"></p>
+        <div class="tslider" id="tslider">
+          <div class="t-head"><span class="t-label" id="timeLabel">12:00 – 13:00</span><span class="t-sub" id="timeSub">1-hour window</span></div>
+          <div class="t-area">
+            <span class="t-pill" id="mealPill">Lunch</span>
+            <div class="t-track" id="tTrack" role="slider" tabindex="0" aria-label="Meal time, one-hour window" aria-valuemin="14" aria-valuemax="44" aria-valuenow="24" aria-valuetext="12:00 to 13:00, Lunch">
+              <div class="t-past" id="tPast" aria-hidden="true"></div>
+              <div class="t-window" id="tWindow"><span class="knob"></span></div>
+            </div>
+          </div>
+          <div class="t-ticks" aria-hidden="true"><span>07:00</span><span>11:00</span><span>15:00</span><span>19:00</span><span>23:00</span></div>
+        </div>
+
+        <div class="actions">
+          <span class="spacer"></span>
+          <button class="btn primary" id="nextParty" type="button">Next →</button>
+        </div>
+      </section>
+
+      <!-- 2 · Budget, Vibe & Tastes -->
+      <section class="slide" data-step="1" aria-label="Budget, vibe and tastes">
+        <p class="eyebrow">Budget &amp; mood</p>
+        <h2 tabindex="-1">How much, and what mood?</h2>
+        <p class="hint">Steps of AED 50 — minimum AED 50 a person, cap AED 1,000.</p>
+        <div class="range-wrap">
+          <div class="range-out" id="budgetOut">AED 50 <small>for the table, at most</small></div>
+          <input type="range" id="budget" min="100" max="1000" step="50" value="100" aria-label="Maximum budget in dirhams, in steps of 50">
+          <p class="joke" id="budgetJoke" aria-live="polite"></p>
+        </div>
+
+        <h3 class="sub-h">Outing vibe</h3>
+        <div class="quick" id="quickVibe" style="margin-top:10px"></div>
+        <p class="joke" id="vibeJoke" aria-live="polite"></p>
+
+        <h3 class="sub-h">Tastes</h3>
+        <p class="hint" style="margin-bottom:10px">Anything you'd rather rule out tonight?</p>
+        <div class="segmented" id="tasteGate" role="radiogroup" aria-label="Exclude any cuisines?">
+          <button type="button" data-v="no" class="on">No, open to anything</button>
+          <button type="button" data-v="yes">Yes, let me pick</button>
+        </div>
+        <div class="taste-reveal" id="tasteBox" hidden>
+          <div class="taste-chips" id="tasteChips" role="group" aria-label="Cuisines to rule out"></div>
+          <p class="subtle" id="chipsHint" style="margin:8px 0 0"></p>
+        </div>
+        <label class="check gate compact" id="dietGate" style="margin-top:12px">
+          <input type="checkbox" id="hasDiet">
+          <span class="ico" aria-hidden="true">⚠️</span>
+          <span><b>Allergies or dietary conditions?</b></span>
+        </label>
+        <div class="reveal-box" id="dietBox" hidden>
+          <div class="check-grid" id="dietGrid"></div>
+          <label class="field">
+            <span>Anything else? <span style="font-weight:400">(optional)</span></span>
+            <input type="text" id="notes" placeholder="e.g. sesame allergy, mild spice only…" autocomplete="off">
+          </label>
+        </div>
+
+        <div class="actions">
+          <button class="btn ghost" data-back type="button">← Back</button>
+          <button class="btn primary" id="next0" type="button">Next →</button>
+        </div>
+      </section>
+
+      <!-- 3 · Location + distance -->
+      <section class="slide" data-step="2" aria-label="Location">
+        <p class="eyebrow">Location</p>
+        <h2 tabindex="-1">First — where are you?</h2>
+        <p class="hint">We need to know this to measure how far away your restaurant is.</p>
+        <label class="field">
+          <span>Please enter your location here</span>
+          <input type="text" id="origin" placeholder="Address, neighborhood, or ZIP code" autocomplete="street-address">
+        </label>
+        <div class="or"><span>or</span></div>
+        <button class="btn ghost loc-btn" id="useLocation" type="button">📍 Enable location services — use my current location</button>
+        <p class="loc-status" id="locStatus" aria-live="polite" hidden></p>
+        <h3 class="sub-h">How far are you from your location?</h3>
+        <p class="hint" style="margin-bottom:8px">Set the farthest you're willing to travel from there.</p>
+        <div class="range-wrap">
+          <div class="range-out" id="distOut">5 <small>miles or less</small></div>
+          <input type="range" id="dist" min="1" max="25" step="1" value="5" aria-label="Maximum distance in miles">
+          <div class="quick" id="quickDist">
+            <button type="button" data-v="1">1 mi</button>
+            <button type="button" data-v="3">3 mi</button>
+            <button type="button" data-v="5" class="on">5 mi</button>
+            <button type="button" data-v="10">10 mi</button>
+            <button type="button" data-v="25">25 mi</button>
+          </div>
+        </div>
+        <p class="subtle" id="locHint" style="margin:0 0 4px">Enter your location above to continue.</p>
+        <div class="actions">
+          <button class="btn ghost" data-back type="button">← Back</button>
+          <button class="btn primary" id="next3" type="button" disabled>Next →</button>
+        </div>
+      </section>
+
+      <!-- 4 · Payment -->
+      <section class="slide" data-step="3" aria-label="Payment">
+        <p class="eyebrow">Payment</p>
+        <h2 tabindex="-1">Seal it with a payment.</h2>
+        <p class="hint">Complete the mock payment to secure your mystery table. No real charge is made in this demo.</p>
+        <div class="order">
+          <div class="order-row"><span>Reservation service fee</span><span id="payService" class="fee-waived">AED 0</span></div>
+          <div class="order-row total"><span>Mock payment total</span><b id="payAmount">AED 50</b></div>
+          <div class="order-row muted"><span id="payBudgetLabel">Reservation budget for 2</span><span id="payBudget">AED 50</span></div>
+        </div>
+        <div class="pay-methods" role="radiogroup" aria-label="Payment method">
+          <button type="button" class="pay-method" data-method="card" role="radio" aria-checked="false"><span class="pm-ico" aria-hidden="true">💳</span><span>Credit card</span></button>
+          <button type="button" class="pay-method" data-method="apple" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701"/></svg><span>Apple Pay</span></button>
+          <button type="button" class="pay-method" data-method="google" role="radio" aria-checked="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12.48 10.92v3.28h7.84c-.24 1.84-.853 3.187-1.787 4.133-1.147 1.147-2.933 2.4-6.053 2.4-4.827 0-8.6-3.893-8.6-8.72s3.773-8.72 8.6-8.72c2.6 0 4.507 1.027 5.907 2.347l2.307-2.307C18.747 1.44 16.133 0 12.48 0 5.867 0 .307 5.387.307 12s5.56 12 12.173 12c3.573 0 6.267-1.173 8.373-3.36 2.16-2.16 2.84-5.213 2.84-7.667 0-.76-.053-1.467-.173-2.053H12.48z"/></svg><span>Google Pay</span></button>
+        </div>
+        <form id="cardForm" class="card-form" hidden novalidate autocomplete="on">
+          <label class="field"><span>Name on card</span><input type="text" id="cardName" autocomplete="cc-name" placeholder="Jane Appleseed"></label>
+          <label class="field"><span>Card number</span><input type="text" id="cardNumber" inputmode="numeric" autocomplete="cc-number" placeholder="1234 5678 9012 3456" maxlength="23"><small id="cardBrand" class="cc-brand"></small></label>
+          <div class="two">
+            <label class="field"><span>Expiry</span><input type="text" id="cardExp" inputmode="numeric" autocomplete="cc-exp" placeholder="MM/YY" maxlength="5"></label>
+            <label class="field"><span>CVC</span><input type="text" id="cardCvc" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4"></label>
+          </div>
+        </form>
+        <p class="wallet-hint subtle" id="walletHint" hidden></p>
+        <p class="subtle" style="margin:8px 0 0;font-size:12.5px">🔒 Demo checkout — nothing is charged.</p>
+        <div class="actions">
+          <button class="btn ghost" data-back type="button">← Back</button>
+          <button class="btn primary" id="seal" type="button" disabled>Choose how to pay</button>
+        </div>
+      </section>
+
+      <!-- 5 · Envelope + countdown -->
+      <!-- 5 · Restaurant & location -->
+      <section class="slide" data-step="4" aria-label="Your restaurant">
+        <div id="restoBody"></div>
+      </section>
+
+      <!-- 6 · Menu -->
+      <section class="slide" data-step="5" aria-label="Menu">
+        <div id="menuBody"></div>
+      </section>
+
+    </div>
+  </section>
+
+  <p class="foot">Sample restaurants &amp; menus for demo purposes. <a href="?reset">Start over</a></p>
+  </div>
+
+  <div class="screen" id="screen-reservations">
+    <section class="card">
+      <div class="static-card">
+        <p class="eyebrow">Reservations</p>
+        <h2>Your reservations</h2>
+        <div id="reservationsBody"></div>
+      </div>
+    </section>
+  </div>
+
+  <div class="screen" id="screen-profile">
+    <section class="card">
+      <div class="static-card">
+        <p class="eyebrow">Profile</p>
+        <div class="profile-head">
+          <div class="avatar" id="profileAvatar" aria-hidden="true">R</div>
+          <div>
+            <h2 id="profileName" style="margin:0 0 2px">Run Out user</h2>
+            <p class="subtle" id="profileEmail" style="margin:0">Signed in</p>
+          </div>
+        </div>
+        <div class="profile-list">
+          <button type="button" class="profile-row"><span class="ico" aria-hidden="true">💳</span><span>Payment methods</span><span class="chev" aria-hidden="true">›</span></button>
+          <button type="button" class="profile-row"><span class="ico" aria-hidden="true">📍</span><span>Saved addresses</span><span class="chev" aria-hidden="true">›</span></button>
+          <button type="button" class="profile-row"><span class="ico" aria-hidden="true">🔔</span><span>Notifications</span><span class="chev" aria-hidden="true">›</span></button>
+          <button type="button" class="profile-row"><span class="ico" aria-hidden="true">🥗</span><span>Dietary preferences</span><span class="chev" aria-hidden="true">›</span></button>
+          <button type="button" class="profile-row"><span class="ico" aria-hidden="true">❓</span><span>Help &amp; support</span><span class="chev" aria-hidden="true">›</span></button>
+          <button type="button" class="profile-row danger" id="profileStartOver"><span class="ico" aria-hidden="true">↺</span><span>Start over</span><span class="chev" aria-hidden="true">›</span></button>
+          <button type="button" class="profile-row danger" id="logout"><span class="ico" aria-hidden="true">⎋</span><span>Logout</span><span class="chev" aria-hidden="true">›</span></button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<nav class="tabbar" id="tabbar" aria-label="Primary">
+  <button type="button" class="tab-btn on" data-tab="home"><span class="tab-ico" aria-hidden="true">🏠</span><span>Home</span></button>
+  <button type="button" class="tab-btn" data-tab="reservations"><span class="tab-ico" aria-hidden="true">📅</span><span>Reservations</span></button>
+  <button type="button" class="tab-btn" data-tab="profile"><span class="tab-ico" aria-hidden="true">👤</span><span>Profile</span></button>
+</nav>
+
+<script>
+const config = {
+  backendUrl: "http://localhost:8080",
+  keycloakUrl: "https://david-obligation-semiconductor-come.trycloudflare.com",
+  realm: "runout",
+  clientId: "runout-mobile",
+  redirectUri: window.location.origin + window.location.pathname
+};
+const AUTH_STORAGE = {
+  accessToken: "runout.public.accessToken",
+  refreshToken: "runout.public.refreshToken",
+  verifier: "runout.public.pkceVerifier",
+  state: "runout.public.oauthState"
+};
+let currentUser = null;
+let backendReservations = [];
+
+/* ---------- data ---------- */
+const CUISINES = ["American","BBQ","Breakfast & Brunch","Chinese","Ethiopian","French","Greek","Indian","Italian","Japanese","Korean","Mediterranean","Mexican","Middle Eastern","Pizza","Seafood","Steakhouse","Thai","Vegan","Vietnamese"];
+
+/* Outing vibe: sets the tone and softly nudges which restaurants we prefer (never a hard filter — the mystery pick always lands somewhere). */
+const VIBES = [
+  {id:"casual",icon:"😎",label:"Casual",tagHints:["counter service","takeout","family style","great value","comfort food","big portions","quick"],jokes:[
+    "Zero dress code, zero stress — flip-flops fully authorized.",
+    "The vibe is: nobody's checking the time, but somebody's checking their phone under the table.",
+    "Paper napkins, plastic cups, zero regrets.",
+    "If you have to Google \"is this too casual,\" it's not casual enough.",
+    "Comfortable chairs beat fancy plates. Every single time.",
+  ]},
+  {id:"date",icon:"💞",label:"Date Night",tagHints:["date night","cozy","rooftop","wine list","candlelit"],jokes:[
+    "Careful — good lighting has ended more first dates than bad conversation.",
+    "Order the thing you can eat without making a mess. Trust us.",
+    "Somewhere between \"trying too hard\" and \"I forgot we had plans.\"",
+    "Candles: because overhead lighting has never once fallen in love with anyone.",
+    "Split the dessert. It's basically a relationship milestone.",
+  ]},
+  {id:"extreme",icon:"🔥",label:"Extreme",tagHints:["great value","counter service","late night","sells out early","hidden"],jokes:[
+    "If they don't take card, you know it's good. Bring cash and low toilet expectations.",
+    "The menu's in one language and it's not yours. Point and pray.",
+    "No Wi-Fi, no reviews, no regrets — probably.",
+    "The kind of place your friends won't believe until you show them the receipt. There isn't one.",
+    "Ask for the thing that's not on the menu. That's the good stuff.",
+  ]},
+  {id:"birthday",icon:"🎉",label:"Birthday",tagHints:["party-friendly","lively","special occasion","shareable","table grill"],jokes:[
+    "Someone's getting sung to in public tonight. Hope it's not you.",
+    "There will be a candle in something that was never designed for a candle.",
+    "The bill gets weird. Someone always \"forgets\" their wallet.",
+    "A table loud enough that the whole restaurant knows whose birthday it is.",
+    "Cake optional. Chaos mandatory.",
+  ]},
+  {id:"dress",icon:"🎩",label:"Dress to Impress",tagHints:["fine dining","special occasion","reservations essential","reservations recommended","dry-aged","bourbon"],jokes:[
+    "The valet judges you before the host does. Dress accordingly.",
+    "If your outfit can't survive a candlelit photo, start over.",
+    "Reservation required. So is an ironed shirt.",
+    "Smart casual means no sneakers, no matter how limited-edition.",
+    "The waiter will out-dress you. Accept this now.",
+  ]},
+];
+const vibeFor = id => VIBES.find(v => v.id === id) || VIBES[0];
+
+/* Restaurant price tiers; a dollar budget maps onto the highest tier it can afford. */
+const BUDGETS = [
+  {tier:1,label:"$",title:"Cheap & cheerful",max:50},
+  {tier:2,label:"$$",title:"Casual",max:150},
+  {tier:3,label:"$$$",title:"Treat yourself",max:300},
+  {tier:4,label:"$$$$",title:"Splurge",max:Infinity},
+];
+const tierFor = dollars => (BUDGETS.find(b => dollars <= b.max) || BUDGETS[3]).tier;
+const BUDGET_JOKES = [
+  {max:250, icon:"🥤", jokes:[
+    "Bold. The tap water will be exquisite.",
+    "Appetizers are technically on the table. Technically.",
+    "Someone's splitting a starter three ways and calling it dinner.",
+    "This is a \"we'll grab a snack after\" budget.",
+    "The waiter will refill your water and nothing else.",
+  ]},
+  {max:450, icon:"🍟", jokes:[
+    "Now we're talking. Appetizers are back on the menu — and so is your dignity.",
+    "One-fifty and someone's already eyeing the dessert menu.",
+    "Two hundred. Look at you, saying \"and a bottle for the table.\"",
+    "The waiter just started calling you \"boss.\"",
+    "Enough for a starter, a main, and mild bragging rights.",
+  ]},
+  {max:650, icon:"🍷", jokes:[
+    "Tasting-menu territory. Hope you like foam.",
+    "The sommelier has been notified. He is on his way.",
+    "Five hundred. Is this a date or an acquisition?",
+    "Someone's ordering the fish that costs extra without asking why.",
+    "You could get a starter each and still not check the bill.",
+  ]},
+  {max:850, icon:"🍾", jokes:[
+    "At this point the chef comes out to say hi. Twice.",
+    "Champagne is now a reasonable question, not a joke.",
+    "The table next to you is wondering what you're celebrating.",
+    "This is \"treat yourself and two friends\" money.",
+    "Nobody's splitting the bill by what they actually ordered anymore.",
+  ]},
+  {max:Infinity, icon:"🏛️", jokes:[
+    "You're not eating out — you're funding the kitchen renovation.",
+    "So close to a grand. Just admit it.",
+    "One thousand dirhams. Are we buying dinner, or the restaurant?",
+    "The valet already knows your name.",
+    "Somewhere, a sommelier just stood up straighter.",
+  ]},
+];
+const budgetTierIndex = dirhams => { const i = BUDGET_JOKES.findIndex(t => dirhams <= t.max); return i < 0 ? BUDGET_JOKES.length - 1 : i; };
+
+/* Time is stored as the window's start in half-hours (0 = 00:00 … 46 = 23:00); the window is always start → start + 1h.
+   The pill word comes from where the window starts on the dial. */
+const HALF_HOURS = 48;
+const DIAL_START = 14, DIAL_END = 46;                     // the dial runs 07:00 → 23:00 (in half-hours from midnight)
+const DIAL_SPAN = DIAL_END - DIAL_START, TIME_MAX = DIAL_END - 2;   // window start: 07:00 … 22:00
+const LEAD_MINUTES = 60;                                             // need at least an hour's notice, so today's earliest slot is an hour out
+const pad2 = n => String(n).padStart(2, "0");
+const isoOf = d => `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const todayISO = () => isoOf(new Date());
+const isoPlus = n => { const d = new Date(); d.setDate(d.getDate() + n); return isoOf(d); };
+const dateOf = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+const fmtDay = iso => dateOf(iso).toLocaleDateString(undefined, { weekday:"short", day:"numeric", month:"short" });
+function earliestToday(){ const n = new Date(); const mins = n.getHours() * 60 + n.getMinutes() + LEAD_MINUTES; return Math.ceil(mins / 30); }   // in half-hours
+const timeMin = () => (state.date === todayISO() ? Math.max(DIAL_START, earliestToday()) : DIAL_START);
+const dayAvailable = iso => iso > todayISO() || (iso === todayISO() && timeMin() <= TIME_MAX);
+const MEALS = [
+  {name:"Late night", from:0,    to:5,    color:"#3b2a20"},
+  {name:"Breakfast",  from:5,    to:10,   color:"#e59a10"},
+  {name:"Brunch",     from:10,   to:11.5, color:"#e0662c"},
+  {name:"Lunch",      from:11.5, to:14.5, color:"#2e8b57"},
+  {name:"Afternoon bite", from:14.5, to:17, color:"#5a7d9a"},
+  {name:"Dinner",     from:17,   to:21.5, color:"#e23a2e"},
+  {name:"Late night", from:21.5, to:24,   color:"#3b2a20"},
+];
+const mealFor = v => { const h = v / 2; return MEALS.find(m => h >= m.from && h < m.to) || MEALS[0]; };
+const hhmm = v => { const h = Math.floor(v / 2) % 24, m = v % 2 ? "30" : "00"; return `${String(h).padStart(2,"0")}:${m}`; };
+const timeRange = v => `${hhmm(v)} – ${v + 2 >= HALF_HOURS ? "24:00" : hhmm(v + 2)}`;
+const fmt12 = h => { const hh = h % 24, m = Math.round((hh % 1) * 60), h12 = Math.floor(hh) % 12 || 12; return `${h12}${m ? ":" + String(m).padStart(2,"0") : ""} ${hh < 12 ? "am" : "pm"}`; };
+const hoursText = r => `${fmt12(r.open[0])} – ${fmt12(r.open[1])}${r.open[1] > 24 ? " (after midnight)" : ""}`;
+function openAt(r, v){ let s = v / 2; if (s < 5) s += 24; return s >= r.open[0] && s + 1 <= r.open[1]; }   // small hours count as "tonight"
+
+const DIETS = [
+  {id:"vegetarian",label:"Vegetarian",icon:"🥕"},
+  {id:"vegan",label:"Vegan",icon:"🌱"},
+  {id:"gf",label:"Gluten-free",icon:"🌾"},
+  {id:"df",label:"Dairy-free",icon:"🥛"},
+  {id:"nut",label:"Nut allergy",icon:"🥜"},
+  {id:"shellfish",label:"Shellfish allergy",icon:"🦐"},
+  {id:"egg",label:"Egg allergy",icon:"🥚"},
+  {id:"soy",label:"Soy allergy",icon:"🫘"},
+];
+const ALLERGEN_NAMES = {n:"nuts",s:"shellfish",d:"dairy",g:"gluten",e:"egg",y:"soy"};
+
+/* Menu item format: [name, description, price, diet ("v" vegetarian | "vg" vegan | ""), allergens ("n s d g e y")] */
+const RESTAURANTS = [
+ {id:"nonnas",name:"Nonna's Table",cuisine:"Italian",price:2,dist:1.8,rating:4.6,addr:"412 Elm St",open:[17,22],blurb:"Handmade pasta and slow Sunday sauce in a candlelit trattoria.",tags:["Cozy","Date night","Handmade pasta"],menu:{
+  "Starters":[["Bruschetta","Grilled bread, tomato, basil, olive oil",9,"vg","g"],["Burrata","Creamy burrata, roasted peppers, aged balsamic",14,"v","d"],["Arancini","Crispy risotto balls, mozzarella, marinara",11,"v","g d e"]],
+  "Mains":[["Cacio e Pepe","Tonnarelli, pecorino, cracked black pepper",18,"v","g d"],["Lasagna alla Bolognese","Beef ragù, béchamel, parmesan",22,"","g d e"],["Chicken Piccata","Lemon, capers, white wine, roasted potatoes",24,"","d"],["Eggplant Parmigiana","Baked eggplant, tomato, mozzarella — gluten-free",19,"v","d"],["Linguine alle Vongole","Clams, garlic, chili, white wine",26,"","g s"]],
+  "Desserts":[["Tiramisu","Espresso-soaked ladyfingers, mascarpone",10,"v","g d e"],["Lemon Sorbetto","House-made, dairy-free",8,"vg",""]]}},
+ {id:"laluna",name:"Taquería La Luna",cuisine:"Mexican",price:1,dist:0.7,rating:4.7,addr:"88 Ocean Ave",open:[11,23],blurb:"Street-style tacos on hand-pressed corn tortillas, salsas made every morning.",tags:["Late night","Counter service","Great value"],menu:{
+  "Starters":[["Chips & Guacamole","Hass avocado, lime, cilantro, house chips",7,"vg",""],["Elote","Grilled corn, chili mayo, cotija, lime",6,"v","d e"],["Queso Fundido","Melted Oaxaca cheese, chorizo, flour tortillas",9,"","d g"]],
+  "Tacos":[["Al Pastor","Spit-roasted pork, pineapple, onion, cilantro",4,"",""],["Carne Asada","Grilled steak, salsa verde, onion",4.5,"",""],["Baja Fish","Beer-battered cod, cabbage, chipotle crema",5,"","g d e"],["Rajas con Crema","Roasted poblano, corn, crema",4,"v","d"],["Mushroom & Black Bean","Chipotle mushrooms, black beans, avocado",4,"vg",""]],
+  "Plates & Sweets":[["Chicken Enchiladas Verdes","Tomatillo salsa, crema, rice & beans",13,"","d"],["Veggie Burrito","Rice, beans, grilled peppers, cheese, flour tortilla",11,"v","g d"],["Churros","Cinnamon sugar, chocolate dipping sauce",5,"v","g d e"],["Horchata","Cinnamon rice milk, served over ice",3,"vg",""]]}},
+ {id:"koyo",name:"Kōyō Sushi & Izakaya",cuisine:"Japanese",price:3,dist:3.4,rating:4.8,addr:"1500 Cedar Blvd",open:[17,22.5],blurb:"Omakase-quality fish at the counter, izakaya plates and sake in the back.",tags:["Sushi bar","Sake list","Reservations recommended"],menu:{
+  "Small Plates":[["Edamame","Steamed soybeans, flaky salt",5,"vg","y"],["Agedashi Tofu","Fried tofu, kombu dashi, grated daikon",8,"v","y g"],["Chicken Karaage","Marinated fried chicken, yuzu kosho mayo",10,"","g y e"],["Shrimp Tempura","Light batter, tentsuyu dipping sauce",13,"","s g e"]],
+  "Sushi":[["Salmon Nigiri (2 pc)","Scottish salmon, house-aged",7,"",""],["Spicy Tuna Roll","Tuna, spicy mayo, cucumber",12,"","e y"],["Dragon Roll","Eel, shrimp tempura, avocado, unagi sauce",16,"","s g e y"],["Avocado Cucumber Roll","Simple, clean, vegan",7,"vg",""],["Chirashi Bowl","Chef's selection of fish over sushi rice",28,"",""]],
+  "Mains & Sweets":[["Chicken Teriyaki Don","Grilled thigh, house teriyaki, rice",17,"","y g"],["Vegetable Yaki Udon","Wok-fried udon, seasonal vegetables",15,"vg","g y"],["Matcha Ice Cream","Ceremonial-grade matcha",6,"v","d e"],["Mochi Ice Cream","Two pieces, rotating flavors",5,"v","d"]]}},
+ {id:"goldenwok",name:"Golden Wok House",cuisine:"Chinese",price:1,dist:2.2,rating:4.4,addr:"205 Market St",open:[11,21.5],blurb:"Wok hei you can taste, generous portions, and a hand-pulled noodle station.",tags:["Family style","Takeout","Big portions"],menu:{
+  "Starters":[["Vegetable Spring Rolls","Cabbage, carrot, glass noodle, sweet chili",6,"vg","g y"],["Pork Dumplings","Pan-fried, black vinegar dip",8,"","g y e"],["Hot & Sour Soup","Tofu, wood ear, bamboo, egg ribbons",5,"v","y g e"],["Scallion Pancake","Flaky, crisp, with soy-ginger dip",6,"vg","g y"]],
+  "Mains":[["Kung Pao Chicken","Peanuts, dried chili, Sichuan pepper",13,"","n y g"],["Mapo Tofu (Vegetarian)","Silken tofu, chili bean paste, numbing spice",11,"v","y"],["Beef Chow Fun","Wide rice noodles, bean sprouts, soy",14,"","y g"],["Salt & Pepper Shrimp","Crispy shell-on shrimp, garlic, chili",16,"","s g e"],["Buddha's Delight","Braised mixed vegetables, tofu skin",12,"vg","y"],["Cumin Lamb Hand-Pulled Noodles","Chewy noodles, cumin, chili oil",15,"","g y"]],
+  "Sides":[["Steamed Jasmine Rice","Bowl",2,"vg",""],["Garlic Bok Choy","Wok-tossed, garlic, soy",8,"vg","y"]]}},
+ {id:"baanthai",name:"Baan Thai Kitchen",cuisine:"Thai",price:2,dist:4.1,rating:4.5,addr:"77 Lotus Lane",open:[11.5,22],blurb:"Bangkok street food with heat levels you dial in yourself.",tags:["Spicy","Vegetarian-friendly","BYOB"],menu:{
+  "Starters":[["Fresh Summer Rolls","Rice paper, herbs, vermicelli, peanut sauce",8,"vg","n"],["Chicken Satay","Turmeric-marinated, peanut sauce",10,"","n"],["Tom Yum Goong","Hot & sour shrimp soup, lemongrass, lime leaf",8,"","s"],["Green Papaya Salad","Chili, lime, peanuts, dried shrimp",9,"","n s"]],
+  "Mains":[["Pad Thai with Shrimp","Rice noodles, tamarind, egg, peanuts",15,"","n e s"],["Tofu Pad Thai","Rice noodles, tamarind, egg, peanuts",13,"v","n e y"],["Green Curry Chicken","Coconut, Thai basil, bamboo, eggplant",15,"",""],["Massaman Curry","Slow-braised beef, potato, peanuts",16,"","n"],["Pad See Ew","Wide noodles, Chinese broccoli, egg, soy",14,"","g y e"],["Panang Tofu Curry","Rich red curry, kaffir lime, coconut",14,"vg","y"],["Basil Fried Rice","Holy basil, chili, egg",13,"","e y g"]],
+  "Sweets & Drinks":[["Mango Sticky Rice","Coconut cream, toasted sesame",8,"vg",""],["Thai Iced Tea","Sweet, creamy, over ice",4,"v","d"]]}},
+ {id:"saffron",name:"Saffron & Spice",cuisine:"Indian",price:2,dist:5.6,rating:4.6,addr:"930 Kingsway",open:[11.5,22],blurb:"North Indian classics from a tandoor, plus a long list of vegetarian thalis.",tags:["Vegetarian-friendly","Tandoor","Lunch buffet"],menu:{
+  "Starters":[["Samosas","Spiced potato & pea pastries, tamarind chutney",7,"vg","g"],["Paneer Tikka","Charred cottage cheese, mint chutney",11,"v","d"],["Onion Bhaji","Chickpea-battered onion fritters",7,"vg",""],["Chicken 65","Crispy chili-garlic chicken bites",11,"","g"]],
+  "Mains":[["Butter Chicken","Tomato-cashew gravy, cream, fenugreek",17,"","d n"],["Chana Masala","Chickpeas, tomato, ginger, garam masala",13,"vg",""],["Palak Paneer","Spinach, paneer, garlic",15,"v","d"],["Lamb Rogan Josh","Kashmiri chili, yogurt, whole spices",19,"","d"],["Dal Makhani","Black lentils, slow-simmered, butter",13,"v","d"],["Baingan Bharta","Smoky mashed eggplant, peas, spices",14,"vg",""]],
+  "Breads, Rice & Sweets":[["Garlic Naan","Tandoor-baked, brushed with butter",4,"v","g d"],["Roti","Whole wheat, tandoor-baked",3,"vg","g"],["Basmati Rice","Steamed, with cumin",3,"vg",""],["Gulab Jamun","Milk dumplings in rose syrup",6,"v","d g"],["Kheer","Cardamom rice pudding, pistachio",6,"v","d n"]]}},
+ {id:"brass",name:"The Brass Burger",cuisine:"American",price:2,dist:1.2,rating:4.3,addr:"18 Foundry Row",open:[11,24],blurb:"Smash burgers off a ripping-hot griddle, thick shakes, and a rotating tap list.",tags:["Late night","Craft beer","Kid-friendly"],menu:{
+  "Starters":[["Loaded Fries","Cheddar sauce, scallions, pickled jalapeño",9,"v","d"],["Buffalo Wings","Hot sauce, blue cheese dip, celery",12,"","d"],["Onion Rings","Beer-battered, smoky ketchup",8,"v","g d"],["Sweet Potato Fries","Sea salt, chipotle aioli on the side",6,"vg",""]],
+  "Burgers & Sandwiches":[["Classic Smash Burger","Double patty, American cheese, brass sauce",13,"","g d e"],["Double Bacon Cheeseburger","Two patties, bacon, cheddar, pickles",16,"","g d e"],["Impossible Burger","Plant patty, vegan bun, lettuce, tomato, vegan mayo",15,"vg","g y"],["Crispy Chicken Sandwich","Buttermilk-fried, slaw, pickles",14,"","g e d"],["Grilled Cheese & Tomato Soup","Three cheeses, sourdough",11,"v","g d"],["Cobb Salad","Chicken, bacon, egg, avocado, blue cheese",14,"","d e"]],
+  "Shakes & Sweets":[["Vanilla Malt Shake","Old-fashioned, malted",7,"v","d g"],["Chocolate Shake","Dark chocolate, whipped cream",7,"v","d"],["Apple Pie","Warm, with vanilla ice cream",7,"v","g d e"]]}},
+ {id:"santorini",name:"Santorini Grill",cuisine:"Greek",price:2,dist:2.9,rating:4.5,addr:"641 Harbor View Rd",open:[12,22],blurb:"Charcoal-grilled souvlaki, whipped feta, and a rooftop that catches the sunset.",tags:["Rooftop","Party-friendly","Charcoal grill"],menu:{
+  "Mezze":[["Hummus & Pita","Chickpea, tahini, warm pita",8,"vg","g"],["Tzatziki & Pita","Strained yogurt, cucumber, dill",7,"v","d g"],["Spanakopita","Spinach & feta in crisp phyllo",9,"v","g d e"],["Grilled Halloumi","Lemon, oregano, honey",11,"v","d"],["Dolmades","Rice-stuffed grape leaves, lemon",8,"vg",""]],
+  "Mains":[["Chicken Souvlaki Plate","Skewers, rice, salad, tzatziki",18,"","d"],["Lamb Gyro Wrap","Shaved lamb, tomato, onion, tzatziki",15,"","g d"],["Moussaka","Eggplant, spiced lamb, béchamel",19,"","d g e"],["Grilled Octopus","Charred, lemon, capers, olive oil",24,"","s"],["Falafel Plate","Crisp falafel, tahini, salad, no pita",15,"vg",""],["Greek Salad","Tomato, cucumber, olives, feta",12,"v","d"]],
+  "Desserts":[["Baklava","Walnut, phyllo, honey syrup",7,"v","g n d"],["Greek Yogurt, Honey & Walnuts","Thick yogurt, thyme honey",7,"v","d n"]]}},
+ {id:"phosaigon",name:"Pho Saigon Corner",cuisine:"Vietnamese",price:1,dist:6.3,rating:4.6,addr:"2200 Riverside Dr",open:[10,21],blurb:"Twenty-hour broth, mountains of fresh herbs, and bánh mì on baguettes baked next door.",tags:["Comfort food","Quick","Fresh herbs"],menu:{
+  "Starters":[["Shrimp Spring Rolls","Rice paper, shrimp, herbs, peanut sauce",7,"","s n"],["Tofu Spring Rolls","Rice paper, tofu, herbs, peanut sauce",7,"vg","n"],["Crispy Egg Rolls","Pork, glass noodle, wood ear",7,"","g e"],["Green Papaya Salad","Herbs, peanuts, lime-fish-sauce dressing",9,"","n"]],
+  "Pho & Noodles":[["Pho Tai","Rare steak, rice noodles, 20-hour broth",13,"",""],["Pho Ga","Poached chicken, rice noodles",12,"",""],["Vegetarian Pho","Mushroom broth, tofu, vegetables",12,"vg","y"],["Bun Thit Nuong","Grilled pork, vermicelli, herbs, peanuts",13,"","n"]],
+  "Bánh Mì & Drinks":[["Grilled Pork Bánh Mì","Baguette, pickles, cilantro, mayo",9,"","g e"],["Lemongrass Tofu Bánh Mì","Baguette, pickles, cilantro, mayo",8,"v","g e y"],["Vietnamese Iced Coffee","Strong drip coffee, condensed milk",5,"v","d"],["Fresh Young Coconut","Served whole, with a straw",5,"vg",""]]}},
+ {id:"seoulfire",name:"Seoul Fire BBQ",cuisine:"Korean",price:3,dist:7.8,rating:4.7,addr:"3300 Sunset Blvd",open:[17,23],blurb:"Grill-at-your-table galbi and pork belly with an ever-refilling parade of banchan.",tags:["Table grill","Parties","Lively"],menu:{
+  "Starters":[["Kimchi Pancake","Crisp, savory, scallion",11,"","g e"],["Japchae","Sweet potato glass noodles, vegetables, egg",12,"v","y e"],["Tteokbokki","Chewy rice cakes, gochujang, fish cake",11,"","g y"],["Seafood Pancake","Squid, shrimp, scallion",14,"","s g e"]],
+  "BBQ (grilled at your table)":[["Galbi","Marinated short rib",32,"","y g"],["Samgyeopsal","Thick-cut pork belly, ssamjang, lettuce",24,"","y"],["Bulgogi","Thin-sliced marinated ribeye",26,"","y g"],["Marinated Mushroom Platter","King oyster, shiitake, enoki",16,"vg","y g"]],
+  "Stews, Rice & Sweets":[["Kimchi Jjigae","Aged kimchi, pork, tofu",14,"","y"],["Sundubu Jjigae","Soft tofu stew, seafood, egg",14,"","s e y"],["Vegetable Bibimbap","Rice, seasoned vegetables, fried egg, gochujang",15,"v","e y g"],["Steamed Rice","Bowl",2,"vg",""],["Hotteok","Sweet pancake, brown sugar, nuts",6,"v","g n"],["Bingsu","Shaved milk ice, red bean, condensed milk",10,"v","d"]]}},
+ {id:"marguerite",name:"Bistro Marguerite",cuisine:"French",price:4,dist:3.1,rating:4.8,addr:"5 Rue Place",open:[17.5,22],blurb:"White tablecloths, a serious wine list, and a duck confit that has never left the menu.",tags:["Fine dining","Wine list","Reservations essential"],menu:{
+  "Entrées":[["French Onion Soup","Gruyère crouton, caramelized onion",14,"","g d"],["Escargots de Bourgogne","Garlic-parsley butter, baguette",16,"","d g"],["Salade Lyonnaise","Frisée, lardons, poached egg, croutons",15,"","e g"],["Chèvre Chaud","Warm goat cheese on toast, walnuts, greens",16,"v","d g n"]],
+  "Plats":[["Duck Confit","Crisp leg, lentils du Puy, jus",38,"",""],["Steak Frites","Hanger steak, béarnaise, frites",44,"","d e"],["Bouillabaisse","Provençal fish stew, rouille, croutons",46,"","s g e"],["Coq au Vin","Red-wine braised chicken, mushrooms, lardons",36,"","d g"],["Ratatouille Provençale","Slow-cooked summer vegetables, olive oil",28,"vg",""],["Sole Meunière","Brown butter, lemon, parsley",48,"","d g"]],
+  "Desserts":[["Crème Brûlée","Vanilla bean custard, burnt sugar",13,"v","d e"],["Tarte Tatin","Caramelized apple, crème fraîche",13,"v","g d e"],["Cheese Course","Three cheeses, honey, baguette",18,"v","d g"]]}},
+ {id:"smokeridge",name:"Smoke Ridge BBQ",cuisine:"BBQ",price:2,dist:9.5,rating:4.5,addr:"4040 Ridge Rd",open:[11,21],blurb:"Post-oak brisket smoked overnight, served on butcher paper until it runs out.",tags:["Smokehouse","Outdoor seating","Sells out early"],menu:{
+  "From the Pit":[["Sliced Brisket","Half pound, salt & pepper bark",24,"",""],["Pork Ribs","Half rack, dry rub",22,"",""],["Pulled Pork Sandwich","Potato bun, slaw, vinegar sauce",14,"","g e d"],["Smoked Turkey Breast","Half pound, sliced",18,"",""],["Jalapeño Cheddar Sausage","House-made link",12,"","d"],["Smoked Jackfruit Sandwich","Pulled jackfruit, slaw, potato bun",13,"vg","g"]],
+  "Sides":[["Mac & Cheese","Three-cheese, baked",6,"v","g d"],["Coleslaw","Creamy, tangy",5,"v","e d"],["Vegetarian Pinto Beans","Slow-simmered, smoky",5,"vg",""],["Cornbread","Honey butter",4,"v","g d e"],["Pickles & Onions","House-pickled",2,"vg",""]],
+  "Desserts":[["Banana Pudding","Vanilla wafers, whipped cream",6,"v","d e g"],["Peach Cobbler","Warm, buttery crust",7,"v","g d e"]]}},
+ {id:"slice",name:"Slice Society",cuisine:"Pizza",price:1,dist:0.4,rating:4.4,addr:"12 Bakery Row",open:[11,25],blurb:"New York–style slices, 72-hour dough, and a vegan pie that fools everyone.",tags:["By the slice","Late night","Vegan options"],menu:{
+  "Slices & Pies":[["Cheese Slice","Classic, thin, foldable",4,"v","g d"],["Pepperoni Slice","Cup-and-char pepperoni",4.5,"","g d"],["White Pie","Ricotta, mozzarella, garlic, no sauce",22,"v","g d"],["Vegan Margherita","Cashew mozzarella, San Marzano, basil",21,"vg","g n"],["Meat Lover's Pie","Pepperoni, sausage, bacon, ham",26,"","g d"],["Gluten-Free Veggie Pie","GF crust, peppers, mushroom, olives",24,"v","d"],["Grandma Pie","Square, thin, garlicky tomato",23,"v","g d"]],
+  "Sides":[["Garlic Knots","Six knots, parmesan, marinara",6,"v","g d"],["Caesar Salad","Romaine, croutons, anchovy dressing",9,"","d e g"],["House Salad","Mixed greens, red wine vinaigrette",8,"vg",""]],
+  "Sweets":[["Cannoli","Ricotta cream, pistachio",5,"v","g d n"],["Zeppole","Fried dough, powdered sugar",6,"v","g e d"]]}},
+ {id:"greenfork",name:"Green Fork",cuisine:"Vegan",price:2,dist:2.6,rating:4.6,addr:"301 Meadow Ave",open:[10,21],blurb:"Plant-based comfort food — nothing here has ever been near an animal.",tags:["100% plant-based","Gluten-free options","Bright & airy"],menu:{
+  "Starters":[["Crispy Cauliflower Bites","Buffalo or sesame-soy glaze",10,"vg","g y"],["Buffalo Chickpea Dip","Cashew cream, celery, crackers",9,"vg","n g"],["Kale Caesar","Cashew dressing, capers, croutons",11,"vg","g n"],["Miso Soup","White miso, tofu, wakame",6,"vg","y"]],
+  "Mains":[["Mushroom 'Bacon' Burger","Smoky shiitake, cheddar-style, brioche-style bun",16,"vg","g y"],["Cashew Mac & Cheese","Elbow pasta, cashew cheddar sauce",14,"vg","g n"],["Buddha Bowl","Quinoa, roasted veg, tahini, chickpeas",14,"vg",""],["Jackfruit Tacos","Corn tortillas, slaw, avocado crema",13,"vg",""],["Lentil Bolognese","Rigatoni, slow-cooked lentil ragù",15,"vg","g"],["Peanut Tofu Pad Thai","Rice noodles, peanut sauce, lime",15,"vg","n y"],["Cauliflower Steak","Chimichurri, romesco, greens",17,"vg","n"]],
+  "Desserts":[["Chocolate Avocado Mousse","Dark chocolate, sea salt",8,"vg",""],["Coconut Soft Serve","Toasted coconut, berry swirl",6,"vg",""]]}},
+ {id:"harbor",name:"Harbor & Hook",cuisine:"Seafood",price:3,dist:8.2,rating:4.5,addr:"1 Pier 9",open:[12,22],blurb:"Dock-to-table oysters and whole fish on the waterfront.",tags:["Waterfront","Raw bar","Sunset views"],menu:{
+  "Raw Bar":[["Oysters (half dozen)","Daily selection, mignonette",18,"","s"],["Shrimp Cocktail","Poached jumbo shrimp, horseradish cocktail sauce",16,"","s"],["Tuna Crudo","Yellowfin, citrus, chili, soy",18,"","y"],["Clam Chowder","New England style, oyster crackers",12,"","s d g"]],
+  "Mains":[["Grilled Whole Branzino","Lemon, herbs, olive oil",36,"",""],["Fish & Chips","Beer-battered haddock, tartar, fries",24,"","g e"],["Lobster Roll","Butter-toasted bun, lemon mayo",34,"","s g d e"],["Seared Scallops","Brown butter, cauliflower purée",38,"","s d"],["Cioppino","Shellfish stew, tomato, grilled bread",36,"","s g"],["Crab Cakes","Jumbo lump, remoulade",28,"","s g e"],["Grilled Vegetable Platter","Seasonal vegetables, salsa verde",22,"vg",""]],
+  "Sides & Sweets":[["Fries","Sea salt",7,"vg",""],["Key Lime Pie","Graham crust, whipped cream",10,"v","g d e"]]}},
+ {id:"zaytoun",name:"Zaytoun",cuisine:"Middle Eastern",price:1,dist:1.5,rating:4.7,addr:"560 Olive St",open:[8,22],blurb:"Falafel fried to order, shawarma spinning all day, and pillowy pita from the oven.",tags:["Fast-casual","Vegan-friendly","Great value"],menu:{
+  "Mezze":[["Hummus","Chickpea, tahini, olive oil, sumac",7,"vg",""],["Baba Ghanoush","Smoky eggplant, tahini, pomegranate",8,"vg",""],["Falafel (6 pc)","Fried to order, tahini sauce",7,"vg",""],["Fattoush","Crisp pita chips, sumac vinaigrette",9,"vg","g"],["Labneh","Strained yogurt, za'atar, olive oil",8,"v","d"],["Fresh Pita","From the oven",2,"vg","g"]],
+  "Plates & Wraps":[["Chicken Shawarma Plate","Rice, salad, garlic toum, pickles",14,"",""],["Beef Kofta Plate","Grilled spiced beef, rice, salad",15,"",""],["Falafel Wrap","Pita, tahini, pickles, tomato",9,"vg","g"],["Lamb Shawarma Wrap","Pita, tahini, onion, parsley",11,"","g"],["Mujadara","Lentils, rice, crispy onions",10,"vg",""],["Shakshuka","Eggs poached in spiced tomato, pita",11,"v","e g"]],
+  "Sweets":[["Baklava","Pistachio, phyllo, syrup",5,"v","g n d"],["Knafeh","Sweet cheese, shredded phyllo, pistachio",7,"v","d g n"]]}},
+ {id:"sunnyside",name:"Sunny Side",cuisine:"Breakfast & Brunch",price:2,dist:3.7,rating:4.4,addr:"902 Maple Ave",open:[7,15],blurb:"All-day brunch, bottomless coffee, and pancakes bigger than the plate.",tags:["All-day breakfast","Bottomless coffee","Weekend line"],menu:{
+  "Sweet":[["Buttermilk Pancakes","Stack of three, maple syrup, butter",12,"v","g d e"],["Belgian Waffle","Berries, whipped cream",13,"v","g d e"],["Brioche French Toast","Cinnamon, orange zest, maple",14,"v","g d e"],["Açaí Bowl","Granola, banana, coconut, almond butter",13,"vg","n g"]],
+  "Savory":[["Eggs Benedict","Poached eggs, ham, hollandaise, English muffin",15,"","e g d"],["Avocado Toast","Sourdough, chili flake, lemon",12,"vg","g"],["Veggie Omelette","Spinach, mushroom, peppers, cheddar",13,"v","e d"],["Breakfast Burrito","Eggs, potato, cheese, salsa, flour tortilla",14,"","g e d"],["Steak & Eggs","Grilled flat iron, two eggs any style",19,"","e"],["Tofu Scramble","Turmeric tofu, peppers, spinach",13,"vg","y"],["Shakshuka","Eggs poached in spiced tomato, toast",14,"v","e g"]],
+  "Sides":[["Bacon","Thick-cut, applewood",5,"",""],["Hash Browns","Crispy, golden",4,"vg",""],["Fresh Fruit","Seasonal",5,"vg",""]]}},
+ {id:"addis",name:"Addis Kitchen",cuisine:"Ethiopian",price:2,dist:5.0,rating:4.7,addr:"1180 Union St",open:[11.5,22],blurb:"Spiced stews on spongy injera, eaten by hand — bring people to share with.",tags:["Shareable","Vegan-friendly","Coffee ceremony"],menu:{
+  "Combos & Stews":[["Vegetarian Combo","Misir wot, gomen, atkilt, shiro on 100% teff injera",18,"vg",""],["Meat Combo","Doro wot, tibs, kitfo, injera",24,"","d e"],["Doro Wot","Slow-cooked chicken, berbere, hard-boiled egg",20,"","d e"],["Beef Tibs","Sautéed beef, onion, jalapeño, spiced butter",19,"","d"],["Kitfo","Minced raw beef, mitmita, spiced butter",21,"","d"],["Misir Wot","Red lentils, berbere",14,"vg",""],["Shiro","Spiced chickpea stew",13,"vg",""],["Gomen","Braised collard greens, garlic",12,"vg",""]],
+  "Sides & Drinks":[["Extra Injera (100% teff)","Two rolls",3,"vg",""],["Ayib","Fresh mild cheese",5,"v","d"],["Ethiopian Coffee","Traditional roast, served in a jebena",4,"vg",""],["Tej","Honey wine",7,"vg",""]]}},
+ {id:"prime",name:"Prime & Ember",cuisine:"Steakhouse",price:4,dist:12.4,rating:4.7,addr:"8000 Vineyard Rd",open:[17,23],blurb:"Dry-aged steaks over live fire, tableside Caesar, and a very deep bourbon list.",tags:["Dry-aged","Special occasion","Bourbon"],menu:{
+  "Starters":[["Wedge Salad","Iceberg, bacon, blue cheese, tomato",16,"","d"],["Shrimp Cocktail","Jumbo shrimp, cocktail sauce",22,"","s"],["Tableside Caesar","Romaine, anchovy, parmesan, croutons",18,"","e d g"],["Burrata & Heirloom Tomato","Basil, aged balsamic",18,"v","d"]],
+  "Steaks":[["Filet Mignon 8 oz","Center-cut, tender",58,"",""],["Bone-In Ribeye 20 oz","45-day dry-aged",72,"",""],["NY Strip 14 oz","28-day dry-aged",62,"",""],["Porterhouse for Two","40 oz, carved tableside",145,"",""]],
+  "Other Mains & Sides":[["Roasted Chicken","Half bird, herb butter, jus",36,"","d"],["Grilled Salmon","Lemon, dill, olive oil",42,"",""],["Cauliflower Steak","Almond romesco, herbs",28,"vg","n"],["Creamed Spinach","Classic",14,"v","d"],["Truffle Fries","Parmesan, truffle oil",14,"v","d"],["Loaded Baked Potato","Sour cream, cheddar, chives",12,"v","d"],["Grilled Asparagus","Lemon, sea salt",13,"vg",""]],
+  "Desserts":[["NY Cheesecake","Graham crust, berry compote",14,"v","d g e"],["Chocolate Lava Cake","Vanilla ice cream",14,"v","d g e"]]}},
+ {id:"olivethyme",name:"Olive & Thyme",cuisine:"Mediterranean",price:3,dist:4.6,rating:4.6,addr:"215 Cypress Ct",open:[11.5,22],blurb:"Coastal Mediterranean cooking — wood-fired fish, seasonal mezze, and a leafy patio.",tags:["Patio","Wood-fired","Seasonal"],menu:{
+  "Mezze":[["Whipped Feta & Hot Honey","Grilled pita",12,"v","d g"],["Grilled Octopus","Charred, lemon, smoked paprika",22,"","s"],["Roasted Beet & Pistachio Salad","Goat cheese, citrus",14,"v","d n"],["Marinated Olives","Citrus, herbs, chili",7,"vg",""]],
+  "Mains":[["Wood-Fired Sea Bass","Whole, lemon, herbs",38,"",""],["Lamb Shoulder for Two","Slow-roasted, harissa, herbs",68,"",""],["Chicken Tagine","Apricot, almond, preserved lemon",29,"","n"],["Saffron Risotto","Parmesan, brown butter",26,"v","d"],["Grilled Vegetable Couscous","Seasonal vegetables, herbs, harissa",24,"vg","g"],["Seafood Paella","Shrimp, mussels, clams, saffron rice",42,"","s"]],
+  "Desserts":[["Olive Oil Cake","Citrus glaze, crème fraîche",11,"v","g e d"],["Pistachio Semifreddo","Frozen, honey",12,"v","d e n"]]}},
+];
+
+/* ---------- state ---------- */
+const STORAGE = "run-out-v1";
+const params = new URLSearchParams(location.search);
+if (params.has("reset")) { localStorage.removeItem(STORAGE); params.delete("reset"); const q = params.toString(); history.replaceState(null, "", location.pathname + (q ? "?" + q : "")); }
+if (params.has("mobile")) document.documentElement.classList.add("mobile");   // ?mobile=1 → phone layout used by ../mobile/ mockup
+
+const DEFAULT = () => ({ step:0, people:2, budget:100, vibe:"casual", wantsExclude:false, hasDiet:false, diet:[], notes:"", exclusions:[], date:null, time:24, distance:5, origin:"", coords:null, payMethod:null, payment:null, seed:null, pickId:null, relaxNote:null, backendReservationId:null, revealAccelerated:false });
+let state = load() || DEFAULT();
+
+function load(){ try { const s = JSON.parse(localStorage.getItem(STORAGE)); return s && typeof s === "object" ? {...DEFAULT(), ...s} : null; } catch { return null; } }
+function save(){ localStorage.setItem(STORAGE, JSON.stringify(state)); }
+
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+$("#googleLogin").addEventListener("click", () => startLogin({ provider: "google" }));
+$("#emailRegistration").addEventListener("click", showEmailRegistration);
+$("#emailLogin").addEventListener("click", showEmailLogin);
+$("#cancelEmailRegistration").addEventListener("click", showAuthChoices);
+$("#emailRegistrationForm").addEventListener("submit", registerWithEmail);
+$("#cancelEmailLogin").addEventListener("click", showAuthChoices);
+$("#emailLoginForm").addEventListener("submit", loginWithEmailForm);
+$("#logout").addEventListener("click", logout);
+
+function showEmailRegistration() {
+  $("#authChoices").hidden = true;
+  $("#emailLoginForm").hidden = true;
+  $("#emailRegistrationForm").hidden = false;
+  $("#loginStatus").hidden = true;
+  $("#registrationName").focus();
+}
+
+function showEmailLogin() {
+  $("#authChoices").hidden = true;
+  $("#emailRegistrationForm").hidden = true;
+  $("#emailLoginForm").hidden = false;
+  $("#loginStatus").hidden = true;
+  $("#loginEmail").focus();
+}
+
+function showAuthChoices() {
+  $("#emailRegistrationForm").reset();
+  $("#emailLoginForm").reset();
+  $("#emailRegistrationForm").hidden = true;
+  $("#emailLoginForm").hidden = true;
+  $("#authChoices").hidden = false;
+  $("#loginStatus").hidden = true;
+}
+
+async function registerWithEmail(event) {
+  event.preventDefault();
+  const displayName = $("#registrationName").value.trim();
+  const email = $("#registrationEmail").value.trim().toLowerCase();
+  const password = $("#registrationPassword").value;
+  const passwordConfirmation = $("#registrationPasswordConfirmation").value;
+  const submitButton = $("#submitEmailRegistration");
+
+  if (password !== passwordConfirmation) {
+    showLoginStatus("Passwords do not match.");
+    return;
+  }
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Creating account...";
+  $("#loginStatus").hidden = true;
+
+  try {
+    const registrationResponse = await fetch(`${config.backendUrl}/api/v1/users/registrations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ displayName, email, password })
+    });
+    const registrationPayload = await responsePayload(registrationResponse);
+    if (!registrationResponse.ok) {
+      throw new Error(apiErrorMessage(registrationPayload, registrationResponse));
+    }
+
+    await loginWithEmail(email, password);
+    await provisionAndRenderUser();
+  } catch (error) {
+    showLoginStatus(error.message || "Could not create the account.");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Create account";
+  }
+}
+
+async function loginWithEmailForm(event) {
+  event.preventDefault();
+  const email = $("#loginEmail").value.trim().toLowerCase();
+  const password = $("#loginPassword").value;
+  const submitButton = $("#submitEmailLogin");
+
+  submitButton.disabled = true;
+  submitButton.textContent = "Signing in...";
+  $("#loginStatus").hidden = true;
+
+  try {
+    await loginWithEmail(email, password, "Invalid email or password.");
+    await provisionAndRenderUser();
+  } catch (error) {
+    showLoginStatus(error.message || "Could not sign in.");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Sign in";
+  }
+}
+
+async function loginWithEmail(email, password, failureMessage) {
+  const response = await fetch(`${config.backendUrl}/api/v1/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify({ email, password })
+  });
+  const payload = await responsePayload(response);
+  if (!response.ok || !payload?.accessToken) {
+    throw new Error(apiErrorMessage(payload, response, failureMessage || "Account created, but automatic login failed. Please sign in with email."));
+  }
+
+  localStorage.setItem(AUTH_STORAGE.accessToken, payload.accessToken);
+  if (payload.refreshToken) localStorage.setItem(AUTH_STORAGE.refreshToken, payload.refreshToken);
+}
+
+async function responsePayload(response) {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
+  }
+}
+
+function apiErrorMessage(payload, response, fallback) {
+  return payload?.detail || payload?.message || payload?.error || fallback || `${response.status} ${response.statusText}`;
+}
+
+async function initAuth(){
+  try {
+    const oauthParams = new URLSearchParams(window.location.search);
+    if (oauthParams.has("error")) {
+      throw new Error(oauthParams.get("error_description") || oauthParams.get("error"));
+    }
+    if (oauthParams.has("code")) {
+      await completeLogin(oauthParams);
+      window.history.replaceState({}, document.title, config.redirectUri);
+    }
+    if (localStorage.getItem(AUTH_STORAGE.accessToken)) {
+      await provisionAndRenderUser();
+    }
+  } catch (error) {
+    showLoginStatus(error.message || "Login failed");
+  }
+}
+
+async function startLogin({ provider, prompt } = {}) {
+  const verifier = randomString(64);
+  const stateValue = randomString(32);
+  const challenge = await sha256Base64Url(verifier);
+  sessionStorage.setItem(AUTH_STORAGE.verifier, verifier);
+  sessionStorage.setItem(AUTH_STORAGE.state, stateValue);
+  const loginParams = new URLSearchParams({
+    client_id: config.clientId,
+    redirect_uri: config.redirectUri,
+    response_type: "code",
+    scope: "openid email profile",
+    state: stateValue,
+    code_challenge: challenge,
+    code_challenge_method: "S256"
+  });
+  if (provider) loginParams.set("kc_idp_hint", provider);
+  if (prompt) loginParams.set("prompt", prompt);
+  window.location.href = `${config.keycloakUrl}/realms/${config.realm}/protocol/openid-connect/auth?${loginParams}`;
+}
+
+async function completeLogin(oauthParams) {
+  const expectedState = sessionStorage.getItem(AUTH_STORAGE.state);
+  if (!expectedState || expectedState !== oauthParams.get("state")) {
+    throw new Error("Invalid OAuth state. Start login again.");
+  }
+  const verifier = sessionStorage.getItem(AUTH_STORAGE.verifier);
+  if (!verifier) {
+    throw new Error("Missing PKCE verifier. Start login again.");
+  }
+  const body = new URLSearchParams({
+    grant_type: "authorization_code",
+    client_id: config.clientId,
+    redirect_uri: config.redirectUri,
+    code: oauthParams.get("code"),
+    code_verifier: verifier
+  });
+  const response = await fetch(`${config.keycloakUrl}/realms/${config.realm}/protocol/openid-connect/token`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    throw new Error(payload.error_description || payload.error || "Could not exchange login code");
+  }
+  localStorage.setItem(AUTH_STORAGE.accessToken, payload.access_token);
+  if (payload.refresh_token) localStorage.setItem(AUTH_STORAGE.refreshToken, payload.refresh_token);
+  sessionStorage.removeItem(AUTH_STORAGE.verifier);
+  sessionStorage.removeItem(AUTH_STORAGE.state);
+}
+
+async function provisionAndRenderUser() {
+  currentUser = await api("/api/v1/users/me/provision", { method:"POST" });
+  document.body.classList.add("is-authenticated");
+  $("#profileName").textContent = currentUser.displayName;
+  $("#profileEmail").textContent = currentUser.email;
+  $("#profileAvatar").textContent = (currentUser.displayName || currentUser.email || "R").slice(0, 1).toUpperCase();
+  await loadBackendReservations();
+  requestAnimationFrame(fitStage);
+}
+
+async function api(path, options = {}) {
+  const token = localStorage.getItem(AUTH_STORAGE.accessToken);
+  const response = await fetch(`${config.backendUrl}${path}`, {
+    ...options,
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers || {})
+    }
+  });
+  const text = await response.text();
+  const payload = text ? JSON.parse(text) : null;
+  if (!response.ok) {
+    if (response.status === 401) logout();
+    throw new Error(payload?.detail || payload?.message || payload?.error || `${response.status} ${response.statusText}`);
+  }
+  return payload;
+}
+
+async function loadBackendReservations() {
+  backendReservations = await api("/api/v1/reservations");
+}
+
+function logout() {
+  localStorage.removeItem(AUTH_STORAGE.accessToken);
+  localStorage.removeItem(AUTH_STORAGE.refreshToken);
+  document.body.classList.remove("is-authenticated");
+  currentUser = null;
+  backendReservations = [];
+  showLoginStatus("Session closed.", true);
+}
+
+function showLoginStatus(message, ok = false) {
+  const box = $("#loginStatus");
+  box.hidden = false;
+  box.textContent = message;
+  box.classList.toggle("ok", ok);
+}
+
+function randomString(length) {
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return base64Url(bytes);
+}
+
+async function sha256Base64Url(value) {
+  const data = new TextEncoder().encode(value);
+  const digest = await crypto.subtle.digest("SHA-256", data);
+  return base64Url(new Uint8Array(digest));
+}
+
+function base64Url(bytes) {
+  let value = "";
+  bytes.forEach(byte => value += String.fromCharCode(byte));
+  return btoa(value).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+/* ---------- slide navigation ---------- */
+const stage = $("#stage");
+const slides = $$(".slide");
+let current = slides.findIndex(s => s.classList.contains("active"));
+
+function fitStage(){ const a = slides[current]; if (a) stage.style.height = a.scrollHeight + "px"; stage.scrollTop = 0; stage.scrollLeft = 0; }
+const ro = new ResizeObserver(() => fitStage());
+slides.forEach(s => ro.observe(s));
+window.addEventListener("resize", fitStage);
+stage.addEventListener("scroll", () => { stage.scrollTop = 0; stage.scrollLeft = 0; });   // overflow:hidden must never scroll (focus/keyboard can nudge it)
+function setInert(){ slides.forEach((s, i) => { if (i === current) s.removeAttribute("inert"); else s.setAttribute("inert", ""); }); }
+
+function go(n){
+  if (n === current) { fitStage(); return; }
+  const dir = n > current ? 1 : -1;
+  const from = slides[current], to = slides[n];
+  to.classList.remove("left","right","active");
+  to.classList.add(dir > 0 ? "right" : "left");
+  void to.offsetWidth;                                   // commit start position
+  from.classList.remove("active"); from.classList.add(dir > 0 ? "left" : "right");
+  to.classList.remove("left","right"); to.classList.add("active");
+  current = n; state.step = n; save();
+  setInert(); fitStage();
+  if (n === 0) requestAnimationFrame(renderDate);          // re-check "today" availability + pill position on the laid-out slide
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  setTimeout(() => { from.classList.remove("left","right"); const h = to.querySelector("h2"); if (h && current === n) h.focus({ preventScroll: true }); fitStage(); }, 600);
+}
+
+/* ---------- step 2: budget (slider, AED 50 steps; minimum AED 50 per person, cap AED 1,000) ---------- */
+const BUDGET_STEP = 50, BUDGET_MAX = 1000, BUDGET_PER_PERSON_MIN = 50;
+const budgetMin = () => BUDGET_PER_PERSON_MIN * state.people;
+const budgetIn = $("#budget"), budgetOut = $("#budgetOut");
+let budgetJokeIdx = -1, budgetJokeTier = -1;
+function renderBudget(){
+  const min = budgetMin();
+  if (state.budget < min) { state.budget = min; save(); }                 // party grew → floor rises with it
+  budgetIn.min = min; budgetIn.value = state.budget;
+  budgetIn.style.setProperty("--pct", ((state.budget - min) / (BUDGET_MAX - min) * 100) + "%");
+  budgetOut.innerHTML = `AED ${state.budget.toLocaleString()} <small>for your table of ${state.people}, at most</small>`;
+  const seg = BUDGET_JOKES[budgetTierIndex(state.budget)];
+  if (budgetTierIndex(state.budget) !== budgetJokeTier) {
+    budgetJokeTier = budgetTierIndex(state.budget);
+    let next = Math.floor(Math.random() * seg.jokes.length);
+    if (seg.jokes.length > 1 && next === budgetJokeIdx) next = (next + 1) % seg.jokes.length;
+    budgetJokeIdx = next;
+  }
+  $("#budgetJoke").innerHTML = `<span class="em" aria-hidden="true">${seg.icon}</span>${esc(seg.jokes[budgetJokeIdx >= 0 && budgetJokeIdx < seg.jokes.length ? budgetJokeIdx : 0])}`;
+}
+budgetIn.addEventListener("input", () => { state.budget = +budgetIn.value; save(); renderBudget(); });
+$("#next0").addEventListener("click", () => go(2));   // budget/vibe/tastes → location
+
+/* ---------- step 1: party size (2–6) ---------- */
+const PEOPLE_MIN = 2, PEOPLE_MAX = 6;
+function renderPeople(){
+  const n = state.people;
+  $("#peopleNum").textContent = n; $("#peopleWord").textContent = "people";
+  $("#peopleIcons").innerHTML = Array.from({ length: n }, () => "<span>🧑</span>").join("");
+  $("#peopleMinus").disabled = n <= PEOPLE_MIN; $("#peoplePlus").disabled = n >= PEOPLE_MAX;
+}
+function setPeople(n){ state.people = Math.max(PEOPLE_MIN, Math.min(PEOPLE_MAX, n)); save(); renderPeople(); renderBudget(); }
+$("#peopleMinus").addEventListener("click", () => setPeople(state.people - 1));
+$("#peoplePlus").addEventListener("click", () => setPeople(state.people + 1));
+$("#nextParty").addEventListener("click", () => go(1));
+
+/* ---------- step 3: outing vibe — tap an option; each tap surfaces a fresh joke from that vibe's pool ---------- */
+const vibeJoke = $("#vibeJoke");
+$("#quickVibe").innerHTML = VIBES.map((v, i) => `<button type="button" data-v="${i}">${v.icon} ${esc(v.label)}</button>`).join("");
+let vibeJokeIdx = -1;                                                // last joke shown this session — not persisted, just keeps re-picks fresh
+function vibeIndex(){ const i = VIBES.findIndex(v => v.id === state.vibe); return i < 0 ? 0 : i; }
+function renderVibe(){
+  const i = vibeIndex(), v = VIBES[i];
+  $$("#quickVibe button").forEach((b, bi) => b.classList.toggle("on", bi === i));
+  vibeJoke.innerHTML = `<span class="em" aria-hidden="true">${v.icon}</span>${esc(v.jokes[vibeJokeIdx >= 0 && vibeJokeIdx < v.jokes.length ? vibeJokeIdx : 0])}`;
+}
+function setVibe(i){
+  i = Math.max(0, Math.min(VIBES.length - 1, i));
+  const v = VIBES[i];
+  let next = Math.floor(Math.random() * v.jokes.length);
+  if (v.jokes.length > 1 && next === vibeJokeIdx) next = (next + 1) % v.jokes.length;   // don't repeat the same line twice in a row
+  vibeJokeIdx = next;
+  state.vibe = v.id; save(); renderVibe();
+}
+$("#quickVibe").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; setVibe(+b.dataset.v); });
+
+/* ---------- step 5: tastes — "want to exclude?" gate, then cuisines to rule out; allergies gate below ---------- */
+const hasDiet = $("#hasDiet"), dietBox = $("#dietBox"), dietGate = $("#dietGate");
+hasDiet.addEventListener("change", () => {
+  state.hasDiet = hasDiet.checked;
+  if (!state.hasDiet) { state.diet = []; state.notes = ""; }      // "no allergies" means none — clear anything ticked earlier
+  save(); renderDiet();
+});
+const tasteGate = $("#tasteGate"), tasteBox = $("#tasteBox"), tasteChips = $("#tasteChips"), chipsHint = $("#chipsHint");
+tasteChips.innerHTML = CUISINES.map(c => `<button type="button" class="taste-chip" data-c="${esc(c)}">${esc(c)}</button>`).join("");
+tasteGate.addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  state.wantsExclude = b.dataset.v === "yes";
+  if (!state.wantsExclude) state.exclusions = [];                  // "no" means open to anything — clear any picks
+  save(); renderTasteChips();
+});
+tasteChips.addEventListener("click", e => {
+  const b = e.target.closest(".taste-chip"); if (!b) return;
+  const c = b.dataset.c;
+  state.exclusions = state.exclusions.includes(c) ? state.exclusions.filter(x => x !== c) : [...state.exclusions, c];
+  save(); renderTasteChips();
+});
+function renderTasteChips(){
+  $$("#tasteGate button").forEach(b => b.classList.toggle("on", (b.dataset.v === "yes") === state.wantsExclude));
+  tasteBox.hidden = !state.wantsExclude;
+  $$(".taste-chip").forEach(b => b.classList.toggle("excluded", state.exclusions.includes(b.dataset.c)));
+  const n = state.exclusions.length;
+  chipsHint.textContent = n === 0 ? "Nothing ruled out yet — you're open to anything."
+    : n === CUISINES.length ? "You've ruled out everything! We'll pick a wildcard."
+    : `${n} cuisine${n > 1 ? "s" : ""} ruled out.`;
+}
+
+/* ---------- step 2: time — one-hour window on a 24h dial ---------- */
+const tTrack = $("#tTrack"), tWindow = $("#tWindow"), tArea = $(".t-area"), mealPill = $("#mealPill"), timeLabel = $("#timeLabel");
+function renderTime(){
+  state.time = Math.max(timeMin(), Math.min(TIME_MAX, state.time));
+  $("#tPast").style.width = ((timeMin() - DIAL_START) / DIAL_SPAN * 100) + "%";
+  const v = state.time, meal = mealFor(v);
+  const leftPct = (v - DIAL_START) / DIAL_SPAN * 100, widthPct = 2 / DIAL_SPAN * 100;
+  tWindow.style.left = leftPct + "%"; tWindow.style.width = widthPct + "%";
+  timeLabel.textContent = timeRange(v);
+  mealPill.textContent = meal.name; mealPill.style.setProperty("--pill", meal.color);
+  // pill floats above the window's centre, clamped so it never leaves the card
+  const trackW = tTrack.clientWidth, centre = tTrack.offsetLeft + trackW * (leftPct + widthPct / 2) / 100;
+  const half = mealPill.offsetWidth / 2, min = half + 2, max = tArea.clientWidth - half - 2;
+  mealPill.style.left = Math.max(min, Math.min(max, centre)) + "px";
+  tTrack.setAttribute("aria-valuenow", v);
+  tTrack.setAttribute("aria-valuetext", `${timeRange(v).replace("–", "to")}, ${meal.name}`);
+}
+function setTime(v){ v = Math.max(timeMin(), Math.min(TIME_MAX, Math.round(v))); if (v !== state.time) { state.time = v; save(); } renderTime(); }
+/* date */
+const dateInput = $("#dateInput"), dayPicks = $("#dayPicks"), dateNote = $("#dateNote");
+function renderDate(){
+  const today = todayISO();
+  if (!state.date || state.date < today) state.date = today;
+  if (!dayAvailable(state.date)) { state.date = isoPlus(1); dateNote.hidden = false; dateNote.textContent = "It's too late to eat out today, so we've moved you to tomorrow."; }
+  else if (state.date === today) { dateNote.hidden = false; dateNote.textContent = `Today — earliest window is ${hhmm(timeMin())} (we need at least an hour's notice).`; }
+  else dateNote.hidden = true;
+  save();
+  dayPicks.innerHTML = Array.from({ length: 6 }, (_, i) => {          // six day pills fit on one row; later dates via the calendar field
+    const iso = isoPlus(i), avail = dayAvailable(iso), on = iso === state.date;
+    const label = i === 0 ? "Today" : i === 1 ? "Tomorrow" : dateOf(iso).toLocaleDateString(undefined, { weekday:"short" });
+    const sub = dateOf(iso).toLocaleDateString(undefined, { day:"numeric", month:"short" });
+    return `<button type="button" class="day${on ? " on" : ""}" data-iso="${iso}" role="radio" aria-checked="${on}" ${avail ? "" : "disabled"}><b>${label}</b><small>${sub}</small></button>`;
+  }).join("");
+  dateInput.min = today; dateInput.value = state.date;
+  renderTime();
+}
+dayPicks.addEventListener("click", e => { const b = e.target.closest("button.day"); if (!b || b.disabled) return; state.date = b.dataset.iso; save(); renderDate(); });
+dateInput.addEventListener("change", () => { if (dateInput.value && dateInput.value >= todayISO()) { state.date = dateInput.value; save(); } renderDate(); });
+function timeFromPointer(e){ const r = tTrack.getBoundingClientRect(); return DIAL_START + (e.clientX - r.left) / r.width * DIAL_SPAN - 1; }   // centre the window on the finger
+let tDragging = false;
+tTrack.addEventListener("pointerdown", e => { tDragging = true; try { tTrack.setPointerCapture(e.pointerId); } catch {} tTrack.focus({ preventScroll: true }); setTime(timeFromPointer(e)); });
+tTrack.addEventListener("pointermove", e => { if (tDragging) setTime(timeFromPointer(e)); });
+["pointerup","pointercancel"].forEach(t => tTrack.addEventListener(t, () => { tDragging = false; }));
+tTrack.addEventListener("keydown", e => {
+  const k = { ArrowLeft:-1, ArrowDown:-1, ArrowRight:1, ArrowUp:1, PageDown:-4, PageUp:4 }[e.key];
+  if (k !== undefined) { e.preventDefault(); setTime(state.time + k); }
+  else if (e.key === "Home") { e.preventDefault(); setTime(timeMin()); }
+  else if (e.key === "End") { e.preventDefault(); setTime(TIME_MAX); }
+});
+window.addEventListener("resize", renderTime);
+
+/* ---------- step 4: location first, then distance ---------- */
+const dist = $("#dist"), distOut = $("#distOut"), origin = $("#origin"), locStatus = $("#locStatus"), locHint = $("#locHint"), useLocation = $("#useLocation");
+const hasOrigin = () => !!(state.origin || state.coords);
+function renderDist(){
+  dist.value = state.distance;
+  dist.style.setProperty("--pct", ((state.distance - 1) / 24 * 100) + "%");
+  distOut.innerHTML = `${state.distance} <small>mile${state.distance === 1 ? "" : "s"} or less</small>`;
+  $$("#quickDist button").forEach(b => b.classList.toggle("on", +b.dataset.v === state.distance));
+  origin.value = state.origin;
+  if (state.coords) { locStatus.hidden = false; locStatus.className = "loc-status"; locStatus.textContent = `📍 Using your current location (${state.coords.lat.toFixed(3)}, ${state.coords.lng.toFixed(3)})`; }
+  $("#next3").disabled = !hasOrigin();
+  locHint.hidden = hasOrigin();
+}
+dist.addEventListener("input", () => { state.distance = +dist.value; save(); renderDist(); });
+$("#quickDist").addEventListener("click", e => { const b = e.target.closest("button"); if (!b) return; state.distance = +b.dataset.v; save(); renderDist(); });
+origin.addEventListener("input", () => { state.origin = origin.value.trim(); if (state.origin) { state.coords = null; locStatus.hidden = true; } save(); renderDist(); });
+useLocation.addEventListener("click", () => {
+  if (!("geolocation" in navigator)) { locStatus.hidden = false; locStatus.className = "loc-status bad"; locStatus.textContent = "Location services aren't available in this browser — please type your location instead."; fitStage(); return; }
+  useLocation.disabled = true; useLocation.textContent = "Finding you…";
+  locStatus.hidden = false; locStatus.className = "loc-status"; locStatus.textContent = "Waiting for your permission…"; fitStage();
+  navigator.geolocation.getCurrentPosition(pos => {
+    state.coords = { lat: pos.coords.latitude, lng: pos.coords.longitude }; state.origin = ""; save();
+    useLocation.disabled = false; useLocation.textContent = "📍 Location found — tap to refresh";
+    renderDist(); fitStage();
+  }, err => {
+    useLocation.disabled = false; useLocation.textContent = "📍 Enable location services — use my current location";
+    locStatus.className = "loc-status bad";
+    locStatus.textContent = err.code === 1 ? "Location access was blocked. Allow it in your browser settings, or type your location above."
+      : "We couldn't get your location — please type it above instead.";
+    fitStage();
+  }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 });
+});
+$("#next3").addEventListener("click", () => { renderPayment(); go(3); });
+async function createBackendReservation(){
+  const reservedAt = reservationDateTimeIso();
+  const reservationDate = new Date(reservedAt);
+  const start = new Date(reservationDate.getTime() - 30 * 60 * 1000).toISOString();
+  const end = new Date(reservationDate.getTime() + 30 * 60 * 1000).toISOString();
+  const coords = state.coords || { lat:25.0805, lng:55.1403 };
+  const perPerson = Math.max(1, Math.round(state.budget / state.people));
+  const payload = {
+    reservationAt: reservedAt,
+    timeWindowStartAt: start,
+    timeWindowEndAt: end,
+    excludedCuisineTypes: state.exclusions.slice(0, 3),
+    vibe: state.vibe,
+    dietaryPreferences: state.diet,
+    allergyNotes: state.notes || null,
+    locationLabel: state.origin || (state.coords ? "Current location" : "Dubai Marina"),
+    partySize: state.people,
+    budgetPerPerson: { amount: perPerson, currency: "AED" },
+    totalBudget: { amount: state.budget, currency: "AED" },
+    searchArea: {
+      latitude: coords.lat,
+      longitude: coords.lng,
+      radiusMeters: Math.max(500, Math.round(state.distance * 1609.34))
+    }
+  };
+  const reservation = await api("/api/v1/reservations", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Idempotency-Key": crypto.randomUUID()
+    },
+    body: JSON.stringify(payload)
+  });
+  state.backendReservationId = reservation.id;
+  await loadBackendReservations();
+  return reservation;
+}
+function reservationDateTimeIso(){
+  const [year, month, day] = state.date.split("-").map(Number);
+  const hours = Math.floor(state.time / 2);
+  const minutes = state.time % 2 ? 30 : 0;
+  return new Date(year, month - 1, day, hours, minutes, 0, 0).toISOString();
+}
+function finalizeBooking(){
+  state.seed = (Math.random() * 2 ** 31) | 0;
+  state.pickId = null; state.relaxNote = null; state.revealAccelerated = false;
+  save();
+  pickRestaurant();
+  renderRestaurant();
+  go(4);
+}
+
+/* ---------- step 5: mock payment ---------- */
+const PAY_SERVICE = 0;
+const WALLET_NAMES = { apple:"Apple Pay", google:"Google Pay" };
+const cardForm = $("#cardForm"), cardNumber = $("#cardNumber"), cardExp = $("#cardExp"), cardCvc = $("#cardCvc"), cardBrand = $("#cardBrand"), walletHint = $("#walletHint"), sealBtn = $("#seal");
+const digits = v => v.replace(/\D/g, "");
+const brandOf = n => /^4/.test(n) ? "Visa" : /^(5[1-5]|2[2-7])/.test(n) ? "Mastercard" : /^3[47]/.test(n) ? "Amex" : /^6/.test(n) ? "Discover" : "";
+function renderPayment(){
+  $("#payService").textContent = `AED ${PAY_SERVICE}`;
+  $("#payAmount").textContent = `AED ${state.budget.toLocaleString()}`;
+  $("#payBudget").textContent = `AED ${state.budget.toLocaleString()}`;
+  $("#payBudgetLabel").textContent = `Reservation budget for ${state.people}`;
+  $$(".pay-method").forEach(b => { const on = b.dataset.method === state.payMethod; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
+  const m = state.payMethod;
+  cardForm.hidden = m !== "card";
+  walletHint.hidden = !(m === "apple" || m === "google");
+  if (!walletHint.hidden) walletHint.textContent = `The mock ${WALLET_NAMES[m]} sheet will confirm AED ${state.budget.toLocaleString()}.`;
+  sealBtn.classList.toggle("wallet", m === "apple" || m === "google");
+  sealBtn.disabled = !m;
+  sealBtn.innerHTML = !m ? "Choose how to pay"
+    : m === "card" ? `Pay AED ${state.budget.toLocaleString()} &amp; seal ✉️`
+    : `${$(`.pay-method[data-method="${m}"] svg`).outerHTML} Pay with ${WALLET_NAMES[m]}`;
+}
+$$(".pay-method").forEach(b => b.addEventListener("click", () => { state.payMethod = b.dataset.method; save(); renderPayment(); }));
+// light-touch formatting so the demo form looks real as you type (nothing is checked or kept)
+cardNumber.addEventListener("input", () => { const d = digits(cardNumber.value).slice(0, 16); cardNumber.value = d.replace(/(.{4})/g, "$1 ").trim(); cardBrand.textContent = brandOf(d); });
+cardExp.addEventListener("input", () => { const d = digits(cardExp.value).slice(0, 4); cardExp.value = d.length > 2 ? d.slice(0, 2) + "/" + d.slice(2) : d; });
+cardCvc.addEventListener("input", () => { cardCvc.value = digits(cardCvc.value).slice(0, 4); });
+sealBtn.addEventListener("click", async () => {
+  const m = state.payMethod; if (!m) return;
+  const cardDigits = digits(cardNumber.value);
+  if (m === "card" && (cardDigits.length < 12 || !cardExp.value || !cardCvc.value)) {
+    alert("Enter a card number, expiry date and CVC to complete the mock payment.");
+    return;
+  }
+  sealBtn.disabled = true;
+  const previousText = sealBtn.innerHTML;
+  sealBtn.textContent = "Processing mock payment…";
+  try {
+    const reservation = await createBackendReservation();
+    const paidReservation = await api(`/api/v1/reservations/${reservation.id}/payments`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Idempotency-Key": crypto.randomUUID()
+      },
+      body: JSON.stringify({ paymentMethodToken: mockPaymentToken(m, cardDigits) })
+    });
+    if (paidReservation.status !== "PAID") {
+      throw new Error("Mock payment was not captured.");
+    }
+    state.payment = m === "card"
+      ? { method:"card", brand: brandOf(cardDigits) || "Card", last4: cardDigits.slice(-4), amount: state.budget, reference: paidReservation.payment?.reference }
+      : { method:m, amount: state.budget, reference: paidReservation.payment?.reference };
+    save(); cardForm.reset(); cardBrand.textContent = "";
+    finalizeBooking(); renderPayment();
+  } catch (error) {
+    alert(error.message || "Could not create reservation");
+    sealBtn.disabled = false;
+    sealBtn.innerHTML = previousText;
+  }
+});
+function mockPaymentToken(method, cardDigits){
+  const suffix = method === "card" ? cardDigits.slice(-4) : method;
+  return `pm_mock_${method}_${suffix || "confirmed"}`;
+}
+const paidLabel = () => { const p = state.payment; if (!p) return ""; return p.method === "card" ? `Paid AED ${p.amount} · ${p.brand} •••• ${p.last4}` : `Paid AED ${p.amount} · ${WALLET_NAMES[p.method]}`; };
+$$("[data-back]").forEach(b => b.addEventListener("click", () => go(current - 1)));
+
+
+/* ---------- step 1 (cont.): allergies & dietary needs ---------- */
+const dietGrid = $("#dietGrid"), notes = $("#notes");
+DIETS.forEach(d => {
+  const l = document.createElement("label"); l.className = "check";
+  l.innerHTML = `<input type="checkbox" value="${d.id}"><span class="ico" aria-hidden="true">${d.icon}</span><span>${d.label}</span>`;
+  const cb = l.querySelector("input");
+  cb.addEventListener("change", () => {
+    const set = new Set(state.diet);
+    cb.checked ? set.add(d.id) : set.delete(d.id);
+    if (cb.checked && d.id === "vegan") set.add("vegetarian");
+    if (!cb.checked && d.id === "vegetarian") set.delete("vegan");
+    state.diet = [...set]; save(); renderDiet();
+  });
+  dietGrid.append(l);
+});
+function renderDiet(){
+  hasDiet.checked = !!state.hasDiet; dietGate.classList.toggle("on", hasDiet.checked);
+  dietBox.hidden = !state.hasDiet;                                   // the options open up only once the gate is ticked
+  $$("#dietGrid input").forEach(cb => { cb.checked = state.diet.includes(cb.value); cb.closest(".check").classList.toggle("on", cb.checked); });
+  notes.value = state.notes;
+}
+notes.addEventListener("input", () => { state.notes = notes.value.trim(); save(); });
+
+/* ---------- restaurant selection ---------- */
+function mulberry32(a){ return function(){ a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function parseItem([name, desc, price, diet, alg]){ return { name, desc, price, diet, alg: new Set((alg || "").split(" ").filter(Boolean)) }; }
+function itemIssues(item, diet){
+  const r = [];
+  if (diet.has("vegetarian") && !(item.diet === "v" || item.diet === "vg")) r.push("not vegetarian");
+  if (diet.has("vegan") && item.diet !== "vg") r.push("not vegan");
+  if (diet.has("gf") && item.alg.has("g")) r.push("contains gluten");
+  if (diet.has("df") && item.alg.has("d")) r.push("contains dairy");
+  if (diet.has("nut") && item.alg.has("n")) r.push("contains nuts");
+  if (diet.has("shellfish") && item.alg.has("s")) r.push("contains shellfish");
+  if (diet.has("egg") && item.alg.has("e")) r.push("contains egg");
+  if (diet.has("soy") && item.alg.has("y")) r.push("contains soy");
+  return r;
+}
+function allItems(r){ return Object.values(r.menu).flat().map(parseItem); }
+function fitCount(r, diet){ return allItems(r).filter(i => itemIssues(i, diet).length === 0).length; }
+
+function pickRestaurant(){
+  const excl = new Set(state.exclusions), diet = new Set(state.diet), rng = mulberry32(state.seed || 1), tier = tierFor(state.budget);
+  const notExcluded = RESTAURANTS.filter(r => !excl.has(r.cuisine));
+  const inBudget = r => r.price <= tier, near = r => r.dist <= state.distance, open = r => openAt(r, state.time);
+  const meal = mealFor(state.time).name.toLowerCase();
+  // Relax constraints one at a time, most negotiable first; keep the note so we can tell the customer what gave.
+  const ladder = [
+    [r => inBudget(r) && near(r) && open(r), null],
+    [r => inBudget(r) && open(r), "Nothing matched inside your radius, so we looked a little farther out."],
+    [r => near(r) && open(r), "Nothing matched your budget nearby, so we stretched it a little."],
+    [r => open(r), "Nothing matched your budget and radius, so we stretched both a little."],
+    [r => inBudget(r) && near(r), `Nothing nearby is open for ${meal} at ${timeRange(state.time)} — this one opens a little earlier or later.`],
+    [() => true, "Nothing matched your budget, radius and time — here's the closest we could do."],
+  ];
+  let pool = [], note = null;
+  for (const [test, n] of ladder) { pool = notExcluded.filter(test); note = n; if (pool.length) break; }
+  if (!pool.length) { pool = RESTAURANTS.slice(); note = "You ruled out every cuisine we know — here's a wildcard."; }
+  if (diet.size) {
+    const good = pool.filter(r => fitCount(r, diet) >= 3);
+    if (good.length) pool = good;
+    else note = (note ? note + " " : "") + "Few dishes anywhere fit your dietary needs, so we chose the best available fit.";
+  }
+  const vb = vibeFor(state.vibe);
+  if (vb) {                                                          // soft nudge toward the vibe — never a hard filter
+    const onVibe = pool.filter(r => r.tags.some(t => vb.tagHints.some(h => t.toLowerCase().includes(h))));
+    if (onVibe.length) pool = onVibe;
+  }
+  const pick = pool[Math.floor(rng() * pool.length)];
+  state.pickId = pick.id; state.relaxNote = note; save();
+}
+
+/* ---------- step 5: restaurant & delayed address reveal ---------- */
+const ADDRESS_REVEAL_LEAD_MS = 2 * 60 * 60 * 1000;
+function addressRevealAt(){
+  return new Date(new Date(reservationDateTimeIso()).getTime() - ADDRESS_REVEAL_LEAD_MS);
+}
+function addressIsRevealed(){
+  return state.revealAccelerated || Date.now() >= addressRevealAt().getTime();
+}
+function addressRevealMessage(){
+  const remainingMs = addressRevealAt().getTime() - Date.now();
+  if (remainingMs <= 0) return "Your address is ready to reveal.";
+  const totalMinutes = Math.ceil(remainingMs / 60000);
+  const hours = Math.floor(totalMinutes / 60);
+  const minutes = totalMinutes % 60;
+  const duration = hours ? `${hours}h ${minutes}m` : `${minutes}m`;
+  return `Address unlocks in ${duration}, two hours before your reservation.`;
+}
+function stars(n){ const full = Math.round(n); return "★".repeat(full) + "☆".repeat(5 - full); }
+function renderRestaurant(){
+  const r = RESTAURANTS.find(x => x.id === state.pickId) || RESTAURANTS[0];
+  const b = BUDGETS.find(x => x.tier === r.price);
+  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + " " + r.addr)}`;
+  const addressAvailable = addressIsRevealed();
+  let html = `
+    <div class="reveal-head fade-up">
+      <p class="eyebrow">Your envelope reveals…</p>
+      <h2 class="resto-name" tabindex="-1">${esc(r.name)}</h2>
+      <div class="meta"><span><b>${esc(r.cuisine)}</b></span><span><b>${b.label}</b> · ${esc(b.title)}</span><span><b>${r.dist} mi</b> from ${state.origin ? esc(state.origin) : "your location"}</span></div>
+      <p class="subtle" style="margin:8px 0 0">${esc(mealFor(state.time).name)} on <b>${esc(fmtDay(state.date))}</b> at <b>${timeRange(state.time)}</b> · table for <b>${state.people}</b> · within your budget of up to <b>AED ${state.budget.toLocaleString()}</b>.${state.payment ? " " + esc(paidLabel()) + "." : ""}</p>
+      <p class="blurb">“${esc(r.blurb)}”</p>
+      <div class="summary">${r.tags.map(t => `<span class="tag">${esc(t)}</span>`).join("")}</div>
+    </div>
+    <div class="info-grid fade-up">
+      <div class="info"><small>Address</small>${addressAvailable ? esc(r.addr) : "Locked until two hours before your reservation"}</div>
+      <div class="info"><small>Hours</small>${esc(hoursText(r))}</div>
+    </div>`;
+  if (state.relaxNote) html += `<div class="notice warn">${esc(state.relaxNote)}</div>`;
+  html += addressAvailable
+    ? `<div class="reveal-actions">
+        <a class="btn ghost" href="${maps}" target="_blank" rel="noopener">📍 Open in Maps</a>
+        <button class="btn primary" id="seeMenu" type="button">See the menu →</button>
+      </div>`
+    : `<div class="notice info">${esc(addressRevealMessage())}</div>
+      <div class="reveal-actions">
+        <button class="btn ghost" id="fastForwardReveal" type="button">Reveal address now (demo)</button>
+      </div>`;
+  $("#restoBody").innerHTML = html;
+  const seeMenu = $("#seeMenu");
+  if (seeMenu) seeMenu.addEventListener("click", () => { renderMenu(); go(5); });
+  const fastForwardReveal = $("#fastForwardReveal");
+  if (fastForwardReveal) fastForwardReveal.addEventListener("click", () => {
+    state.revealAccelerated = true;
+    save();
+    renderRestaurant();
+    fitStage();
+  });
+}
+
+/* ---------- step 6: menu ---------- */
+function renderMenu(){
+  if (!addressIsRevealed()) {
+    renderRestaurant();
+    go(4);
+    return;
+  }
+  const r = RESTAURANTS.find(x => x.id === state.pickId) || RESTAURANTS[0];
+  const diet = new Set(state.diet);
+  const items = allItems(r), fits = items.filter(i => itemIssues(i, diet).length === 0).length;
+  const dietLabels = DIETS.filter(d => diet.has(d.id)).map(d => d.label);
+  const maps = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(r.name + " " + r.addr)}`;
+  let html = `
+    <p class="eyebrow">${esc(r.name)}</p>
+    <div class="menu-bar">
+      <h2 tabindex="-1" style="margin:0">The menu</h2>
+      ${diet.size ? `<label class="toggle"><input type="checkbox" id="onlyFit"> Only show dishes that fit</label>` : ""}
+    </div>
+    <p class="diet-line">${diet.size
+      ? `Your needs: <b>${esc(dietLabels.join(", "))}</b> — <b>${fits} of ${items.length}</b> dishes fit.`
+      : `No allergies or dietary needs set — every dish is fair game.`}
+      ${state.notes ? `<br>Your note: <b>${esc(state.notes)}</b>` : ""}</p>
+    <div class="menu-wrap" id="menuWrap">`;
+  for (const [section, list] of Object.entries(r.menu)) {
+    html += `<h4 class="menu-section">${esc(section)}</h4><ul class="menu">`;
+    for (const raw of list) {
+      const it = parseItem(raw), issues = itemIssues(it, diet), ok = issues.length === 0;
+      const badges = [];
+      if (it.diet === "vg") badges.push(`<span class="tag ok">Vegan</span>`); else if (it.diet === "v") badges.push(`<span class="tag ok">Vegetarian</span>`);
+      if (!it.alg.has("g")) badges.push(`<span class="tag">Gluten-free</span>`);
+      const contains = [...it.alg].map(a => ALLERGEN_NAMES[a]).filter(Boolean);
+      if (contains.length) badges.push(`<span class="tag">Contains: ${contains.join(", ")}</span>`);
+      if (diet.size) badges.push(ok ? `<span class="tag ok">✓ Fits your needs</span>` : `<span class="tag bad">✕ ${esc(issues.join(", "))}</span>`);
+      html += `<li class="dish ${ok ? "fits" : "nofit"}">
+        <div class="dish-head"><span class="dish-name">${esc(it.name)}</span></div>
+        <p class="dish-desc">${esc(it.desc)}</p>
+        <div class="dish-meta">${badges.join("")}</div></li>`;
+    }
+    html += `</ul>`;
+  }
+  html += `</div>
+    <div class="reveal-actions">
+      <a class="btn primary" href="${maps}" target="_blank" rel="noopener">📍 Open in Maps</a>
+      <button class="btn ghost" id="backToResto" type="button">← Back to restaurant</button>
+      <button class="btn ghost" id="startOver" type="button">Start over</button>
+    </div>`;
+  $("#menuBody").innerHTML = html;
+  const only = $("#onlyFit"); if (only) only.addEventListener("change", () => { $("#menuWrap").classList.toggle("only-fit", only.checked); fitStage(); });
+  $("#backToResto").addEventListener("click", () => go(4));
+  $("#startOver").addEventListener("click", startOver);
+}
+function startOver(){
+  localStorage.removeItem(STORAGE);
+  state = DEFAULT();
+  document.title = "Run Out";
+  renderPeople(); renderVibe(); renderTasteChips(); renderBudget(); renderDist(); renderDiet(); renderDate(); cardForm.reset(); cardBrand.textContent = ""; renderPayment();
+  $("#restoBody").innerHTML = ""; $("#menuBody").innerHTML = "";
+  go(0);
+}
+
+/* ---------- bottom tab bar: home / reservations / profile ---------- */
+function renderReservations(){
+  const body = $("#reservationsBody");
+  if (backendReservations.length) {
+    body.innerHTML = backendReservations
+      .slice()
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      .map(reservation => {
+        const when = new Date(reservation.reservationAt).toLocaleString(undefined, { dateStyle:"medium", timeStyle:"short" });
+        return `<div class="profile-row" style="flex-direction:column;align-items:stretch;gap:5px">
+          <span style="display:flex;width:100%;align-items:center;gap:10px">
+            <span class="ico" aria-hidden="true">🍽️</span><span style="font-size:15.5px">${esc(reservation.status.replaceAll("_", " "))}</span>
+          </span>
+          <span class="subtle" style="font-size:13px">${esc(when)} · table for ${reservation.partySize} · AED ${reservation.budgetPerPerson.amount}/person</span>
+        </div>`;
+      }).join("");
+  } else if (state.pickId && state.payment) {
+    body.innerHTML = `<p class="hint" style="margin-top:14px">Your request was created locally. Refresh after backend sync to see the server reservation.</p>`;
+  } else {
+    body.innerHTML = `<p class="hint" style="margin-top:14px">No reservations yet — book a table on the Home tab and it'll show up here.</p>`;
+  }
+}
+async function setTab(tab){
+  $$(".screen").forEach(s => s.classList.toggle("active", s.id === "screen-" + tab));
+  $$(".tab-btn").forEach(b => b.classList.toggle("on", b.dataset.tab === tab));
+  if (tab === "reservations") {
+    try { await loadBackendReservations(); } catch {}
+    renderReservations();
+  }
+  if (tab === "home") requestAnimationFrame(fitStage);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+$("#tabbar").addEventListener("click", e => { const b = e.target.closest(".tab-btn"); if (!b) return; setTab(b.dataset.tab); });
+$("#profileStartOver").addEventListener("click", () => { startOver(); setTab("home"); });
+
+/* ---------- boot ---------- */
+renderPeople(); renderVibe(); renderTasteChips(); renderBudget(); renderDist(); renderDiet(); renderDate(); renderPayment();
+(function boot(){
+  let step = state.step || 0;
+  if (step >= 4 && !state.pickId) step = 3;                         // no restaurant picked yet — back to payment
+  if (step === 5 && !addressIsRevealed()) step = 4;
+  if (step > 5) step = 5;
+  slides[current].classList.remove("active");
+  current = step; slides[current].classList.add("active");
+  setInert(); fitStage();
+  if (step === 4) { if (!state.pickId) pickRestaurant(); renderRestaurant(); requestAnimationFrame(fitStage); }
+  else if (step === 5) { if (!state.pickId) pickRestaurant(); renderRestaurant(); renderMenu(); requestAnimationFrame(fitStage); }
+})();
+setInterval(() => {
+  if (current === 4 && state.pickId && !addressIsRevealed()) {
+    renderRestaurant();
+    fitStage();
+  }
+}, 60 * 1000);
+void initAuth();
+</script>
+</body>
+</html>

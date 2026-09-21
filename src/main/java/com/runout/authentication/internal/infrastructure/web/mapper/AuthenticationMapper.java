@@ -9,12 +9,12 @@ public final class AuthenticationMapper {
     }
 
     public static TokenResponse toResponse(AuthenticationTokens tokens) {
-        return new TokenResponse(
-                tokens.accessToken(),
-                tokens.expiresIn(),
-                tokens.refreshToken(),
-                tokens.refreshExpiresIn(),
-                tokens.tokenType()
-        );
+        return TokenResponse.builder()
+                .accessToken(tokens.accessToken())
+                .expiresIn(tokens.expiresIn())
+                .refreshToken(tokens.refreshToken())
+                .refreshExpiresIn(tokens.refreshExpiresIn())
+                .tokenType(tokens.tokenType())
+                .build();
     }
 }

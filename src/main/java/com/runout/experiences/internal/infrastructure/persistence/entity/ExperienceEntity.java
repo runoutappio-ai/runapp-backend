@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -28,6 +29,7 @@ public class ExperienceEntity {
     @Enumerated(EnumType.STRING)
     private ExperienceStatus status;
 
+    @Builder
     public ExperienceEntity(String title, Instant startsAt, int capacity) {
         this.id = UUID.randomUUID();
         this.title = title;

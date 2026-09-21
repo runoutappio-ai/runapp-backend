@@ -7,6 +7,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -21,16 +22,17 @@ public class PaymentEntity {
 
     @Id
     private UUID id;
-    private UUID bookingId;
+    private UUID reservationId;
 
     @Enumerated(EnumType.STRING)
     private PaymentStatus status;
 
     private Instant createdAt;
 
-    public PaymentEntity(UUID bookingId) {
+    @Builder
+    public PaymentEntity(UUID reservationId) {
         this.id = UUID.randomUUID();
-        this.bookingId = bookingId;
+        this.reservationId = reservationId;
         this.status = PaymentStatus.PENDING;
         this.createdAt = Instant.now();
     }

@@ -11,14 +11,18 @@ public final class UserRegistrationMapper {
     }
 
     public static RegisterUserCommand toCommand(RegisterUserRequest request) {
-        return new RegisterUserCommand(
-                request.displayName(),
-                request.email(),
-                request.password()
-        );
+        return RegisterUserCommand.builder()
+                .displayName(request.displayName())
+                .email(request.email())
+                .password(request.password())
+                .build();
     }
 
     public static RegisteredUserResponse toResponse(UserSummary user) {
-        return new RegisteredUserResponse(user.id(), user.displayName(), user.email());
+        return RegisteredUserResponse.builder()
+                .id(user.id())
+                .displayName(user.displayName())
+                .email(user.email())
+                .build();
     }
 }

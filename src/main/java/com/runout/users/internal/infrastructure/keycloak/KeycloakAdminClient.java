@@ -1,48 +1,62 @@
 package com.runout.users.internal.infrastructure.keycloak;
 
+import com.runout.shared.KeycloakProperties;
+import com.runout.shared.KeycloakTokenRequest;
 import com.runout.users.api.RegisterUserCommand;
+import com.runout.users.api.UserRole;
 import com.runout.users.internal.application.IdentityProviderRegistration;
-import com.runout.users.internal.infrastructure.keycloak.dto.response.KeycloakAccessTokenResponse;
-import com.runout.users.internal.infrastructure.keycloak.mapper.KeycloakUserMapper;
-import org.springframework.beans.factory.annotation.Value;
+import com.runout.users.internal.infrastructure.keycloak.dto.response.KeycloakUserResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.UUID;
+
+import static com.runout.users.internal.infrastructure.keycloak.mapper.KeycloakUserMapper.toRequest;
+
 @Component
+@RequiredArgsConstructor
 class KeycloakAdminClient implements IdentityProviderRegistration {
 
-    private final RestClient restClient;
-    private final String realm;
-    private final String clientId;
-    private final String clientSecret;
+    private static final String BEARER = "Bearer ";
 
-    KeycloakAdminClient(
-            @Value("${runout.identity.keycloak.base-url}") String baseUrl,
-            @Value("${runout.identity.keycloak.realm}") String realm,
-            @Value("${runout.identity.keycloak.registration-client-id}") String clientId,
-            @Value("${runout.identity.keycloak.registration-client-secret}") String clientSecret
-    ) {
-        this.restClient = RestClient.builder().baseUrl(baseUrl).build();
-        this.realm = realm;
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-    }
+    private final KeycloakProperties keycloakProperties;
+    private final KeycloakAdminHttpClient adminHttpClient;
+    private final KeycloakTokenHttpClient tokenHttpClient;
 
     @Override
-    public String register(RegisterUserCommand command) {
+    public UUID register(RegisterUserCommand command) {
+        var accessToken = serviceAccessToken();
+        var userId = createUser(command, accessToken);
+
         try {
-            var response = restClient.post()
-                    .uri("/admin/realms/{realm}/users", realm)
-                    .headers(headers -> headers.setBearerAuth(serviceAccessToken()))
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(KeycloakUserMapper.toRequest(command))
-                    .retrieve()
-                    .toBodilessEntity();
+            var user = getUser(userId, accessToken);
+
+            if (user == null || user.id() == null) {
+                compensateCreatedUser(userId, accessToken);
+                throw unavailable("Keycloak did not return the created user representation", null);
+            }
+
+            var parsedUserId = parseUserId(user.id());
+            try {
+                updateRole(parsedUserId, null, UserRole.USER.name());
+                return parsedUserId;
+            } catch (RuntimeException error) {
+                compensateCreatedUser(userId, accessToken);
+                throw error;
+            }
+        } catch (RestClientResponseException error) {
+            compensateCreatedUser(userId, accessToken);
+            throw unavailable("Could not retrieve the created Keycloak user", error);
+        }
+    }
+
+    private UUID createUser(RegisterUserCommand command, String accessToken) {
+        try {
+            var response = adminHttpClient.createUser(authorization(accessToken), toRequest(command));
 
             var location = response.getHeaders().getLocation();
             if (location == null) {
@@ -50,7 +64,8 @@ class KeycloakAdminClient implements IdentityProviderRegistration {
             }
 
             var path = location.getPath();
-            return path.substring(path.lastIndexOf('/') + 1);
+            String id = path.substring(path.lastIndexOf('/') + 1);
+            return UUID.fromString(id);
         } catch (RestClientResponseException error) {
             if (error.getStatusCode().value() == HttpStatus.CONFLICT.value()) {
                 throw new IllegalArgumentException("A user with this email already exists");
@@ -60,32 +75,55 @@ class KeycloakAdminClient implements IdentityProviderRegistration {
         }
     }
 
-    @Override
-    public void delete(String identityProviderSubject) {
+    private KeycloakUserResponse getUser(UUID userId, String accessToken) {
+        return adminHttpClient.getUser(userId, authorization(accessToken));
+    }
+
+    private void compensateCreatedUser(UUID userId, String accessToken) {
         try {
-            restClient.delete()
-                    .uri("/admin/realms/{realm}/users/{userId}", realm, identityProviderSubject)
-                    .headers(headers -> headers.setBearerAuth(serviceAccessToken()))
-                    .retrieve()
-                    .toBodilessEntity();
+            adminHttpClient.deleteUser(userId, authorization(accessToken));
+        } catch (RestClientResponseException ignored) {
+            // The original retrieval failure remains the relevant registration error.
+        }
+    }
+
+    @Override
+    public void delete(UUID userId) {
+        try {
+            adminHttpClient.deleteUser(userId, authorization(serviceAccessToken()));
         } catch (RestClientResponseException error) {
             throw unavailable("Could not compensate the Keycloak user registration", error);
         }
     }
 
+    @Override
+    public void updateRole(UUID userId, String previousRole, String role) {
+        var authorization = authorization(serviceAccessToken());
+        try {
+            if (previousRole != null && !previousRole.equals(role)) {
+                var currentRole = adminHttpClient.getRealmRole(previousRole, authorization);
+                adminHttpClient.removeRealmRole(userId, authorization, List.of(currentRole));
+            }
+            var nextRole = adminHttpClient.getRealmRole(role, authorization);
+            adminHttpClient.addRealmRole(userId, authorization, List.of(nextRole));
+        } catch (RestClientResponseException error) {
+            throw unavailable("Could not update the Keycloak user role", error);
+        }
+    }
+
+    private UUID parseUserId(String userId) {
+        try {
+            return UUID.fromString(userId);
+        } catch (IllegalArgumentException error) {
+            throw unavailable("Keycloak returned a non-UUID user identifier", error);
+        }
+    }
+
     private String serviceAccessToken() {
-        var form = new LinkedMultiValueMap<String, String>();
-        form.add("grant_type", "client_credentials");
-        form.add("client_id", clientId);
-        form.add("client_secret", clientSecret);
+        var request = KeycloakTokenRequest.clientCredentials(keycloakProperties);
 
         try {
-            var response = restClient.post()
-                    .uri("/realms/{realm}/protocol/openid-connect/token", realm)
-                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
-                    .body(form)
-                    .retrieve()
-                    .body(KeycloakAccessTokenResponse.class);
+            var response = tokenHttpClient.serviceAccessToken(request);
 
             if (response == null || response.accessToken() == null) {
                 throw unavailable("Keycloak did not return a service access token", null);
@@ -95,6 +133,10 @@ class KeycloakAdminClient implements IdentityProviderRegistration {
         } catch (RestClientResponseException error) {
             throw unavailable("Could not authenticate the registration service with Keycloak", error);
         }
+    }
+
+    private String authorization(String accessToken) {
+        return BEARER + accessToken;
     }
 
     private ResponseStatusException unavailable(String message, Exception cause) {

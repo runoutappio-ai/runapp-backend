@@ -1,12 +1,12 @@
 package com.runout.administration.internal.infrastructure.web.mapper;
 
 import com.runout.administration.internal.infrastructure.web.dto.request.CreateExperienceRequest;
-import com.runout.administration.internal.infrastructure.web.dto.request.CreateGroupRequest;
-import com.runout.administration.internal.infrastructure.web.dto.request.RecordBookingRequest;
+import com.runout.administration.internal.infrastructure.web.dto.request.ConfirmReservationRequest;
+import com.runout.administration.internal.infrastructure.web.dto.response.AdminReservationResponse;
 import com.runout.administration.internal.infrastructure.web.dto.response.IdResponse;
-import com.runout.bookings.api.RecordManualBookingCommand;
+import com.runout.bookings.api.ConfirmReservationCommand;
+import com.runout.bookings.api.ReservationSummary;
 import com.runout.experiences.api.CreateExperienceCommand;
-import com.runout.matching.api.CreateGroupCommand;
 
 import java.util.UUID;
 
@@ -16,24 +16,58 @@ public final class AdminOperationsMapper {
     }
 
     public static CreateExperienceCommand toCommand(CreateExperienceRequest request) {
-        return new CreateExperienceCommand(request.title(), request.startsAt(), request.capacity());
+        return CreateExperienceCommand.builder()
+                .title(request.title())
+                .startsAt(request.startsAt())
+                .capacity(request.capacity())
+                .build();
     }
 
-    public static CreateGroupCommand toCommand(CreateGroupRequest request) {
-        return new CreateGroupCommand(request.experienceId(), request.participantIds());
-    }
-
-    public static RecordManualBookingCommand toCommand(RecordBookingRequest request) {
-        return new RecordManualBookingCommand(
-                request.experienceId(),
-                request.restaurantId(),
-                request.groupId(),
-                request.externalReference(),
-                request.reservedAt()
-        );
+    public static ConfirmReservationCommand toCommand(UUID reservationId, ConfirmReservationRequest request) {
+        return ConfirmReservationCommand.builder()
+                .reservationId(reservationId)
+                .restaurantId(request.restaurantId())
+                .externalReference(request.externalReference())
+                .reservedAt(request.reservedAt())
+                .build();
     }
 
     public static IdResponse toIdResponse(UUID id) {
-        return new IdResponse(id);
+        return IdResponse.builder()
+                .id(id)
+                .build();
+    }
+
+    public static AdminReservationResponse toResponse(ReservationSummary reservation) {
+        var currency = reservation.currency().getCurrencyCode();
+        return AdminReservationResponse.builder()
+                .id(reservation.id())
+                .status(reservation.status())
+                .reservationAt(reservation.reservationAt())
+                .excludedCuisineTypes(reservation.excludedCuisineTypes())
+                .partySize(reservation.partySize())
+                .budgetPerPerson(AdminReservationResponse.MoneyResponse.builder()
+                        .amount(reservation.budgetPerPerson())
+                        .currency(currency)
+                        .build())
+                .totalBudget(AdminReservationResponse.MoneyResponse.builder()
+                        .amount(reservation.totalBudget())
+                        .currency(currency)
+                        .build())
+                .searchArea(AdminReservationResponse.SearchAreaResponse.builder()
+                        .latitude(reservation.latitude())
+                        .longitude(reservation.longitude())
+                        .radiusMeters(reservation.radiusMeters())
+                        .build())
+                .payment(AdminReservationResponse.PaymentResponse.builder()
+                        .reference(reservation.paymentReference())
+                        .status(reservation.paymentStatus())
+                        .build())
+                .assignedEmployeeId(reservation.assignedEmployeeId())
+                .restaurantId(reservation.restaurantId())
+                .externalReference(reservation.externalReference())
+                .confirmedReservationAt(reservation.confirmedReservationAt())
+                .createdAt(reservation.createdAt())
+                .build();
     }
 }
