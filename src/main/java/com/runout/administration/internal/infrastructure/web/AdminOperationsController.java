@@ -36,13 +36,13 @@ class AdminOperationsController {
     private final UserService users;
 
     @GetMapping("/employees")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
     List<UserSummary> findReservationAssignees() {
         return users.findAllActiveByRole(UserRole.WORKER);
     }
 
     @GetMapping("/reservations")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
     List<AdminReservationResponse> findReservations() {
         log.info("Admin listing reservations");
         return reservations.findAll().stream()
@@ -60,7 +60,7 @@ class AdminOperationsController {
     }
 
     @GetMapping("/reservations/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'WORKER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     AdminReservationResponse findReservation(@PathVariable UUID id,
                                              @RequestHeader(USER_ID) UUID employeeId,
                                              Authentication authentication) {
@@ -71,7 +71,7 @@ class AdminOperationsController {
     }
 
     @GetMapping("/reservations/{id}/nearby-restaurants")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'WORKER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     List<NearbyRestaurantResponse> findNearbyRestaurants(@PathVariable UUID id,
                                                           @RequestHeader(USER_ID) UUID employeeId,
                                                           Authentication authentication) {
@@ -87,7 +87,7 @@ class AdminOperationsController {
     }
 
     @PostMapping("/reservations/{id}/confirmation")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'WORKER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     @ResponseStatus(HttpStatus.CREATED)
     IdResponse confirmReservation(@PathVariable UUID id,
                                   @RequestHeader(USER_ID) UUID employeeId,
@@ -100,7 +100,7 @@ class AdminOperationsController {
     }
 
     @PostMapping("/reservations/{id}/assignment")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'WORKER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     void assignReservation(@PathVariable UUID id,
                            @RequestHeader(USER_ID) UUID employeeId,
@@ -139,14 +139,6 @@ class AdminOperationsController {
         log.info("Admin rejecting reservation id={}", id);
         ensureWorkerOwnsReservation(authentication, employeeId, id);
         reservations.rejectReservation(id);
-    }
-
-    @PostMapping("/reservations/{id}/delivery")
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    void sendReservationToUser(@PathVariable UUID id) {
-        log.info("Admin delivering reservation id={}", id);
-        reservations.sendReservationToUser(id);
     }
 
     @PostMapping("/reservations/{id}/completion")

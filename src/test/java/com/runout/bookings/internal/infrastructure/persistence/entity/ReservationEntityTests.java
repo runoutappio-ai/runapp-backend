@@ -39,15 +39,24 @@ class ReservationEntityTests {
         reservation.confirm();
         assertEquals(ReservationStatus.CONFIRMED, reservation.getStatus());
 
-        reservation.sendToUser();
-        assertEquals(ReservationStatus.SENT_TO_USER, reservation.getStatus());
+        reservation.complete();
+        assertEquals(ReservationStatus.COMPLETED, reservation.getStatus());
     }
 
     @Test
     void rejectsInvalidStateTransition() {
         var reservation = reservation();
 
-        assertThrows(IllegalStateException.class, reservation::sendToUser);
+        assertThrows(IllegalStateException.class, reservation::complete);
+    }
+
+    @Test
+    void doesNotAdvanceWithoutCapturedPayment() {
+        var reservation = reservation();
+
+        assertThrows(IllegalStateException.class, () -> reservation.markPaid("pending_reference", "PENDING"));
+        assertThrows(IllegalStateException.class, () -> reservation.assign(UUID.randomUUID()));
+        assertEquals(ReservationStatus.PAYMENT_PENDING, reservation.getStatus());
     }
 
     @Test
@@ -71,6 +80,38 @@ class ReservationEntityTests {
 
         assertEquals(ReservationStatus.PAYMENT_FAILED, reservation.getStatus());
         assertEquals("402 PAYMENT_REQUIRED", reservation.getPaymentStatus());
+    }
+
+    @Test
+    void acceptsFeedbackForCompletedReservation() {
+        var reservation = completedReservation();
+
+        reservation.submitFeedback(5, "  Great surprise.  ", true);
+
+        assertEquals(5, reservation.getFeedbackRating());
+        assertEquals("Great surprise.", reservation.getFeedbackComment());
+        assertEquals(true, reservation.getFeedbackWouldReturnForSurpriseMenu());
+    }
+
+    @Test
+    void rejectsFeedbackBeforeCompletionAndDuplicateFeedback() {
+        var pendingReservation = reservation();
+        assertThrows(IllegalStateException.class, () -> pendingReservation.submitFeedback(5, null, false));
+
+        var completed = completedReservation();
+        completed.submitFeedback(4, null, false);
+
+        assertThrows(IllegalStateException.class, () -> completed.submitFeedback(3, "Changed my mind", true));
+    }
+
+    private static ReservationEntity completedReservation() {
+        var reservation = reservation();
+        reservation.markPaid("mock_reference", "CAPTURED");
+        reservation.assign(UUID.randomUUID());
+        reservation.start();
+        reservation.confirm();
+        reservation.complete();
+        return reservation;
     }
 
     private static ReservationEntity reservation() {

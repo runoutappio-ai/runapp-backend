@@ -67,6 +67,10 @@ final class ReservationApplicationMapper {
                 .restaurantId(reservation.getRestaurantId())
                 .externalReference(reservation.getExternalReference())
                 .confirmedReservationAt(reservation.getConfirmedReservationAt())
+                .feedbackRating(reservation.getFeedbackRating())
+                .feedbackComment(reservation.getFeedbackComment())
+                .feedbackWouldReturnForSurpriseMenu(reservation.getFeedbackWouldReturnForSurpriseMenu())
+                .feedbackSubmittedAt(reservation.getFeedbackSubmittedAt())
                 .createdAt(reservation.getCreatedAt())
                 .build();
     }

@@ -2,7 +2,10 @@ package com.runout.restaurants.internal.infrastructure.persistence.entity;
 
 import com.runout.restaurants.api.RestaurantMenuSummary;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -32,6 +35,10 @@ public class RestaurantEntity {
     private String tags;
     private String googlePlaceId;
     private String formattedAddress;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "city_id", nullable = false)
+    private CityEntity city;
+    private String area;
     private Double latitude;
     private Double longitude;
     private Double rating;
@@ -53,6 +60,8 @@ public class RestaurantEntity {
                             List<String> tags,
                             String googlePlaceId,
                             String formattedAddress,
+                            CityEntity city,
+                            String area,
                             Double latitude,
                             Double longitude,
                             Double rating,
@@ -72,7 +81,7 @@ public class RestaurantEntity {
         this.openingHours = openingHours;
         this.tags = join(tags);
         this.menus = copyMenus(menus);
-        updateGoogleMetadata(googlePlaceId, formattedAddress, latitude, longitude, rating, userRatingCount, websiteUri,
+        updateGoogleMetadata(googlePlaceId, formattedAddress, city, area, latitude, longitude, rating, userRatingCount, websiteUri,
                 googleMapsUri, primaryType, types);
     }
 
@@ -85,6 +94,8 @@ public class RestaurantEntity {
                        List<String> tags,
                        String googlePlaceId,
                        String formattedAddress,
+                       CityEntity city,
+                       String area,
                        Double latitude,
                        Double longitude,
                        Double rating,
@@ -102,7 +113,7 @@ public class RestaurantEntity {
         this.openingHours = openingHours;
         this.tags = join(tags);
         this.menus = copyMenus(menus);
-        updateGoogleMetadata(googlePlaceId, formattedAddress, latitude, longitude, rating, userRatingCount, websiteUri,
+        updateGoogleMetadata(googlePlaceId, formattedAddress, city, area, latitude, longitude, rating, userRatingCount, websiteUri,
                 googleMapsUri, primaryType, types);
     }
 
@@ -128,6 +139,8 @@ public class RestaurantEntity {
 
     private void updateGoogleMetadata(String googlePlaceId,
                                       String formattedAddress,
+                                      CityEntity city,
+                                      String area,
                                       Double latitude,
                                       Double longitude,
                                       Double rating,
@@ -138,6 +151,8 @@ public class RestaurantEntity {
                                       List<String> types) {
         this.googlePlaceId = googlePlaceId;
         this.formattedAddress = formattedAddress;
+        this.city = city;
+        this.area = area;
         this.latitude = latitude;
         this.longitude = longitude;
         this.rating = rating;

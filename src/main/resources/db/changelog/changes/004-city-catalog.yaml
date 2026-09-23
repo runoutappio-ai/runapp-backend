@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-city-catalog
+      author: runout
+      comment: Adds the city catalog and assigns existing restaurants to Dubai.
+      changes:
+        - createTable:
+            tableName: city
+            columns:
+              - column: { name: id, type: uuid, constraints: { primaryKey: true, nullable: false } }
+              - column: { name: name, type: varchar(100), constraints: { nullable: false, unique: true } }
+              - column: { name: country_code, type: varchar(2), constraints: { nullable: false } }
+              - column: { name: active, type: boolean, defaultValueBoolean: true, constraints: { nullable: false } }
+        - insert:
+            tableName: city
+            columns:
+              - column: { name: id, value: "00000000-0000-0000-0000-000000000001" }
+              - column: { name: name, value: Dubai }
+              - column: { name: country_code, value: AE }
+              - column: { name: active, valueBoolean: true }
+        - addColumn:
+            tableName: restaurant
+            columns:
+              - column: { name: city_id, type: uuid }
+        - update:
+            tableName: restaurant
+            columns:
+              - column: { name: city_id, value: "00000000-0000-0000-0000-000000000001" }
+        - addNotNullConstraint:
+            tableName: restaurant
+            columnName: city_id
+            columnDataType: uuid
+        - addForeignKeyConstraint:
+            baseTableName: restaurant
+            baseColumnNames: city_id
+            referencedTableName: city
+            referencedColumnNames: id
+            constraintName: fk_restaurant_city

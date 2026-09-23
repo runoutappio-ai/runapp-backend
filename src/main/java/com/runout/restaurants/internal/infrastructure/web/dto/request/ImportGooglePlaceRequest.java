@@ -1,16 +1,20 @@
 package com.runout.restaurants.internal.infrastructure.web.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.UUID;
 
 @Builder
 public record ImportGooglePlaceRequest(
         @NotBlank @Size(max = 120) String googlePlaceId,
         @NotBlank @Size(max = 160) String name,
         @Size(max = 500) String formattedAddress,
+        @NotNull UUID cityId,
+        @NotBlank @Size(max = 80) String area,
         @Size(max = 40) String phone,
         @Size(max = 80) String cuisine,
         @Size(max = 500) String description,

@@ -3,3 +3,13 @@ databaseChangeLog:
       file: db/changelog/changes/001-initial-schema.yaml
   - include:
       file: db/changelog/changes/002-reservation-assignee.yaml
+  - include:
+      file: db/changelog/changes/003-restaurant-area.yaml
+  - include:
+      file: db/changelog/changes/004-city-catalog.yaml
+  - include:
+      file: db/changelog/changes/005-remove-sent-to-user-status.yaml
+  - include:
+      file: db/changelog/changes/006-reservation-feedback.yaml
+  - include:
+      file: db/changelog/changes/007-feedback-return-intent.yaml

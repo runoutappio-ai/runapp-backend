@@ -1,16 +1,17 @@
 import { FormEvent, ReactNode, useEffect, useState } from "react";
 import {
+  ArrowLeft,
   CalendarCheck,
   CheckCircle2,
   ClipboardCheck,
   Gauge,
+  List,
   Loader2,
   LogOut,
   MapPin,
   Play,
   RefreshCcw,
   Search,
-  Send,
   Store,
   UserPlus,
   UserRound,
@@ -18,7 +19,7 @@ import {
   XCircle
 } from "lucide-react";
 import { ApiConfig, ApiError, apiRequest } from "./api";
-import { GooglePlaceCandidate, NearbyRestaurant, Reservation, Restaurant, RestaurantMenu, TokenResponse, UserRole, UserSummary } from "./types";
+import { City, GooglePlaceCandidate, NearbyRestaurant, Reservation, Restaurant, RestaurantMenu, TokenResponse, UserRole, UserSummary } from "./types";
 
 type Section = "dashboard" | "users" | "reservations" | "restaurants";
 
@@ -30,6 +31,7 @@ const initialConfig: ApiConfig = {
 export function App() {
   const [config, setConfig] = useState(initialConfig);
   const [section, setSection] = useState<Section>("dashboard");
+  const [sectionHistory, setSectionHistory] = useState<Section[]>([]);
   const [currentUser, setCurrentUser] = useState<UserSummary | null>(null);
   const [currentUserError, setCurrentUserError] = useState("");
   const authenticated = Boolean(config.token);
@@ -46,6 +48,7 @@ export function App() {
       setCurrentUser(null);
       setCurrentUserError("");
       setSection("dashboard");
+      setSectionHistory([]);
     };
     window.addEventListener("runout:unauthorized", unauthorized);
     return () => window.removeEventListener("runout:unauthorized", unauthorized);
@@ -73,6 +76,23 @@ export function App() {
     void apiRequest<void>(config, "/api/v1/auth/logout", { method: "POST" }).catch(() => undefined);
     setConfig({ ...config, token: "" });
     setSection("dashboard");
+    setSectionHistory([]);
+  }
+
+  function navigateTo(nextSection: Section) {
+    if (nextSection === section) return;
+    setSectionHistory((current) => [...current, section]);
+    setSection(nextSection);
+  }
+
+  function goBack() {
+    const allowed = allowedSections(authenticatedRole);
+    const remaining = [...sectionHistory];
+    let previous = remaining.pop();
+    while (previous && !allowed.includes(previous)) previous = remaining.pop();
+    if (!previous) return;
+    setSectionHistory(remaining);
+    setSection(previous);
   }
 
   useEffect(() => {
@@ -101,10 +121,10 @@ export function App() {
         </div>
 
         <nav className="sideNav" aria-label="Admin navigation">
-          {allowedSections(authenticatedRole).includes("dashboard") && <NavButton active={section === "dashboard"} icon={<Gauge size={18} />} label="Dashboard" onClick={() => setSection("dashboard")} />}
-          {allowedSections(authenticatedRole).includes("users") && <NavButton active={section === "users"} icon={<UserRound size={18} />} label="Users" onClick={() => setSection("users")} />}
-          {allowedSections(authenticatedRole).includes("reservations") && <NavButton active={section === "reservations"} icon={<CalendarCheck size={18} />} label="Reservations" onClick={() => setSection("reservations")} />}
-          {allowedSections(authenticatedRole).includes("restaurants") && <NavButton active={section === "restaurants"} icon={<Store size={18} />} label="Restaurants" onClick={() => setSection("restaurants")} />}
+          {allowedSections(authenticatedRole).includes("dashboard") && <NavButton active={section === "dashboard"} icon={<Gauge size={18} />} label="Dashboard" onClick={() => navigateTo("dashboard")} />}
+          {allowedSections(authenticatedRole).includes("users") && <NavButton active={section === "users"} icon={<UserRound size={18} />} label="Users" onClick={() => navigateTo("users")} />}
+          {allowedSections(authenticatedRole).includes("reservations") && <NavButton active={section === "reservations"} icon={<CalendarCheck size={18} />} label="Reservations" onClick={() => navigateTo("reservations")} />}
+          {allowedSections(authenticatedRole).includes("restaurants") && <NavButton active={section === "restaurants"} icon={<Store size={18} />} label="Restaurants" onClick={() => navigateTo("restaurants")} />}
         </nav>
 
         <div className="sidebarUser">
@@ -119,9 +139,20 @@ export function App() {
 
       <section className="adminContent">
         <header className="topbar">
-          <div>
+          <div className="topbarHeading">
+            <button
+              type="button"
+              className="secondary backButton"
+              onClick={goBack}
+              disabled={sectionHistory.length === 0}
+              title={sectionHistory.length === 0 ? "No previous page" : "Go back"}
+            >
+              <ArrowLeft size={18} /> Back
+            </button>
+            <div>
             <div className="eyebrow">Runout Operations</div>
             <h1>{sectionTitle(section)}</h1>
+            </div>
           </div>
           <div className="topbarActions">
             <button className="iconButton" title="Sign out" onClick={logout}>
@@ -134,7 +165,7 @@ export function App() {
         {!currentUserError && currentUser && section === "dashboard" && <DashboardPanel config={config} />}
         {!currentUserError && currentUser && section === "users" && <UsersPanel config={config} />}
         {!currentUserError && currentUser && authenticatedRole && section === "reservations" && <ReservationsPanel config={config} role={authenticatedRole} currentUser={currentUser} />}
-        {!currentUserError && currentUser && section === "restaurants" && <RestaurantsPanel config={config} />}
+        {!currentUserError && currentUser && authenticatedRole && section === "restaurants" && <RestaurantsPanel config={config} role={authenticatedRole} />}
       </section>
     </main>
   );
@@ -164,14 +195,13 @@ function LoginScreen({ config, onLogin }: { config: ApiConfig; onLogin: (config:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  async function submit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
+  async function signIn(loginEmail: string, loginPassword: string) {
     setLoading(true);
     setError("");
     try {
       const tokens = await apiRequest<TokenResponse>({ baseUrl: "http://localhost:8080", token: "" }, "/api/v1/auth/login", {
         method: "POST",
-        body: { email, password }
+        body: { email: loginEmail, password: loginPassword }
       });
       onLogin({ baseUrl: "http://localhost:8080", token: tokens.accessToken });
     } catch (err) {
@@ -179,6 +209,17 @@ function LoginScreen({ config, onLogin }: { config: ApiConfig; onLogin: (config:
     } finally {
       setLoading(false);
     }
+  }
+
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    await signIn(email, password);
+  }
+
+  function signInAs(loginEmail: string, loginPassword: string) {
+    setEmail(loginEmail);
+    setPassword(loginPassword);
+    void signIn(loginEmail, loginPassword);
   }
 
   return (
@@ -207,6 +248,17 @@ function LoginScreen({ config, onLogin }: { config: ApiConfig; onLogin: (config:
             Sign in
           </button>
         </form>
+        <div className="quickLogin" aria-label="Demo accounts">
+          <button type="button" className="secondary" onClick={() => signInAs("admin@admin.com", "Admin123456!")} disabled={loading}>
+            Sign in as Admin
+          </button>
+          <button type="button" className="secondary" onClick={() => signInAs("personal@personal.com", "Admin123456!")} disabled={loading}>
+            Sign in as Staff
+          </button>
+          <button type="button" className="secondary" onClick={() => signInAs("manager@manager.com", "Admin123456!")} disabled={loading}>
+            Sign in as Manager
+          </button>
+        </div>
       </section>
     </main>
   );
@@ -242,9 +294,16 @@ function DashboardPanel({ config }: { config: ApiConfig }) {
     void load();
   }, []);
 
+  const pendingReservations = reservations.filter((reservation) => reservation.status === "PAID").length;
   const activeReservations = reservations.filter((reservation) =>
-    ["PAID", "ASSIGNED", "IN_PROGRESS"].includes(reservation.status)
+    ["ASSIGNED", "IN_PROGRESS", "CONFIRMED"].includes(reservation.status)
   ).length;
+  const completedReservations = reservations.filter((reservation) => reservation.status === "COMPLETED").length;
+  const recentReservations = [...reservations]
+    .sort((left, right) => new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime())
+    .slice(0, 6);
+  const reservationStatusSummary = ["PAID", "ASSIGNED", "IN_PROGRESS", "CONFIRMED", "REJECTED", "COMPLETED"]
+    .map((status) => ({ status, count: reservations.filter((reservation) => reservation.status === status).length }));
 
   return (
     <section className="panel">
@@ -252,8 +311,59 @@ function DashboardPanel({ config }: { config: ApiConfig }) {
       {error && <div className="error">{error}</div>}
       <div className="statsGrid">
         <Stat label="Active reservations" value={activeReservations} />
+        <Stat label="Completed reservations" value={completedReservations} />
+        <Stat label="Pending assignment" value={pendingReservations} />
         <Stat label="Users" value={users.length} />
         <Stat label="Restaurants" value={restaurants.length} />
+      </div>
+      <div className="dashboardTables">
+        <section className="dashboardSection">
+          <div className="dashboardSectionHeader">
+            <div>
+              <div className="formTitle">Recent reservations</div>
+              <div className="muted">Latest captured reservations entering operations.</div>
+            </div>
+          </div>
+          <div className="tableWrap">
+            <table>
+              <thead>
+                <tr><th>Status</th><th>Date</th><th>Guests</th><th>Total</th></tr>
+              </thead>
+              <tbody>
+                {recentReservations.map((reservation) => (
+                  <tr key={reservation.id}>
+                    <td><StatusBadge value={reservation.status} /></td>
+                    <td>{formatDate(reservation.reservationAt)}</td>
+                    <td>{reservation.partySize}</td>
+                    <td>{reservation.totalBudget.amount} {reservation.totalBudget.currency}</td>
+                  </tr>
+                ))}
+                {recentReservations.length === 0 && <tr><td className="emptyTable" colSpan={4}>No reservations yet.</td></tr>}
+              </tbody>
+            </table>
+          </div>
+        </section>
+        <section className="dashboardSection">
+          <div className="dashboardSectionHeader">
+            <div>
+              <div className="formTitle">Reservation pipeline</div>
+              <div className="muted">Current workload grouped by status.</div>
+            </div>
+          </div>
+          <div className="tableWrap">
+            <table>
+              <thead><tr><th>Status</th><th>Reservations</th></tr></thead>
+              <tbody>
+                {reservationStatusSummary.map(({ status, count }) => (
+                  <tr key={status}>
+                    <td><StatusBadge value={status} /></td>
+                    <td className="pipelineCount">{count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
     </section>
   );
@@ -426,7 +536,6 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [confirmForm, setConfirmForm] = useState({
     restaurantId: "",
-    externalReference: "",
     reservedAt: ""
   });
 
@@ -466,6 +575,10 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
   async function openReservation(reservation: Reservation) {
     setSelected(reservation);
     setSelectedEmployeeId(reservation.assignedEmployeeId ?? "");
+    setConfirmForm({
+      restaurantId: reservation.restaurantId ?? "",
+      reservedAt: futureDateTimeLocal(reservation.confirmedReservationAt ?? reservation.reservationAt)
+    });
     setLoadingNearbyRestaurants(true);
     setNearbyRestaurantsError("");
     try {
@@ -501,11 +614,11 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
         method: "POST",
         body: {
           restaurantId: confirmForm.restaurantId,
-          externalReference: confirmForm.externalReference,
+          externalReference: `RUNOUT-${selected.id.slice(0, 8)}-${Date.now()}`,
           reservedAt: new Date(confirmForm.reservedAt).toISOString()
         }
       });
-      setConfirmForm({ restaurantId: "", externalReference: "", reservedAt: "" });
+      setConfirmForm({ restaurantId: "", reservedAt: "" });
       await load();
     } catch (err) {
       setError(errorMessage(err));
@@ -521,8 +634,12 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
     : reservations.filter((reservation) => reservation.status === statusFilter);
 
   const statusOptions = role === "WORKER"
-    ? ["ALL", "IN_PROGRESS", "CONFIRMED", "REJECTED", "SENT_TO_USER", "COMPLETED"]
-    : ["ALL", "PAYMENT_PENDING", "PAID", "ASSIGNED", "IN_PROGRESS", "CONFIRMED", "REJECTED", "SENT_TO_USER", "COMPLETED"];
+    ? ["ALL", "IN_PROGRESS", "CONFIRMED", "REJECTED", "COMPLETED"]
+    : ["ALL", "PAID", "ASSIGNED", "IN_PROGRESS", "CONFIRMED", "REJECTED", "COMPLETED"];
+  const canStartSelected = role !== "MANAGER" && (selected?.status === "ASSIGNED" || selected?.status === "REJECTED");
+  const canRejectSelected = role !== "MANAGER" && selected?.status === "IN_PROGRESS";
+  const canCompleteSelected = role === "SUPER_ADMIN" && selected?.status === "CONFIRMED";
+  const hasWorkflowAction = canStartSelected || canRejectSelected || canCompleteSelected;
 
   return (
     <section className="panel">
@@ -619,7 +736,7 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
                 {!loadingNearbyRestaurants && nearbyRestaurantsError && <div className="error compact">{nearbyRestaurantsError}</div>}
                 {!loadingNearbyRestaurants && !nearbyRestaurantsError && nearbyRestaurants.length === 0 && <div className="nearbyState">No active restaurants within this radius.</div>}
                 {!loadingNearbyRestaurants && nearbyRestaurants.map((restaurant) => (
-                  <div className="nearbyRestaurant" key={restaurant.id}>
+                  <div className={`nearbyRestaurant${confirmForm.restaurantId === restaurant.id ? " selected" : ""}`} key={restaurant.id}>
                     <div>
                       <div className="nearbyRestaurantName">{restaurant.name}</div>
                       <div className="muted">{restaurant.formattedAddress ?? "Address unavailable"}</div>
@@ -628,6 +745,15 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
                       {restaurant.cuisine && <span>{restaurant.cuisine}</span>}
                       {restaurant.rating !== null && <span>{restaurant.rating.toFixed(1)} / 5</span>}
                       <strong>{formatDistance(restaurant.distanceMeters)}</strong>
+                      {selected.status === "IN_PROGRESS" && (
+                        <button
+                          type="button"
+                          className="secondary selectRestaurantButton"
+                          onClick={() => setConfirmForm({ ...confirmForm, restaurantId: restaurant.id })}
+                        >
+                          {confirmForm.restaurantId === restaurant.id ? "Selected" : "Select"}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -646,51 +772,49 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
                 </button>
               </div>
 
-              <div className="actions">
-                <button onClick={() => transition(`/api/admin/reservations/${selected.id}/start`)}>
+              {hasWorkflowAction && <div className="actions">
+                {canStartSelected && <button onClick={() => transition(`/api/admin/reservations/${selected.id}/start`)}>
                   <Play size={17} /> Start
-                </button>
-                <button onClick={() => transition(`/api/admin/reservations/${selected.id}/rejection`)}>
-                  <XCircle size={17} /> Reject
-                </button>
-                {role === "SUPER_ADMIN" && <button onClick={() => transition(`/api/admin/reservations/${selected.id}/delivery`)}>
-                  <Send size={17} /> Send
                 </button>}
-                {role === "SUPER_ADMIN" && <button onClick={() => transition(`/api/admin/reservations/${selected.id}/completion`)}>
+                {canRejectSelected && <button onClick={() => transition(`/api/admin/reservations/${selected.id}/rejection`)}>
+                  <XCircle size={17} /> Reject
+                </button>}
+                {canCompleteSelected && <button onClick={() => transition(`/api/admin/reservations/${selected.id}/completion`)}>
                   <CheckCircle2 size={17} /> Complete
                 </button>}
-              </div>
+              </div>}
 
-              <form className="form elevated" onSubmit={confirm}>
+              {selected.status === "IN_PROGRESS" && <form className="form elevated confirmationForm" onSubmit={confirm}>
+                <div className="formTitle">Confirm restaurant and time</div>
                 <label>
-                  Restaurant ID
-                  <input
+                  Restaurant
+                  <select
                     value={confirmForm.restaurantId}
                     onChange={(event) => setConfirmForm({ ...confirmForm, restaurantId: event.target.value })}
                     required
-                  />
+                  >
+                    <option value="">Select a restaurant</option>
+                    {nearbyRestaurants.map((restaurant) => (
+                      <option key={restaurant.id} value={restaurant.id}>
+                        {restaurant.name} · {formatDistance(restaurant.distanceMeters)}
+                      </option>
+                    ))}
+                  </select>
                 </label>
                 <label>
-                  Reference
-                  <input
-                    value={confirmForm.externalReference}
-                    onChange={(event) => setConfirmForm({ ...confirmForm, externalReference: event.target.value })}
-                    required
-                  />
-                </label>
-                <label>
-                  Reservation time
+                  Date and time
                   <input
                     type="datetime-local"
                     value={confirmForm.reservedAt}
+                    min={futureDateTimeLocal(null)}
                     onChange={(event) => setConfirmForm({ ...confirmForm, reservedAt: event.target.value })}
                     required
                   />
                 </label>
-                <button type="submit">
+                <button type="submit" disabled={!confirmForm.restaurantId || !confirmForm.reservedAt}>
                   <CheckCircle2 size={17} /> Confirm
                 </button>
-              </form>
+              </form>}
             </div>
           </section>
         </div>
@@ -699,8 +823,13 @@ function ReservationsPanel({ config, role, currentUser }: { config: ApiConfig; r
   );
 }
 
-function RestaurantsPanel({ config }: { config: ApiConfig }) {
+function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole }) {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
+  const [cities, setCities] = useState<City[]>([]);
+  const [view, setView] = useState<"create" | "list">("create");
+  const [cityFilter, setCityFilter] = useState("");
+  const [areaFilter, setAreaFilter] = useState("ALL");
+  const [cityForm, setCityForm] = useState({ name: "", countryCode: "" });
   const [form, setForm] = useState<RestaurantForm>(emptyRestaurantForm());
   const [placeQuery, setPlaceQuery] = useState("");
   const [placeResults, setPlaceResults] = useState<GooglePlaceCandidate[]>([]);
@@ -708,12 +837,32 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [error, setError] = useState("");
   const editing = Boolean(form.id);
+  const canManageRestaurants = role === "SUPER_ADMIN" || role === "MANAGER";
+  const selectedFormCity = cities.find((city) => city.id === form.cityId);
+  const selectedListCity = cities.find((city) => city.id === cityFilter);
+  const restaurantsByCity = cityFilter === "ALL"
+    ? restaurants
+    : restaurants.filter((restaurant) => restaurant.cityId === cityFilter);
+  const restaurantsByArea = areaFilter === "ALL"
+    ? restaurantsByCity
+    : restaurantsByCity.filter((restaurant) => restaurantAreaFor(restaurant) === areaFilter);
+  const areaOptions = selectedListCity?.name === "Dubai"
+    ? [...DUBAI_AREAS.map(({ name }) => name), "Other Dubai"]
+    : [...new Set(restaurantsByCity.map(restaurantAreaFor))].sort();
 
   async function load() {
     setLoading(true);
     setError("");
     try {
-      setRestaurants(await apiRequest<Restaurant[]>(config, "/api/admin/restaurants"));
+      const [nextRestaurants, nextCities] = await Promise.all([
+        apiRequest<Restaurant[]>(config, "/api/admin/restaurants"),
+        apiRequest<City[]>(config, "/api/admin/cities")
+      ]);
+      setRestaurants(nextRestaurants);
+      setCities(nextCities);
+      const defaultCityId = nextCities.find((city) => city.name === "Dubai")?.id ?? nextCities[0]?.id ?? "";
+      setForm((current) => current.cityId ? current : { ...current, cityId: defaultCityId });
+      setCityFilter((current) => current || defaultCityId || "ALL");
     } catch (err) {
       setError(errorMessage(err));
     } finally {
@@ -739,6 +888,7 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
       }
       setForm(emptyRestaurantForm());
       await load();
+      setView("list");
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -750,9 +900,9 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
     setError("");
     try {
       const params = new URLSearchParams({
-        query: placeQuery,
+        query: `${placeQuery} in ${selectedFormCity?.name ?? ""}`.trim(),
         languageCode: "en",
-        regionCode: "AE"
+        regionCode: selectedFormCity?.countryCode ?? "AE"
       });
       setPlaceResults(await apiRequest<GooglePlaceCandidate[]>(config, `/api/admin/restaurants/google-places/search?${params}`));
     } catch (err) {
@@ -767,11 +917,16 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
     try {
       await apiRequest<Restaurant>(config, "/api/admin/restaurants/google-places/import", {
         method: "POST",
-        body: place
+        body: {
+          ...place,
+          cityId: form.cityId,
+          area: selectedFormCity?.name === "Dubai" ? dubaiAreaFor(place.formattedAddress) : form.area
+        }
       });
       setPlaceResults([]);
       setPlaceQuery("");
       await load();
+      setView("list");
     } catch (err) {
       setError(errorMessage(err));
     }
@@ -789,6 +944,22 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
     }
   }
 
+  async function createCity(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setError("");
+    try {
+      const city = await apiRequest<City>(config, "/api/admin/cities", {
+        method: "POST",
+        body: cityForm
+      });
+      setCities((current) => [...current, city].sort((left, right) => left.name.localeCompare(right.name)));
+      setCityForm({ name: "", countryCode: "" });
+      setForm((current) => ({ ...current, cityId: city.id, area: "" }));
+    } catch (err) {
+      setError(errorMessage(err));
+    }
+  }
+
   useEffect(() => {
     void load();
   }, []);
@@ -797,18 +968,63 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
     <section className="panel">
       <PanelHeader title="Restaurants" loading={loading} onRefresh={load} />
       {error && <div className="error">{error}</div>}
-      <div className="restaurantTools">
+      <div className="restaurantViewTabs" role="tablist" aria-label="Restaurant views">
+        <button
+          type="button"
+          className={view === "create" ? "active" : "secondary"}
+          role="tab"
+          aria-selected={view === "create"}
+          onClick={() => setView("create")}
+        >
+          <Store size={17} /> Create restaurant
+        </button>
+        <button
+          type="button"
+          className={view === "list" ? "active" : "secondary"}
+          role="tab"
+          aria-selected={view === "list"}
+          onClick={() => setView("list")}
+        >
+          <List size={17} /> Restaurant list
+        </button>
+      </div>
+
+      {view === "create" && <div className="restaurantTools">
+        {role === "SUPER_ADMIN" && (
+          <form className="form elevated cityCreator" onSubmit={createCity}>
+            <div>
+              <div className="formTitle">Add city</div>
+              <div className="muted">New cities become available when creating and filtering restaurants.</div>
+            </div>
+            <label>
+              City name
+              <input value={cityForm.name} onChange={(event) => setCityForm({ ...cityForm, name: event.target.value })} required />
+            </label>
+            <label>
+              Country code
+              <input
+                value={cityForm.countryCode}
+                maxLength={2}
+                placeholder="AE"
+                onChange={(event) => setCityForm({ ...cityForm, countryCode: event.target.value.toUpperCase() })}
+                required
+              />
+            </label>
+            <button type="submit"><MapPin size={17} /> Add city</button>
+          </form>
+        )}
+
         <form className="form elevated googlePlacesForm" onSubmit={searchPlaces}>
           <label>
             Search Google Maps
             <div className="inlineSearch">
               <input
                 value={placeQuery}
-                placeholder="e.g. sushi in Dubai"
+                placeholder={`e.g. sushi in ${selectedFormCity?.name ?? "city"}`}
                 onChange={(event) => setPlaceQuery(event.target.value)}
                 required
               />
-              <button type="submit" disabled={searchingPlaces}>
+              <button type="submit" disabled={searchingPlaces || !form.cityId}>
                 {searchingPlaces ? <Loader2 className="spin" size={17} /> : <Search size={17} />}
                 Search
               </button>
@@ -845,6 +1061,20 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
           <div className="formTitle">{editing ? "Edit restaurant" : "Create restaurant manually"}</div>
           <div className="formGrid">
           <label>
+            City
+            <select
+              value={form.cityId}
+              onChange={(event) => {
+                const city = cities.find((candidate) => candidate.id === event.target.value);
+                setForm({ ...form, cityId: event.target.value, area: city?.name === "Dubai" ? "Other Dubai" : "" });
+              }}
+              required
+            >
+              <option value="" disabled>Select city</option>
+              {cities.map((city) => <option key={city.id} value={city.id}>{city.name} ({city.countryCode})</option>)}
+            </select>
+          </label>
+          <label>
             Name
             <input value={form.name} onChange={(event) => setForm({ ...form, name: event.target.value })} required />
           </label>
@@ -856,6 +1086,17 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
           <label>Price tier<select value={form.priceTier ?? ""} onChange={(event) => setForm({ ...form, priceTier: event.target.value ? Number(event.target.value) : null })}><option value="">Not specified</option><option value="1">€</option><option value="2">€€</option><option value="3">€€€</option><option value="4">€€€€</option></select></label>
           <label className="spanTwo">Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
           <label className="spanTwo">Opening hours<input value={form.openingHours} placeholder="Mon-Sun 13:00-00:00" onChange={(event) => setForm({ ...form, openingHours: event.target.value })} /></label>
+          {selectedFormCity?.name === "Dubai" ? (
+            <label>
+              Dubai area
+              <select value={form.area} onChange={(event) => setForm({ ...form, area: event.target.value })} required>
+                {DUBAI_AREAS.map(({ name }) => <option key={name} value={name}>{name}</option>)}
+                <option value="Other Dubai">Other Dubai</option>
+              </select>
+            </label>
+          ) : (
+            <label>Area<input value={form.area} onChange={(event) => setForm({ ...form, area: event.target.value })} required /></label>
+          )}
           <label className="spanTwo">Address<input value={form.formattedAddress} onChange={(event) => setForm({ ...form, formattedAddress: event.target.value })} /></label>
           <label>Latitude<input type="number" step="any" value={form.latitude ?? ""} onChange={(event) => setForm({ ...form, latitude: event.target.value ? Number(event.target.value) : null })} /></label>
           <label>Longitude<input type="number" step="any" value={form.longitude ?? ""} onChange={(event) => setForm({ ...form, longitude: event.target.value ? Number(event.target.value) : null })} /></label>
@@ -874,34 +1115,74 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
               <Store size={17} /> {editing ? "Update" : "Create manually"}
             </button>
             {editing && (
-              <button type="button" className="secondary" onClick={() => setForm(emptyRestaurantForm())}>
+              <button type="button" className="secondary" onClick={() => setForm(emptyRestaurantForm(form.cityId))}>
                 Cancel
               </button>
             )}
           </div>
         </form>
-      </div>
+      </div>}
 
-      <div className="restaurantTable">
+      {view === "list" && <div className="restaurantTable">
+        <div className="restaurantListToolbar">
+          <div>
+            <div className="formTitle">Restaurant list</div>
+            <div className="muted">Browse restaurants by city and area.</div>
+          </div>
+          <div className="restaurantListFilters">
+          <label className="areaFilter">
+            City
+            <select
+              value={cityFilter}
+              onChange={(event) => {
+                setCityFilter(event.target.value);
+                setAreaFilter("ALL");
+              }}
+            >
+              <option value="ALL">All cities ({restaurants.length})</option>
+              {cities.map((city) => (
+                <option key={city.id} value={city.id}>
+                  {city.name} ({restaurants.filter((restaurant) => restaurant.cityId === city.id).length})
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="areaFilter">
+            Area
+            <select value={areaFilter} onChange={(event) => setAreaFilter(event.target.value)}>
+              <option value="ALL">All areas ({restaurantsByCity.length})</option>
+              {areaOptions.map((area) => (
+                <option key={area} value={area}>
+                  {area} ({restaurantsByCity.filter((restaurant) => restaurantAreaFor(restaurant) === area).length})
+                </option>
+              ))}
+            </select>
+          </label>
+          </div>
+        </div>
         <div className="tableWrap">
           <table>
             <thead>
               <tr>
                 <th>Name</th>
+                <th>City</th>
+                <th>Area</th>
                 <th>Phone</th>
                 <th>Google</th>
                 <th>Rating</th>
                 <th>Active</th>
-                <th></th>
+                {canManageRestaurants && <th></th>}
               </tr>
             </thead>
             <tbody>
-              {restaurants.map((restaurant) => (
+              {restaurantsByArea.map((restaurant) => (
                 <tr key={restaurant.id}>
                   <td>
                     <strong>{restaurant.name}</strong>
                     <div className="muted">{restaurant.formattedAddress ?? ""}</div>
                   </td>
+                  <td>{restaurant.cityName}</td>
+                  <td>{restaurantAreaFor(restaurant)}</td>
                   <td>{restaurant.phone ?? ""}</td>
                   <td>
                     {restaurant.googleMapsUri ? (
@@ -912,28 +1193,68 @@ function RestaurantsPanel({ config }: { config: ApiConfig }) {
                   </td>
                   <td>{restaurant.rating ? `${restaurant.rating} (${restaurant.userRatingCount ?? 0})` : ""}</td>
                   <td>{restaurant.active ? "Yes" : "No"}</td>
-                  <td className="buttonCell">
+                  {canManageRestaurants && <td className="buttonCell">
                     <button
                       className="secondary"
-                      onClick={() => setForm(restaurantToForm(restaurant))}
+                      onClick={() => {
+                        setForm(restaurantToForm(restaurant));
+                        setView("create");
+                      }}
                     >
                       Edit
                     </button>
-                    <button className="secondary" onClick={() => setActive(restaurant.id, true)}>
-                      Activate
-                    </button>
-                    <button className="secondary" onClick={() => setActive(restaurant.id, false)}>
-                      Deactivate
-                    </button>
-                  </td>
+                    {restaurant.active ? (
+                      <button className="secondary dangerButton" onClick={() => setActive(restaurant.id, false)}>
+                        Delete
+                      </button>
+                    ) : (
+                      <button className="secondary" onClick={() => setActive(restaurant.id, true)}>
+                        Restore
+                      </button>
+                    )}
+                  </td>}
                 </tr>
               ))}
+              {restaurantsByArea.length === 0 && (
+                <tr>
+                  <td className="emptyTable" colSpan={canManageRestaurants ? 8 : 7}>
+                    No restaurants found in this area.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </section>
   );
+}
+
+const DUBAI_AREAS = [
+  { name: "Downtown Dubai", aliases: ["downtown dubai", "downtown"] },
+  { name: "Business Bay", aliases: ["business bay"] },
+  { name: "DIFC", aliases: ["difc", "dubai international financial centre"] },
+  { name: "Dubai Marina", aliases: ["dubai marina", "marina"] },
+  { name: "JBR", aliases: ["jbr", "jumeirah beach residence"] },
+  { name: "Palm Jumeirah", aliases: ["palm jumeirah"] },
+  { name: "Jumeirah", aliases: ["jumeirah"] },
+  { name: "Dubai Hills", aliases: ["dubai hills"] },
+  { name: "JVC", aliases: ["jvc", "jumeirah village circle"] },
+  { name: "Al Barsha", aliases: ["al barsha"] },
+  { name: "Deira", aliases: ["deira"] },
+  { name: "Bur Dubai", aliases: ["bur dubai"] },
+  { name: "Dubai Creek", aliases: ["dubai creek", "creek harbour"] },
+  { name: "City Walk", aliases: ["city walk"] },
+  { name: "Bluewaters Island", aliases: ["bluewaters"] }
+] as const;
+
+function dubaiAreaFor(formattedAddress: string | null): string {
+  const address = formattedAddress?.toLocaleLowerCase("en") ?? "";
+  return DUBAI_AREAS.find(({ aliases }) => aliases.some((alias) => address.includes(alias)))?.name ?? "Other Dubai";
+}
+
+function restaurantAreaFor(restaurant: Restaurant): string {
+  return restaurant.area || dubaiAreaFor(restaurant.formattedAddress);
 }
 
 type RestaurantForm = {
@@ -947,6 +1268,8 @@ type RestaurantForm = {
   tags: string[];
   googlePlaceId: string;
   formattedAddress: string;
+  cityId: string;
+  area: string;
   latitude: number | null;
   longitude: number | null;
   rating: number | null;
@@ -958,7 +1281,7 @@ type RestaurantForm = {
   menusJson: string;
 };
 
-function emptyRestaurantForm(): RestaurantForm {
+function emptyRestaurantForm(cityId = ""): RestaurantForm {
   return {
     id: "",
     name: "",
@@ -970,6 +1293,8 @@ function emptyRestaurantForm(): RestaurantForm {
     tags: [],
     googlePlaceId: "",
     formattedAddress: "",
+    cityId,
+    area: "Other Dubai",
     latitude: null,
     longitude: null,
     rating: null,
@@ -994,6 +1319,8 @@ function restaurantToForm(restaurant: Restaurant): RestaurantForm {
     tags: restaurant.tags ?? [],
     googlePlaceId: restaurant.googlePlaceId ?? "",
     formattedAddress: restaurant.formattedAddress ?? "",
+    cityId: restaurant.cityId,
+    area: restaurantAreaFor(restaurant),
     latitude: restaurant.latitude,
     longitude: restaurant.longitude,
     rating: restaurant.rating,
@@ -1018,6 +1345,8 @@ function restaurantPayload(form: RestaurantForm) {
     tags: form.tags,
     googlePlaceId: form.googlePlaceId || null,
     formattedAddress: form.formattedAddress || null,
+    cityId: form.cityId,
+    area: form.area,
     latitude: form.latitude,
     longitude: form.longitude,
     rating: form.rating,
@@ -1123,15 +1452,14 @@ function StatusBadge({ value }: { value: string }) {
 
 function statusLabel(value: string) {
   return {
-    PAYMENT_PENDING: "Payment pending",
-    PAID: "Paid · pending",
+    PAYMENT_PENDING: "Checkout incomplete",
+    PAID: "Pending assignment",
     PAYMENT_FAILED: "Payment failed",
     CANCELLED: "Cancelled",
     ASSIGNED: "Assigned",
     IN_PROGRESS: "In progress",
     CONFIRMED: "Confirmed",
     REJECTED: "Rejected",
-    SENT_TO_USER: "Sent to user",
     COMPLETED: "Completed"
   }[value] ?? value.replaceAll("_", " ");
 }
@@ -1151,8 +1479,8 @@ function sectionTitle(section: Section) {
 
 function allowedSections(role?: UserRole): Section[] {
   if (role === "SUPER_ADMIN") return ["dashboard", "users", "reservations", "restaurants"];
-  if (role === "MANAGER") return ["restaurants"];
-  if (role === "WORKER") return ["reservations"];
+  if (role === "MANAGER") return ["reservations", "restaurants"];
+  if (role === "WORKER") return ["reservations", "restaurants"];
   return [];
 }
 
@@ -1196,6 +1524,19 @@ function formatDate(value: string | null) {
     dateStyle: "medium",
     timeStyle: "short"
   }).format(new Date(value));
+}
+
+function toDateTimeLocal(value: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return localDate.toISOString().slice(0, 16);
+}
+
+function futureDateTimeLocal(value: string | null) {
+  const minimum = new Date(Date.now() + 5 * 60_000);
+  const requested = value ? new Date(value) : minimum;
+  return toDateTimeLocal((requested > minimum ? requested : minimum).toISOString());
 }
 
 function formatDistance(distanceMeters: number) {

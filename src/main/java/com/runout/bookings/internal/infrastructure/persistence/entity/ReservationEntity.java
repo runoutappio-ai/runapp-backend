@@ -63,6 +63,13 @@ public class ReservationEntity {
     private UUID restaurantId;
     private String externalReference;
     private Instant confirmedReservationAt;
+    private Integer feedbackRating;
+
+    @Column(length = 1000)
+    private String feedbackComment;
+
+    private Boolean feedbackWouldReturnForSurpriseMenu;
+    private Instant feedbackSubmittedAt;
 
     @Enumerated(EnumType.STRING)
     private ReservationStatus status;
@@ -101,6 +108,9 @@ public class ReservationEntity {
 
     public void markPaid(String paymentReference, String paymentStatus) {
         requireStatus(ReservationStatus.PAYMENT_PENDING, "Only payment-pending reservations can be paid");
+        if (!"CAPTURED".equals(paymentStatus)) {
+            throw new IllegalStateException("Reservation payment must be captured before it can advance");
+        }
         this.paymentReference = paymentReference;
         this.paymentStatus = paymentStatus;
         status = ReservationStatus.PAID;
@@ -121,6 +131,7 @@ public class ReservationEntity {
     }
 
     public void assign(UUID employeeId) {
+        requireCapturedPayment();
         if (status != ReservationStatus.PAID && status != ReservationStatus.ASSIGNED) {
             throw new IllegalStateException("Only paid or assigned reservations can be assigned");
         }
@@ -130,6 +141,7 @@ public class ReservationEntity {
     }
 
     public void start() {
+        requireCapturedPayment();
         if (status != ReservationStatus.ASSIGNED && status != ReservationStatus.REJECTED) {
             throw new IllegalStateException("Only assigned or rejected reservations can be started");
         }
@@ -154,14 +166,24 @@ public class ReservationEntity {
         status = ReservationStatus.REJECTED;
     }
 
-    public void sendToUser() {
-        requireStatus(ReservationStatus.CONFIRMED, "Only confirmed reservations can be sent to the user");
-        status = ReservationStatus.SENT_TO_USER;
+    public void complete() {
+        requireStatus(ReservationStatus.CONFIRMED, "Only confirmed reservations can be completed");
+        status = ReservationStatus.COMPLETED;
     }
 
-    public void complete() {
-        requireStatus(ReservationStatus.SENT_TO_USER, "Only delivered reservations can be completed");
-        status = ReservationStatus.COMPLETED;
+    public void submitFeedback(int rating, String comment, boolean wouldReturnForSurpriseMenu) {
+        requireStatus(ReservationStatus.COMPLETED, "Feedback can only be submitted for completed reservations");
+        if (feedbackSubmittedAt != null) {
+            throw new IllegalStateException("Feedback has already been submitted for this reservation");
+        }
+        if (rating < 1 || rating > 5) {
+            throw new IllegalArgumentException("Feedback rating must be between 1 and 5");
+        }
+
+        feedbackRating = rating;
+        feedbackComment = comment == null || comment.isBlank() ? null : comment.trim();
+        feedbackWouldReturnForSurpriseMenu = wouldReturnForSurpriseMenu;
+        feedbackSubmittedAt = Instant.now();
     }
 
     public boolean represents(CreateReservationCommand command) {
@@ -187,6 +209,12 @@ public class ReservationEntity {
     private void requireStatus(ReservationStatus expectedStatus, String message) {
         if (status != expectedStatus) {
             throw new IllegalStateException(message);
+        }
+    }
+
+    private void requireCapturedPayment() {
+        if (!"CAPTURED".equals(paymentStatus)) {
+            throw new IllegalStateException("Reservation cannot advance without a captured payment");
         }
     }
 

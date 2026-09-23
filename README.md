@@ -46,6 +46,8 @@ Docker Compose starts PostgreSQL and Keycloak. The local Keycloak console is ava
 
 The imported `runout` realm enables self-registration and defines public clients for the mobile app (`runout-mobile`) and admin panel (`runout-admin`). Both use Authorization Code with PKCE and request tokens for the `runout-api` audience. Access tokens last five minutes; refresh tokens are rotated and governed by the Keycloak session limits.
 
+For local development, the admin panel includes quick sign-in buttons for `admin@admin.com` / `Admin123456!` (`SUPER_ADMIN`), `manager@manager.com` / `Admin123456!` (`MANAGER`) and `personal@personal.com` / `Admin123456!` (`WORKER`). These development credentials must not be used outside a local environment.
+
 The API is an OAuth2 resource server. It validates the JWT signature, issuer, audience and timestamps on every protected request. Realm roles are mapped to Spring Security `ROLE_*` authorities. The administration roles are `SUPER_ADMIN` (full access), `MANAGER` (restaurant management) and `WORKER` (reservation operations through confirmation). Production must use HTTPS, secure administrator credentials and a production Keycloak database/configuration.
 
 After Spring Security validates a bearer token, a once-per-request filter replaces any client-supplied identity headers with trusted values obtained from the JWT. Internal handlers can read `X-Authenticated-User-Id` (the Keycloak subject), `X-Authenticated-User-Email`, `X-Authenticated-Username`, `X-Authenticated-User-Name`, `X-Authenticated-User-Roles`, `X-Authenticated-Token-Issued-At` and `X-Authenticated-Token-Expires-At`. These headers are intended only for processing inside the trusted application or gateway boundary and must not be echoed back to clients.

@@ -26,6 +26,8 @@ public final class GooglePlacesMapper {
                 .googlePlaceId(place.id())
                 .name(place.displayName() == null ? null : place.displayName().text())
                 .formattedAddress(place.formattedAddress())
+                .cityId(null)
+                .area(null)
                 .phone(place.nationalPhoneNumber())
                 .latitude(location == null ? null : location.latitude())
                 .longitude(location == null ? null : location.longitude())

@@ -4,6 +4,7 @@ import com.runout.restaurants.api.CreateRestaurantCommand;
 import com.runout.restaurants.api.GooglePlaceCandidate;
 import com.runout.restaurants.api.RestaurantSummary;
 import com.runout.restaurants.internal.infrastructure.persistence.entity.RestaurantEntity;
+import com.runout.restaurants.internal.infrastructure.persistence.entity.CityEntity;
 
 final class RestaurantMapper {
 
@@ -23,6 +24,9 @@ final class RestaurantMapper {
                 .tags(restaurant.getTags())
                 .googlePlaceId(restaurant.getGooglePlaceId())
                 .formattedAddress(restaurant.getFormattedAddress())
+                .cityId(restaurant.getCity().getId())
+                .cityName(restaurant.getCity().getName())
+                .area(restaurant.getArea())
                 .latitude(restaurant.getLatitude())
                 .longitude(restaurant.getLongitude())
                 .rating(restaurant.getRating())
@@ -35,7 +39,7 @@ final class RestaurantMapper {
                 .build();
     }
 
-    static RestaurantEntity toEntity(CreateRestaurantCommand command) {
+    static RestaurantEntity toEntity(CreateRestaurantCommand command, CityEntity city) {
         return RestaurantEntity.builder()
                 .name(command.name())
                 .phone(command.phone())
@@ -46,6 +50,8 @@ final class RestaurantMapper {
                 .tags(command.tags())
                 .googlePlaceId(command.googlePlaceId())
                 .formattedAddress(command.formattedAddress())
+                .city(city)
+                .area(command.area())
                 .latitude(command.latitude())
                 .longitude(command.longitude())
                 .rating(command.rating())
@@ -69,6 +75,8 @@ final class RestaurantMapper {
                 .tags(candidate.types())
                 .googlePlaceId(candidate.googlePlaceId())
                 .formattedAddress(candidate.formattedAddress())
+                .cityId(candidate.cityId())
+                .area(candidate.area())
                 .latitude(candidate.latitude())
                 .longitude(candidate.longitude())
                 .rating(candidate.rating())

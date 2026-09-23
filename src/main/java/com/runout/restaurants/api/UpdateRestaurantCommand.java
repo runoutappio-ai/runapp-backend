@@ -17,6 +17,8 @@ public record UpdateRestaurantCommand(
         List<String> tags,
         String googlePlaceId,
         String formattedAddress,
+        UUID cityId,
+        String area,
         Double latitude,
         Double longitude,
         Double rating,

@@ -17,6 +17,8 @@ public interface ReservationRepository extends JpaRepository<ReservationEntity, 
 
     List<ReservationEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
 
+    List<ReservationEntity> findAllByPaymentStatusOrderByCreatedAtDesc(String paymentStatus);
+
     @Query("""
             select reservation from ReservationEntity reservation
             where reservation.assignedEmployeeId = :employeeId

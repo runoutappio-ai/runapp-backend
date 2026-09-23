@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-reservation-feedback
+      author: runout
+      comment: Stores customer feedback for completed reservations.
+      changes:
+        - addColumn:
+            tableName: reservation
+            columns:
+              - column: { name: feedback_rating, type: integer }
+              - column: { name: feedback_comment, type: varchar(1000) }
+              - column: { name: feedback_submitted_at, type: timestamp with time zone }
+        - sql:
+            dbms: postgresql,h2
+            sql: ALTER TABLE reservation ADD CONSTRAINT chk_reservation_feedback_rating CHECK (feedback_rating IS NULL OR feedback_rating BETWEEN 1 AND 5)

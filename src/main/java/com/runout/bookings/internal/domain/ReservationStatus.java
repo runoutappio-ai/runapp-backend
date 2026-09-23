@@ -9,6 +9,5 @@ public enum ReservationStatus {
     IN_PROGRESS,
     CONFIRMED,
     REJECTED,
-    SENT_TO_USER,
     COMPLETED
 }

@@ -33,6 +33,10 @@ public record ReservationSummary(
         UUID restaurantId,
         String externalReference,
         Instant confirmedReservationAt,
+        Integer feedbackRating,
+        String feedbackComment,
+        Boolean feedbackWouldReturnForSurpriseMenu,
+        Instant feedbackSubmittedAt,
         Instant createdAt
 ) {
     public ReservationSummary {

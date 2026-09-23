@@ -43,7 +43,7 @@ class ReservationApplicationService implements ReservationService {
     @Override
     @Transactional(readOnly = true)
     public List<ReservationSummary> findAll() {
-        return reservationRepository.findAll().stream()
+        return reservationRepository.findAllByPaymentStatusOrderByCreatedAtDesc("CAPTURED").stream()
                 .map(ReservationApplicationMapper::toSummary)
                 .toList();
     }
@@ -135,14 +135,16 @@ class ReservationApplicationService implements ReservationService {
     }
 
     @Override
-    public void sendReservationToUser(UUID reservationId) {
-        var reservation = reservationRepository.findById(reservationId).orElseThrow();
-        reservation.sendToUser();
-    }
-
-    @Override
     public void completeReservation(UUID reservationId) {
         var reservation = reservationRepository.findById(reservationId).orElseThrow();
         reservation.complete();
+    }
+
+    @Override
+    public ReservationSummary submitFeedback(SubmitReservationFeedbackCommand command) {
+        users.findByUserId(command.userId());
+        var reservation = reservationRepository.findByIdAndUserId(command.reservationId(), command.userId()).orElseThrow();
+        reservation.submitFeedback(command.rating(), command.comment(), command.wouldReturnForSurpriseMenu());
+        return ReservationApplicationMapper.toSummary(reservation);
     }
 }

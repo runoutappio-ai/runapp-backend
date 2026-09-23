@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-feedback-return-intent
+      author: runout
+      comment: Records whether a customer would revisit a restaurant for another surprise menu.
+      changes:
+        - addColumn:
+            tableName: reservation
+            columns:
+              - column: { name: feedback_would_return_for_surprise_menu, type: boolean }

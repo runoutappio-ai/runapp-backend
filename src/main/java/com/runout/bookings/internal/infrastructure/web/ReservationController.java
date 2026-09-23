@@ -4,6 +4,7 @@ import com.runout.bookings.api.ReservationService;
 import com.runout.bookings.api.ReservationSummary;
 import com.runout.bookings.internal.infrastructure.web.dto.request.CreateReservationRequest;
 import com.runout.bookings.internal.infrastructure.web.dto.request.PayReservationRequest;
+import com.runout.bookings.internal.infrastructure.web.dto.request.SubmitReservationFeedbackRequest;
 import com.runout.bookings.internal.infrastructure.web.dto.response.ReservationResponse;
 import com.runout.bookings.internal.infrastructure.web.dto.response.ReservationRevealResponse;
 import com.runout.bookings.internal.infrastructure.web.mapper.ReservationMapper;
@@ -18,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import static com.runout.shared.AuthenticatedUserHeaders.IDEMPOTENCY_KEY;
 import static com.runout.shared.AuthenticatedUserHeaders.USER_ID;
@@ -51,7 +54,11 @@ class ReservationController {
     ReservationRevealResponse reveal(@RequestHeader(USER_ID) UUID userId, @PathVariable UUID id) {
         log.info("Revealing reservation id={} for userId={}", id, userId);
         var reservation = reservations.findByIdForUser(id, userId);
-        if (!"SENT_TO_USER".equals(reservation.status()) || reservation.restaurantId() == null) {
+        var revealAt = reservation.confirmedReservationAt() == null
+                ? null
+                : reservation.confirmedReservationAt().minus(2, ChronoUnit.HOURS);
+        var revealableStatus = "CONFIRMED".equals(reservation.status()) || "COMPLETED".equals(reservation.status());
+        if (!revealableStatus || reservation.restaurantId() == null || revealAt == null || Instant.now().isBefore(revealAt)) {
             return ReservationRevealResponse.builder()
                     .available(false)
                     .status(reservation.status())
@@ -96,5 +103,14 @@ class ReservationController {
     void cancel(@RequestHeader(USER_ID) UUID userId, @PathVariable UUID id) {
         log.info("Cancelling reservation id={} for userId={}", id, userId);
         reservations.cancel(id, userId);
+    }
+
+    @PostMapping("/{id}/feedback")
+    ReservationResponse submitFeedback(@RequestHeader(USER_ID) UUID userId,
+                                       @PathVariable UUID id,
+                                       @Valid @RequestBody SubmitReservationFeedbackRequest request) {
+        log.info("Submitting feedback for reservation id={} userId={}", id, userId);
+        var command = ReservationMapper.toCommand(userId, id, request);
+        return ReservationMapper.toResponse(reservations.submitFeedback(command));
     }
 }

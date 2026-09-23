@@ -1,0 +1,12 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-restaurant-area
+      author: runout
+      comment: Stores the Dubai area used to organize restaurants in the admin panel.
+      changes:
+        - addColumn:
+            tableName: restaurant
+            columns:
+              - column:
+                  name: area
+                  type: varchar(80)

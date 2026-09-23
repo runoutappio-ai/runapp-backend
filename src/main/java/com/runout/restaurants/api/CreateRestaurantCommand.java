@@ -3,6 +3,7 @@ package com.runout.restaurants.api;
 import lombok.Builder;
 
 import java.util.List;
+import java.util.UUID;
 
 @Builder
 public record CreateRestaurantCommand(
@@ -15,6 +16,8 @@ public record CreateRestaurantCommand(
         List<String> tags,
         String googlePlaceId,
         String formattedAddress,
+        UUID cityId,
+        String area,
         Double latitude,
         Double longitude,
         Double rating,

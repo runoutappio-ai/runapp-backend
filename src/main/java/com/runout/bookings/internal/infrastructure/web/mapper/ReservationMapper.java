@@ -3,11 +3,14 @@ package com.runout.bookings.internal.infrastructure.web.mapper;
 import com.runout.bookings.api.CreateReservationCommand;
 import com.runout.bookings.api.PayReservationCommand;
 import com.runout.bookings.api.ReservationSummary;
+import com.runout.bookings.api.SubmitReservationFeedbackCommand;
 import com.runout.bookings.internal.infrastructure.web.dto.request.CreateReservationRequest;
 import com.runout.bookings.internal.infrastructure.web.dto.request.PayReservationRequest;
+import com.runout.bookings.internal.infrastructure.web.dto.request.SubmitReservationFeedbackRequest;
 import com.runout.bookings.internal.infrastructure.web.dto.response.MoneyResponse;
 import com.runout.bookings.internal.infrastructure.web.dto.response.PaymentResponse;
 import com.runout.bookings.internal.infrastructure.web.dto.response.ReservationResponse;
+import com.runout.bookings.internal.infrastructure.web.dto.response.ReservationFeedbackResponse;
 import com.runout.bookings.internal.infrastructure.web.dto.response.SearchAreaResponse;
 
 import java.util.Currency;
@@ -83,7 +86,32 @@ public final class ReservationMapper {
                 .restaurantId(reservation.restaurantId())
                 .externalReference(reservation.externalReference())
                 .confirmedReservationAt(reservation.confirmedReservationAt())
+                .feedback(toFeedbackResponse(reservation))
                 .createdAt(reservation.createdAt())
+                .build();
+    }
+
+    public static SubmitReservationFeedbackCommand toCommand(UUID userId,
+                                                             UUID reservationId,
+                                                             SubmitReservationFeedbackRequest request) {
+        return SubmitReservationFeedbackCommand.builder()
+                .userId(userId)
+                .reservationId(reservationId)
+                .rating(request.rating())
+                .comment(request.comment())
+                .wouldReturnForSurpriseMenu(request.wouldReturnForSurpriseMenu())
+                .build();
+    }
+
+    private static ReservationFeedbackResponse toFeedbackResponse(ReservationSummary reservation) {
+        if (reservation.feedbackSubmittedAt() == null) {
+            return null;
+        }
+        return ReservationFeedbackResponse.builder()
+                .rating(reservation.feedbackRating())
+                .comment(reservation.feedbackComment())
+                .wouldReturnForSurpriseMenu(Boolean.TRUE.equals(reservation.feedbackWouldReturnForSurpriseMenu()))
+                .submittedAt(reservation.feedbackSubmittedAt())
                 .build();
     }
 

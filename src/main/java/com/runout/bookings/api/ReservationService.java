@@ -28,7 +28,7 @@ public interface ReservationService {
 
     void rejectReservation(UUID reservationId);
 
-    void sendReservationToUser(UUID reservationId);
-
     void completeReservation(UUID reservationId);
+
+    ReservationSummary submitFeedback(SubmitReservationFeedbackCommand command);
 }

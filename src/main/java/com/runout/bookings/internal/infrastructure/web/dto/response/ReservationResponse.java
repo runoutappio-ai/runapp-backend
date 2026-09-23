@@ -27,6 +27,7 @@ public record ReservationResponse(
         UUID restaurantId,
         String externalReference,
         Instant confirmedReservationAt,
+        ReservationFeedbackResponse feedback,
         Instant createdAt
 ) {
     public ReservationResponse {

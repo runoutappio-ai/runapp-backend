@@ -1,6 +1,6 @@
 :root {
-  color: #18201c;
-  background: #f5f6f7;
+  color: #17263a;
+  background: #f4f8fc;
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
@@ -10,6 +10,7 @@
 }
 
 body {
+  background: #f4f8fc;
   margin: 0;
 }
 
@@ -22,8 +23,8 @@ select {
 
 button {
   align-items: center;
-  background: #1f3b2d;
-  border: 1px solid #1f3b2d;
+  background: #1689e8;
+  border: 1px solid #1689e8;
   border-radius: 6px;
   color: #ffffff;
   cursor: pointer;
@@ -36,21 +37,32 @@ button {
 }
 
 button:hover {
-  background: #2c533f;
+  background: #0f75ca;
+  border-color: #0f75ca;
 }
 
 button.secondary {
   background: #ffffff;
-  border-color: #c9d3cf;
-  color: #1f3b2d;
+  border-color: #b9d6ed;
+  color: #0875c9;
 }
 
 button.secondary:hover {
-  background: #edf4f0;
+  background: #eaf6ff;
+  border-color: #86bce4;
+}
+
+button.dangerButton {
+  border-color: #d8aaa3;
+  color: #982217;
+}
+
+button.dangerButton:hover {
+  background: #fff0ed;
 }
 
 a {
-  color: #1f5b44;
+  color: #0875c9;
   font-weight: 750;
   text-decoration: none;
 }
@@ -68,12 +80,20 @@ input,
 textarea,
 select {
   background: #ffffff;
-  border: 1px solid #cbd3d0;
+  border: 1px solid #c8d9e8;
   border-radius: 6px;
-  color: #18201c;
+  color: #17263a;
   min-height: 38px;
   padding: 8px 10px;
   width: 100%;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #1689e8;
+  box-shadow: 0 0 0 3px rgba(22, 137, 232, 0.12);
+  outline: none;
 }
 
 select { width: 100%; }
@@ -90,14 +110,14 @@ table {
 
 th,
 td {
-  border-bottom: 1px solid #e1e6e4;
+  border-bottom: 1px solid #e2ebf3;
   padding: 12px;
   text-align: left;
   vertical-align: middle;
 }
 
 th {
-  color: #62706a;
+  color: #60758a;
   font-size: 12px;
   font-weight: 800;
   text-transform: uppercase;
@@ -105,12 +125,12 @@ th {
 
 tbody tr:hover,
 tbody tr.selected {
-  background: #eef5f1;
+  background: #eff8ff;
 }
 
 .loginPage {
   align-items: center;
-  background: #eef1f4;
+  background: #eef7ff;
   display: grid;
   min-height: 100vh;
   padding: 24px;
@@ -118,15 +138,22 @@ tbody tr.selected {
 
 .loginPanel {
   background: #ffffff;
-  border: 1px solid #dce3e0;
+  border: 1px solid #d8e8f4;
   border-radius: 8px;
-  box-shadow: 0 18px 60px rgba(26, 36, 32, 0.08);
+  box-shadow: 0 18px 60px rgba(35, 91, 132, 0.12);
   display: grid;
   gap: 28px;
   margin: 0 auto;
   max-width: 420px;
   padding: 28px;
   width: 100%;
+}
+
+.quickLogin {
+  border-top: 1px solid #d8e8f4;
+  display: grid;
+  gap: 8px;
+  padding-top: 18px;
 }
 
 .brandRow,
@@ -148,7 +175,7 @@ tbody tr.selected {
 
 .brandMark {
   align-items: center;
-  background: #1f3b2d;
+  background: #1689e8;
   border-radius: 8px;
   color: #ffffff;
   display: grid;
@@ -166,20 +193,22 @@ tbody tr.selected {
 }
 
 .muted {
-  color: #738078;
+  color: #6d8092;
   font-size: 13px;
   line-height: 1.35;
 }
 
 .adminShell {
+  border-top: 3px solid #1689e8;
   display: grid;
   grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .adminSidebar {
-  background: #111a16;
-  color: white;
+  background: #edf6ff;
+  border-right: 1px solid #d8e8f4;
+  color: #1a3550;
   display: flex;
   flex-direction: column;
   min-height: 100vh;
@@ -187,12 +216,13 @@ tbody tr.selected {
 }
 
 .adminSidebar .brandMark {
-  background: #e5f4ec;
-  color: #1f3b2d;
+  background: #1689e8;
+  box-shadow: 0 6px 18px rgba(22, 137, 232, 0.2);
+  color: #ffffff;
 }
 
 .adminSidebar .muted {
-  color: #aab5af;
+  color: #71879a;
 }
 
 .sideNav {
@@ -204,17 +234,20 @@ tbody tr.selected {
 .sideNav button {
   background: transparent;
   border-color: transparent;
+  color: #3e5b75;
   justify-content: flex-start;
   min-height: 42px;
 }
 
 .sideNav button:hover,
 .sideNav button.active {
-  background: #24342c;
+  background: #d8edff;
+  border-color: #c4e2fb;
+  color: #086fbf;
 }
 
 .sidebarUser {
-  border-top: 1px solid #2b3932;
+  border-top: 1px solid #d1e3f1;
   gap: 10px;
   margin-top: auto;
   padding-top: 16px;
@@ -222,7 +255,8 @@ tbody tr.selected {
 
 .avatar {
   align-items: center;
-  background: #31463a;
+  background: #d2eaff;
+  color: #086fbf;
   border-radius: 999px;
   display: grid;
   font-weight: 850;
@@ -236,9 +270,10 @@ tbody tr.selected {
   font-weight: 800;
 }
 
-.sidebarRole { color: #8fc8a8; font-size: 11px; font-weight: 850; margin-top: 3px; text-transform: uppercase; }
+.sidebarRole { color: #0875c9; font-size: 11px; font-weight: 850; margin-top: 3px; text-transform: uppercase; }
 
 .adminContent {
+  background: #f6f9fc;
   min-width: 0;
   padding: 20px;
 }
@@ -246,6 +281,24 @@ tbody tr.selected {
 .topbar {
   justify-content: space-between;
   margin-bottom: 18px;
+}
+
+.topbarHeading {
+  align-items: center;
+  display: flex;
+  gap: 14px;
+  min-width: 0;
+}
+
+.backButton {
+  flex: 0 0 auto;
+}
+
+.backButton:disabled {
+  background: #f4f8fc;
+  border-color: #d9e6f0;
+  color: #8ba0b2;
+  cursor: not-allowed;
 }
 
 .topbar h1 {
@@ -256,7 +309,7 @@ tbody tr.selected {
 }
 
 .eyebrow {
-  color: #68756f;
+  color: #5e7890;
   font-size: 12px;
   font-weight: 850;
   text-transform: uppercase;
@@ -267,7 +320,7 @@ tbody tr.selected {
 }
 
 .apiField {
-  color: #4d5b55;
+  color: #4f6c85;
   display: grid;
   font-size: 12px;
   font-weight: 800;
@@ -278,8 +331,9 @@ tbody tr.selected {
 
 .panel {
   background: #ffffff;
-  border: 1px solid #dce3e0;
+  border: 1px solid #d9e6f0;
   border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(44, 91, 126, 0.06);
   overflow: hidden;
 }
 
@@ -297,7 +351,7 @@ tbody tr.selected {
 }
 
 .statePanel p {
-  color: #4d5b55;
+  color: #536b80;
   line-height: 1.5;
 }
 
@@ -314,7 +368,7 @@ tbody tr.selected {
 
 .panelHeader {
   align-items: center;
-  border-bottom: 1px solid #dce3e0;
+  border-bottom: 1px solid #d9e6f0;
   display: flex;
   justify-content: space-between;
   padding: 16px 18px;
@@ -337,13 +391,44 @@ tbody tr.selected {
 .statsGrid {
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   padding: 18px;
+}
+
+.dashboardTables {
+  border-top: 1px solid #d9e6f0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.8fr);
+}
+
+.dashboardSection {
+  min-width: 0;
+}
+
+.dashboardSection + .dashboardSection {
+  border-left: 1px solid #d9e6f0;
+}
+
+.dashboardSectionHeader {
+  align-items: center;
+  background: #fbfdff;
+  border-bottom: 1px solid #d9e6f0;
+  display: flex;
+  justify-content: space-between;
+  min-height: 72px;
+  padding: 14px 18px;
+}
+
+.pipelineCount {
+  font-size: 18px;
+  font-weight: 850;
+  text-align: right;
 }
 
 .filtersBar {
   align-items: center;
-  border-bottom: 1px solid #dce3e0;
+  background: #fbfdff;
+  border-bottom: 1px solid #d9e6f0;
   display: flex;
   gap: 14px;
   justify-content: space-between;
@@ -351,9 +436,9 @@ tbody tr.selected {
 }
 
 .filterTabs { display: flex; flex-wrap: wrap; gap: 8px; }
-.filterTabs button.active { background: #1f3b2d; color: #fff; }
+.filterTabs button.active { background: #1689e8; border-color: #1689e8; color: #fff; }
 .count { background: rgba(255,255,255,.18); border-radius: 999px; padding: 1px 6px; }
-.filterTabs button.secondary .count { background: #e9eeeb; }
+.filterTabs button.secondary .count { background: #e2f1fd; }
 .searchField { align-items: center; display: flex; gap: 8px; min-width: 300px; }
 .searchField input { min-width: 260px; }
 .roleSelect { font-size: 12px; font-weight: 800; min-width: 140px; width: auto; }
@@ -365,7 +450,7 @@ tbody tr.selected {
 .roleLabel.super_admin { background: #eee5ff; color: #5b2998; }
 
 .stat {
-  border: 1px solid #e0e7e4;
+  border: 1px solid #dce8f1;
   border-radius: 8px;
   padding: 16px;
 }
@@ -377,7 +462,7 @@ tbody tr.selected {
 }
 
 .statLabel {
-  color: #66736d;
+  color: #647b8f;
   font-size: 13px;
   font-weight: 750;
   margin-top: 8px;
@@ -394,7 +479,7 @@ tbody tr.selected {
 }
 
 .detail {
-  border-left: 1px solid #dce3e0;
+  border-left: 1px solid #d9e6f0;
   padding: 18px;
 }
 
@@ -403,13 +488,13 @@ tbody tr.selected {
 }
 
 .reservationRow:focus-visible {
-  outline: 2px solid #1f5b44;
+  outline: 2px solid #1689e8;
   outline-offset: -2px;
 }
 
 .modalOverlay {
   align-items: center;
-  background: rgba(17, 26, 22, 0.52);
+  background: rgba(22, 41, 61, 0.52);
   display: flex;
   inset: 0;
   justify-content: center;
@@ -420,9 +505,9 @@ tbody tr.selected {
 
 .reservationModal {
   background: #ffffff;
-  border: 1px solid #dce3e0;
+  border: 1px solid #d9e6f0;
   border-radius: 8px;
-  box-shadow: 0 20px 64px rgba(17, 26, 22, 0.24);
+  box-shadow: 0 20px 64px rgba(22, 41, 61, 0.24);
   max-height: calc(100vh - 48px);
   max-width: 860px;
   overflow: hidden;
@@ -431,7 +516,7 @@ tbody tr.selected {
 
 .modalHeader {
   align-items: flex-start;
-  border-bottom: 1px solid #dce3e0;
+  border-bottom: 1px solid #d9e6f0;
   display: flex;
   gap: 16px;
   justify-content: space-between;
@@ -446,8 +531,8 @@ tbody tr.selected {
 
 .assignmentControl {
   align-items: end;
-  background: #f4f8f5;
-  border: 1px solid #dce3e0;
+  background: #f3f9fe;
+  border: 1px solid #d6e7f4;
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -457,7 +542,7 @@ tbody tr.selected {
 }
 
 .assignmentControl label {
-  color: #4d5b55;
+  color: #4f6c85;
   display: grid;
   font-size: 12px;
   font-weight: 800;
@@ -466,7 +551,7 @@ tbody tr.selected {
 }
 
 .nearbyRestaurants {
-  border-top: 1px solid #dce3e0;
+  border-top: 1px solid #d9e6f0;
   display: grid;
   gap: 8px;
   margin: 22px 0;
@@ -482,7 +567,7 @@ tbody tr.selected {
 
 .nearbyState {
   align-items: center;
-  color: #65716b;
+  color: #64798c;
   display: flex;
   gap: 8px;
   min-height: 52px;
@@ -490,12 +575,18 @@ tbody tr.selected {
 
 .nearbyRestaurant {
   align-items: center;
-  border: 1px solid #dce3e0;
+  border: 1px solid #d9e6f0;
   border-radius: 6px;
   display: flex;
   gap: 12px;
   justify-content: space-between;
   padding: 12px;
+}
+
+.nearbyRestaurant.selected {
+  background: #eff8ff;
+  border-color: #86bce4;
+  box-shadow: 0 0 0 2px rgba(22, 137, 232, 0.08);
 }
 
 .nearbyRestaurantName {
@@ -505,7 +596,7 @@ tbody tr.selected {
 
 .nearbyRestaurantMeta {
   align-items: flex-end;
-  color: #586760;
+  color: #5e7488;
   display: grid;
   font-size: 12px;
   gap: 3px;
@@ -513,7 +604,17 @@ tbody tr.selected {
 }
 
 .nearbyRestaurantMeta strong {
-  color: #1f3b2d;
+  color: #0875c9;
+}
+
+.selectRestaurantButton {
+  min-height: 32px;
+  padding: 0 10px;
+}
+
+.confirmationForm {
+  border-color: #b9d6ed;
+  margin-top: 18px;
 }
 
 .staffModal {
@@ -531,7 +632,7 @@ tbody tr.selected {
 }
 
 .detailBack { margin-bottom: 18px; }
-.detailGrid { display: grid; gap: 1px; grid-template-columns: 1fr 1fr; margin: 18px 0; background: #dce3e0; border: 1px solid #dce3e0; }
+.detailGrid { display: grid; gap: 1px; grid-template-columns: 1fr 1fr; margin: 18px 0; background: #d9e6f0; border: 1px solid #d9e6f0; }
 .detailItem { background: #fff; min-width: 0; padding: 12px; }
 .detailItem .label { margin-bottom: 5px; }
 
@@ -542,7 +643,7 @@ tbody tr.selected {
 }
 
 .label {
-  color: #65716b;
+  color: #60768a;
   font-size: 12px;
   font-weight: 850;
   text-transform: uppercase;
@@ -555,7 +656,7 @@ tbody tr.selected {
 }
 
 .facts {
-  color: #4f5d56;
+  color: #536b80;
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -563,7 +664,7 @@ tbody tr.selected {
 }
 
 .facts span {
-  background: #f2f5f3;
+  background: #edf6fd;
   border-radius: 999px;
   padding: 6px 10px;
 }
@@ -585,14 +686,14 @@ tbody tr.selected {
 }
 
 .form.elevated {
-  background: #f8faf9;
-  border: 1px solid #e0e7e4;
+  background: #f8fbfe;
+  border: 1px solid #dce8f1;
   border-radius: 8px;
   padding: 14px;
 }
 
 .form label {
-  color: #4d5b55;
+  color: #4f6c85;
   display: grid;
   font-size: 12px;
   font-weight: 800;
@@ -608,15 +709,39 @@ tbody tr.selected {
 }
 
 .restaurantTools {
-  border-bottom: 1px solid #dce3e0;
+  border-bottom: 1px solid #d9e6f0;
   display: grid;
   gap: 18px;
   grid-template-columns: minmax(0, 1fr);
   padding: 18px;
 }
 
+.restaurantViewTabs {
+  background: #fbfdff;
+  border-bottom: 1px solid #d9e6f0;
+  display: flex;
+  gap: 8px;
+  padding: 12px 18px;
+}
+
+.restaurantViewTabs button.active {
+  background: #1689e8;
+  border-color: #1689e8;
+  color: #ffffff;
+}
+
 .restaurantEditorForm { order: 1; }
 .googlePlacesForm { order: 2; }
+
+.cityCreator {
+  align-items: end;
+  grid-template-columns: minmax(220px, 1fr) minmax(180px, 1fr) 130px auto;
+  order: 0;
+}
+
+.cityCreator button {
+  justify-content: center;
+}
 
 .formTitle { font-size: 17px; font-weight: 850; }
 .formGrid { display: grid; gap: 12px; grid-template-columns: 1fr 1fr; }
@@ -624,6 +749,35 @@ tbody tr.selected {
 
 .restaurantTable {
   padding: 0 18px 18px;
+}
+
+.restaurantListToolbar {
+  align-items: end;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 18px 0;
+}
+
+.restaurantListFilters {
+  display: flex;
+  gap: 12px;
+}
+
+.areaFilter {
+  color: #4f6c85;
+  display: grid;
+  font-size: 12px;
+  font-weight: 800;
+  gap: 6px;
+  min-width: 260px;
+  text-transform: uppercase;
+}
+
+.emptyTable {
+  color: #6d8193;
+  padding: 34px 12px;
+  text-align: center;
 }
 
 .inlineSearch {
@@ -640,7 +794,7 @@ tbody tr.selected {
 .placeResult {
   align-items: start;
   background: #ffffff;
-  border: 1px solid #dfe7e3;
+  border: 1px solid #dce8f1;
   border-radius: 8px;
   display: grid;
   gap: 12px;
@@ -658,9 +812,9 @@ tbody tr.selected {
 .linkButton {
   align-items: center;
   background: #ffffff;
-  border: 1px solid #c9d3cf;
+  border: 1px solid #b9d6ed;
   border-radius: 6px;
-  color: #1f3b2d;
+  color: #0875c9;
   display: inline-flex;
   font-size: 14px;
   font-weight: 800;
@@ -670,7 +824,8 @@ tbody tr.selected {
 }
 
 .linkButton:hover {
-  background: #edf4f0;
+  background: #eaf6ff;
+  border-color: #86bce4;
   text-decoration: none;
 }
 
@@ -695,7 +850,6 @@ tbody tr.selected {
 
 .paid,
 .confirmed,
-.sent_to_user,
 .completed {
   background: #ddf4e7;
   color: #11603a;
@@ -728,7 +882,7 @@ tbody tr.selected {
 
 .empty {
   align-items: center;
-  color: #75817c;
+  color: #6d8193;
   display: flex;
   justify-content: center;
   min-height: 240px;
@@ -769,15 +923,31 @@ tbody tr.selected {
     flex-direction: column;
   }
 
+  .topbarHeading {
+    align-items: flex-start;
+  }
+
   .apiField,
   .split,
   .gridTwo,
   .restaurantTools,
-  .statsGrid {
+  .statsGrid,
+  .dashboardTables {
     grid-template-columns: 1fr;
   }
 
+  .dashboardSection + .dashboardSection {
+    border-left: 0;
+    border-top: 1px solid #d9e6f0;
+  }
+
   .filtersBar { align-items: stretch; flex-direction: column; }
+  .restaurantViewTabs { flex-direction: column; }
+  .restaurantViewTabs button { justify-content: center; width: 100%; }
+  .restaurantListToolbar { align-items: stretch; flex-direction: column; }
+  .restaurantListFilters { align-items: stretch; flex-direction: column; }
+  .areaFilter { min-width: 0; }
+  .cityCreator { align-items: stretch; grid-template-columns: 1fr; }
   .searchField, .searchField input { min-width: 0; width: 100%; }
   .formGrid, .detailGrid { grid-template-columns: 1fr; }
   .assignmentControl { align-items: stretch; grid-template-columns: 1fr; }
@@ -798,6 +968,6 @@ tbody tr.selected {
 
   .detail {
     border-left: 0;
-    border-top: 1px solid #dce3e0;
+    border-top: 1px solid #d9e6f0;
   }
 }

@@ -1,0 +1,11 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-remove-sent-to-user-status
+      author: runout
+      comment: Removes the manual delivery stage from the reservation lifecycle.
+      changes:
+        - update:
+            tableName: reservation
+            columns:
+              - column: { name: status, value: CONFIRMED }
+            where: status = 'SENT_TO_USER'

@@ -43,6 +43,9 @@ export type Restaurant = {
   tags: string[];
   googlePlaceId: string | null;
   formattedAddress: string | null;
+  cityId: string;
+  cityName: string;
+  area: string | null;
   latitude: number | null;
   longitude: number | null;
   rating: number | null;
@@ -72,6 +75,8 @@ export type GooglePlaceCandidate = {
   googlePlaceId: string;
   name: string;
   formattedAddress: string | null;
+  cityId: string | null;
+  area: string | null;
   phone: string | null;
   latitude: number | null;
   longitude: number | null;
@@ -81,6 +86,12 @@ export type GooglePlaceCandidate = {
   googleMapsUri: string | null;
   primaryType: string | null;
   types: string[];
+};
+
+export type City = {
+  id: string;
+  name: string;
+  countryCode: string;
 };
 
 export type UserSummary = {

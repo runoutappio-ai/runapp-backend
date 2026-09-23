@@ -46,28 +46,28 @@ class RestaurantController {
     }
 
     @GetMapping("/api/admin/restaurants")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     List<RestaurantSummary> findRestaurants() {
         log.info("Admin listing restaurants");
         return restaurants.findAll();
     }
 
     @GetMapping("/api/admin/restaurants/{id}")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     RestaurantSummary findRestaurant(@PathVariable UUID id) {
         log.info("Admin retrieving restaurant id={}", id);
         return restaurants.findById(id);
     }
 
     @GetMapping("/api/admin/restaurants/{id}/menu")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     List<RestaurantMenuSummary> findRestaurantMenu(@PathVariable UUID id) {
         log.info("Admin retrieving restaurant menu restaurantId={}", id);
         return restaurants.findMenu(id);
     }
 
     @GetMapping("/api/admin/restaurants/google-places/search")
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     List<GooglePlaceCandidate> searchGooglePlaces(@RequestParam @NotBlank String query,
                                                   @RequestParam(defaultValue = "es") String languageCode,
                                                   @RequestParam(defaultValue = "ES") String regionCode) {
@@ -77,7 +77,7 @@ class RestaurantController {
 
     @PostMapping("/api/admin/restaurants/google-places/import")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     RestaurantSummary importGooglePlace(@Valid @RequestBody ImportGooglePlaceRequest request) {
         log.info("Admin importing Google Place googlePlaceId={}", request.googlePlaceId());
         return restaurants.importGooglePlace(RestaurantWebMapper.toCandidate(request));
@@ -85,7 +85,7 @@ class RestaurantController {
 
     @PostMapping("/api/admin/restaurants")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER', 'WORKER')")
     RestaurantSummary createRestaurant(@Valid @RequestBody CreateRestaurantRequest request) {
         log.info("Admin creating restaurant name={}", request.name());
         return restaurants.create(RestaurantWebMapper.toCommand(request));
