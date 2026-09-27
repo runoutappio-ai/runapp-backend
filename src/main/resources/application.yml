@@ -34,6 +34,8 @@ springdoc:
     display-request-duration: true
     operations-sorter: method
 runout:
+  demo:
+    skip-wait-enabled: ${RUNOUT_DEMO_SKIP_WAIT_ENABLED:true}
   payments:
     provider: ${PAYMENT_PROVIDER:mock}
   google:

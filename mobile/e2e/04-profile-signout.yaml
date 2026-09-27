@@ -1,0 +1,10 @@
+appId: com.runout.mobile
+---
+- launchApp
+- tapOn: "Profile"
+- tapOn: "Phone"
+- inputText: "+971500000000"
+- tapOn: "Save changes"
+- assertVisible: "Profile saved."
+- tapOn: "Sign out"
+- assertVisible: "Continue with Google"

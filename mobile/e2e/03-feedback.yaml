@@ -1,0 +1,8 @@
+appId: com.runout.mobile
+---
+- launchApp
+- tapOn: "Reservations"
+- tapOn: "Leave feedback"
+- tapOn: "5 stars"
+- tapOn: "Submit feedback"
+- assertVisible: "Feedback submitted"

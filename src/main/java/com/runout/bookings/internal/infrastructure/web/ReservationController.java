@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.UUID;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 
 import static com.runout.shared.AuthenticatedUserHeaders.IDEMPOTENCY_KEY;
 import static com.runout.shared.AuthenticatedUserHeaders.USER_ID;
@@ -54,9 +53,7 @@ class ReservationController {
     ReservationRevealResponse reveal(@RequestHeader(USER_ID) UUID userId, @PathVariable UUID id) {
         log.info("Revealing reservation id={} for userId={}", id, userId);
         var reservation = reservations.findByIdForUser(id, userId);
-        var revealAt = reservation.confirmedReservationAt() == null
-                ? null
-                : reservation.confirmedReservationAt().minus(2, ChronoUnit.HOURS);
+        var revealAt = reservation.confirmedReservationAt();
         var revealableStatus = "CONFIRMED".equals(reservation.status()) || "COMPLETED".equals(reservation.status());
         if (!revealableStatus || reservation.restaurantId() == null || revealAt == null || Instant.now().isBefore(revealAt)) {
             return ReservationRevealResponse.builder()

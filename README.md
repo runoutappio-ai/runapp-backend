@@ -42,6 +42,14 @@ docker compose up -d
 mvn spring-boot:run
 ```
 
+With the default mock payment provider, local demo mode is enabled automatically so the mobile app can exercise the envelope animation without waiting for the confirmed reservation time. It can be explicitly disabled with:
+
+```bash
+RUNOUT_DEMO_SKIP_WAIT_ENABLED=false mvn spring-boot:run
+```
+
+The demo endpoint still requires an authenticated owner and a paid reservation. Before operations assigns a restaurant, it returns an active restaurant as a non-persistent visual preview; it never changes the real assignment. The endpoint is never registered when a non-mock payment provider is configured.
+
 Docker Compose starts PostgreSQL and Keycloak. The local Keycloak console is available at `http://localhost:8081`; its development credentials default to `admin` / `admin` and can be overridden with `KEYCLOAK_ADMIN_USERNAME` and `KEYCLOAK_ADMIN_PASSWORD`.
 
 The imported `runout` realm enables self-registration and defines public clients for the mobile app (`runout-mobile`) and admin panel (`runout-admin`). Both use Authorization Code with PKCE and request tokens for the `runout-api` audience. Access tokens last five minutes; refresh tokens are rotated and governed by the Keycloak session limits.

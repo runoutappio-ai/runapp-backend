@@ -1,0 +1,8 @@
+appId: com.runout.mobile
+---
+- launchApp
+- tapOn: "Reservations"
+- tapOn:
+    text: "Confirmed & sealed"
+    optional: true
+- assertNotVisible: "Open in Google Maps"

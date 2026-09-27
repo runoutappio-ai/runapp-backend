@@ -1,0 +1,14 @@
+appId: com.runout.mobile
+---
+- launchApp
+- tapOn: "Sign in with email"
+- tapOn: "Email"
+- inputText: "${TEST_EMAIL}"
+- tapOn: "Password"
+- inputText: "${TEST_PASSWORD}"
+- tapOn: "Sign in"
+- tapOn: "Start reservation"
+- assertVisible: "Who’s going, and when?"
+- tapOn: "Continue"
+- assertVisible: "Set the total spend."
+# Continue through the environment-specific future date and payment fixture manually.
