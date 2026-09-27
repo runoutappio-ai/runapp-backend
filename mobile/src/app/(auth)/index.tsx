@@ -31,7 +31,7 @@ export default function WelcomeScreen() {
           <Text style={styles.headline}>No choosing where to go.</Text>
           <Text style={styles.headline}>No thinking about what to eat.</Text>
           <Text style={styles.headlineAccent}>Get more for your money.</Text>
-          <Text style={styles.lede}>The restaurant chooses the menu. You just show up, enjoy the surprise and get more on your table than you paid for.</Text>
+          <Text style={styles.lede}>We choose the restaurant. The restaurant chooses the menu. You just show up, enjoy the surprise and get more on your table than you paid for.</Text>
         </View>
       </View>
       {error ? <InlineError message={error} /> : null}

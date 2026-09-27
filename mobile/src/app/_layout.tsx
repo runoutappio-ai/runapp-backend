@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -13,6 +13,9 @@ import { colors } from '@/theme/tokens';
 function Navigation() {
   const { user, ready } = useAuth();
   useEffect(() => {
+    // expo-notifications is native-only. The web demo does not register or
+    // inspect notification responses, but keeps this flow on iOS/Android.
+    if (Platform.OS === 'web') return;
     const redirect = (notification: Notifications.Notification) => {
       const url = notification.request.content.data?.url;
       if (typeof url === 'string') router.push(url as never);
