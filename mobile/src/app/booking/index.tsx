@@ -227,8 +227,8 @@ export default function BookingScreen() {
         <Svg width="100%" height="100%" preserveAspectRatio="none">
           <Defs>
             <LinearGradient id="bookingBackgroundFade" x1="0" y1="0" x2="0.9" y2="1">
-              <Stop offset="0" stopColor="#321322" stopOpacity="1" />
-              <Stop offset="0.42" stopColor="#190D14" stopOpacity="1" />
+              <Stop offset="0" stopColor="#24101A" stopOpacity="1" />
+              <Stop offset="0.42" stopColor="#140B11" stopOpacity="1" />
               <Stop offset="1" stopColor="#0D0B0C" stopOpacity="1" />
             </LinearGradient>
           </Defs>
