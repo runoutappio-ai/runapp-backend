@@ -262,8 +262,8 @@ export default function BookingScreen() {
             })}
             </ScrollView>
             <Text style={styles.fieldHint}>Or choose another date</Text>
-            <View style={styles.dateTimeRow}>
-              <View style={styles.datePicker}><DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} /></View>
+            <View style={styles.datePicker}>
+              <DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} />
               <Text style={styles.dateTimeValue}>{draft.time}–{endTime(draft.time)}</Text>
             </View>
             <View style={styles.mealBadge}><Text style={styles.mealBadgeText}>{timeMinutes < 11 * 60 ? 'BREAKFAST' : timeMinutes < 16 * 60 ? 'LUNCH' : 'DINNER'}</Text></View>
@@ -307,19 +307,27 @@ export default function BookingScreen() {
               <Title>First — where are you?</Title>
               <Body muted>We need to know this to measure how far away your restaurant is.</Body>
             </View>
-            <Text style={styles.fieldHint}>Choose your area in Dubai</Text>
-            <Pressable accessibilityRole="button" onPress={() => setShowAreas((current) => !current)} style={styles.areaSelect}><Text style={[styles.areaSelectText, !draft.locationLabel && styles.mutedText]} numberOfLines={1}>{draft.locationLabel || 'Select an area'}</Text><ChevronDown color={colors.muted} size={18} /></Pressable>
-            {showAreas ? <View style={styles.areaGrid}>{DUBAI_AREAS.map((area) => <Chip key={area.name} label={area.name} selected={draft.locationLabel.startsWith(area.name)} onPress={() => void selectArea(area)} />)}</View> : null}
-            <View style={styles.orRow}><View style={styles.orLine} /><Text style={styles.orText}>OR</Text><View style={styles.orLine} /></View>
-            <Button variant="secondary" onPress={() => void locateDevice()}><LocateFixed color={colors.text} size={16} /> Use my current location</Button>
-            {locationStatus ? <Card><View style={styles.inline}><MapPin color={colors.gold} size={16} /><Body>{locationStatus}</Body></View></Card> : null}
+            <Pressable onPress={() => update({ anywhere: !draft.anywhere, ...(draft.anywhere ? { locationLabel: '', latitude: null, longitude: null, radiusKm: 5 } : { locationLabel: 'Anywhere in Dubai', latitude: 25.2048, longitude: 55.2708, radiusKm: 25 }) })} style={styles.anywhereToggle} accessibilityRole="checkbox" accessibilityState={{ checked: draft.anywhere }}>
+              <View style={[styles.checkbox, draft.anywhere && styles.checkboxChecked]}>{draft.anywhere ? <Check size={14} color={colors.primaryText} strokeWidth={3} /> : null}</View>
+              <Text style={styles.anywhereText}>Take me wherever you want!</Text>
+            </Pressable>
+            {!draft.anywhere ? <>
+              <Text style={styles.fieldHint}>Choose your area in Dubai</Text>
+              <Pressable accessibilityRole="button" onPress={() => setShowAreas((current) => !current)} style={styles.areaSelect}><Text style={[styles.areaSelectText, !draft.locationLabel && styles.mutedText]} numberOfLines={1}>{draft.locationLabel || 'Select an area'}</Text><ChevronDown color={colors.muted} size={18} /></Pressable>
+              {showAreas ? <View style={styles.areaGrid}>{DUBAI_AREAS.map((area) => <Chip key={area.name} label={area.name} selected={draft.locationLabel.startsWith(area.name)} onPress={() => void selectArea(area)} />)}</View> : null}
+              <View style={styles.orRow}><View style={styles.orLine} /><Text style={styles.orText}>OR</Text><View style={styles.orLine} /></View>
+              <Button variant="secondary" onPress={() => void locateDevice()}><LocateFixed color={colors.text} size={16} /> Use my current location</Button>
+              {locationStatus ? <Card><View style={styles.inline}><MapPin color={colors.gold} size={16} /><Body>{locationStatus}</Body></View></Card> : null}
+            </> : null}
+            {draft.anywhere ? <Card style={styles.anywhereMessage}><Text style={styles.anywhereTitle}>This is the attitude.</Text><Body muted>This is exactly the kind of client we love at Run Out. We won’t disappoint you.</Body></Card> : <>
             <View style={styles.divider} />
             <Text style={styles.sectionTitle}>How far are you willing to travel?</Text>
-            <Body muted>Set the farthest you’re willing to travel from there.</Body>
-            <View style={styles.sliderLabelRow}><Text style={styles.sliderTitle}>Travel distance</Text><Text style={styles.sliderValue}>{draft.radiusKm} km</Text></View>
-            <DiscreteRail value={draft.radiusKm} minimum={1} maximum={25} step={1} label="Maximum travel distance in kilometres" onChange={(radiusKm) => update({ radiusKm })} />
-            <View style={styles.distanceLabels}><Text style={styles.railLabel}>1 km</Text><Text style={styles.railLabel}>25 km</Text></View>
-            <View style={styles.chipsCentered}>{[1, 3, 5, 10, 25].map((km) => <Chip key={km} label={`${km} km`} selected={draft.radiusKm === km} onPress={() => update({ radiusKm: km })} />)}</View>
+              <Body muted>Set the farthest you’re willing to travel from there.</Body>
+              <View style={styles.sliderLabelRow}><Text style={styles.sliderTitle}>Travel distance</Text><Text style={styles.sliderValue}>{draft.radiusKm} km</Text></View>
+              <DiscreteRail value={draft.radiusKm} minimum={1} maximum={25} step={1} label="Maximum travel distance in kilometres" onChange={(radiusKm) => update({ radiusKm })} />
+              <View style={styles.distanceLabels}><Text style={styles.railLabel}>1 km</Text><Text style={styles.railLabel}>25 km</Text></View>
+              <View style={styles.chipsCentered}>{[1, 3, 5, 10, 25].map((km) => <Chip key={km} label={`${km} km`} selected={draft.radiusKm === km} onPress={() => update({ radiusKm: km })} />)}</View>
+            </>}
             {!canContinue ? <Body muted>Choose an area or use your device location to continue.</Body> : null}
           </>
         ) : null}
@@ -342,6 +350,7 @@ export default function BookingScreen() {
             {!user ? <Card style={styles.accountNote}><Text style={styles.accountTitle}>Create your account to pay</Text><Body muted>You can plan the whole mystery as a guest. We’ll ask you to register only when you’re ready to seal the reservation.</Body></Card> : null}
             <Card style={styles.envelopePromise}><Text style={styles.envelopePromiseTitle}>✉️ Your sealed reveal</Text><Body muted>After payment, the restaurant and menu go into a sealed envelope. It opens with an animation exactly at your confirmed reservation time.</Body></Card>
             {error ? <InlineError message={error} /> : null}
+            <Button variant="ghost" onPress={back}>← Back</Button>
             <Button disabled={!draft.paymentMethod} loading={submitting} onPress={() => void confirm()}>{draft.paymentMethod ? (user ? `Pay AED ${draft.totalBudget} & seal envelope` : 'Create account to continue') : 'Choose how to pay'}</Button>
           </>
         ) : null}
@@ -392,9 +401,8 @@ const styles = StyleSheet.create({
   dateLabel: { color: colors.textSoft, fontSize: 13, fontWeight: '700' },
   dateValue: { color: colors.muted, fontSize: 11.5, marginTop: 2 },
   selectedText: { color: colors.text },
-  dateTimeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  datePicker: { flex: 1, minHeight: 50, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.sm, paddingHorizontal: 12, alignItems: 'flex-start', justifyContent: 'center' },
-  dateTimeValue: { color: colors.gold, fontSize: 16, fontWeight: '800', minWidth: 104, textAlign: 'right' },
+  datePicker: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.sm, paddingHorizontal: 12 },
+  dateTimeValue: { color: colors.gold, fontSize: 16, fontWeight: '800', marginLeft: spacing.sm },
   sliderLabelRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: spacing.sm },
   sliderTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   sliderValue: { color: colors.gold, fontSize: 16, fontWeight: '800' },
@@ -423,6 +431,10 @@ const styles = StyleSheet.create({
   checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: colors.muted, alignItems: 'center', justifyContent: 'center' },
   checkboxChecked: { borderColor: colors.gold, backgroundColor: colors.gold },
   allergyText: { color: colors.text, fontWeight: '600', fontSize: 14 },
+  anywhereToggle: { minHeight: 52, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: colors.accentBorder, backgroundColor: colors.accentSurface, borderRadius: radius.md, paddingHorizontal: 14 },
+  anywhereText: { color: colors.text, fontSize: 14, fontWeight: '800' },
+  anywhereMessage: { backgroundColor: '#24101A', borderColor: colors.accentBorder },
+  anywhereTitle: { color: colors.gold, fontSize: 17, fontWeight: '800' },
   areaSelect: { minHeight: 50, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.sm, paddingHorizontal: 14 },
   areaSelectText: { flex: 1, color: colors.text, fontSize: 15, marginRight: spacing.sm },
   areaGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

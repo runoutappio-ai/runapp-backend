@@ -32,6 +32,7 @@ export type BookingDraft = {
   excludedCuisineTypes: string[];
   dietaryPreferences: string[];
   allergyNotes: string;
+  anywhere: boolean;
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
@@ -52,6 +53,7 @@ export const initialDraft: BookingDraft = {
   excludedCuisineTypes: [],
   dietaryPreferences: [],
   allergyNotes: '',
+  anywhere: false,
   locationLabel: '',
   latitude: null,
   longitude: null,
