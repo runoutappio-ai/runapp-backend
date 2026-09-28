@@ -9,9 +9,11 @@ import { AuthProvider, useAuth } from '@/auth/AuthProvider';
 import { BookingDraftProvider } from '@/features/booking/BookingDraftProvider';
 import { installQueryLifecycle, queryClient } from '@/api/query';
 import { colors } from '@/theme/tokens';
+import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
 
 function Navigation() {
   const { user, ready } = useAuth();
+  const { colors: themeColors } = useTheme();
   useEffect(() => {
     // expo-notifications is native-only. The web demo does not register or
     // inspect notification responses, but keeps this flow on iOS/Android.
@@ -25,9 +27,9 @@ function Navigation() {
     const subscription = Notifications.addNotificationResponseReceivedListener((response) => redirect(response.notification));
     return () => subscription.remove();
   }, []);
-  if (!ready) return <View style={styles.loading}><ActivityIndicator size="large" color={colors.gold} /></View>;
+  if (!ready) return <View style={[styles.loading, { backgroundColor: themeColors.background }]}><ActivityIndicator size="large" color={themeColors.gold} /></View>;
   return (
-    <Stack initialRouteName="(auth)" screenOptions={{ headerStyle: { backgroundColor: colors.background }, headerTintColor: colors.gold, headerTitleStyle: { color: colors.text, fontSize: 16, fontWeight: '700' }, headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal', contentStyle: { backgroundColor: colors.background } }}>
+    <Stack initialRouteName="(auth)" screenOptions={{ headerStyle: { backgroundColor: themeColors.background }, headerTintColor: themeColors.gold, headerTitleStyle: { color: themeColors.text, fontSize: 16, fontWeight: '700' }, headerShadowVisible: false, headerBackButtonDisplayMode: 'minimal', contentStyle: { backgroundColor: themeColors.background } }}>
       <Stack.Screen name="(auth)" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="booking" options={{ headerShown: false, presentation: 'fullScreenModal' }} />
@@ -44,12 +46,17 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <BookingDraftProvider><StatusBar style="light" /><Navigation /></BookingDraftProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <ThemedApp />
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
+}
+
+function ThemedApp() {
+  const { isLight } = useTheme();
+  return <AuthProvider><BookingDraftProvider><StatusBar style={isLight ? 'dark' : 'light'} /><Navigation /></BookingDraftProvider></AuthProvider>;
 }
 
 const styles = StyleSheet.create({ loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background } });

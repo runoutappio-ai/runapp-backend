@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, radius, spacing, type } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeProvider';
 
 /** Soft wine glow that sits behind the top of every main screen. */
 export function TopGlow() {
@@ -21,26 +22,29 @@ export function TopGlow() {
 }
 
 export function Screen({ children, scroll = true, glow = true }: PropsWithChildren<{ scroll?: boolean; glow?: boolean }>) {
+  const { colors: themeColors } = useTheme();
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
       {glow ? <TopGlow /> : null}
       {scroll ? (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.content, { backgroundColor: themeColors.background }]} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
       ) : (
-        <View style={styles.content}>{children}</View>
+        <View style={[styles.content, { backgroundColor: themeColors.background }]}>{children}</View>
       )}
     </SafeAreaView>
   );
 }
 
 export function Eyebrow({ children }: PropsWithChildren) {
-  return <Text style={styles.eyebrow}>{children}</Text>;
+  const { colors: themeColors } = useTheme();
+  return <Text style={[styles.eyebrow, { color: themeColors.gold }]}>{children}</Text>;
 }
 
 export function Title({ children, size = 'large' }: PropsWithChildren<{ size?: 'large' | 'medium' }>) {
-  return <Text style={[styles.title, size === 'medium' && styles.titleMedium]}>{children}</Text>;
+  const { colors: themeColors } = useTheme();
+  return <Text style={[styles.title, { color: themeColors.text }, size === 'medium' && styles.titleMedium]}>{children}</Text>;
 }
 
 export function SectionTitle({ children, action }: PropsWithChildren<{ action?: ReactNode }>) {
@@ -53,22 +57,25 @@ export function SectionTitle({ children, action }: PropsWithChildren<{ action?: 
 }
 
 export function Body({ children, muted = false }: PropsWithChildren<{ muted?: boolean }>) {
-  return <Text style={[styles.body, muted && styles.muted]}>{children}</Text>;
+  const { colors: themeColors } = useTheme();
+  return <Text style={[styles.body, { color: muted ? themeColors.muted : themeColors.text }]}>{children}</Text>;
 }
 
 export function Card({ children, style }: PropsWithChildren<{ style?: ViewStyle }>) {
-  return <View style={[styles.card, style]}>{children}</View>;
+  const { colors: themeColors } = useTheme();
+  return <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.line }, style]}>{children}</View>;
 }
 
 /** Pill segmented control — dark track, raised active pill. */
 export function Segmented<T extends string>({ options, value, onChange }: { options: { key: T; label: string }[]; value: T; onChange: (value: T) => void }) {
+  const { colors: themeColors } = useTheme();
   return (
-    <View accessibilityRole="tablist" style={styles.segmented}>
+    <View accessibilityRole="tablist" style={[styles.segmented, { backgroundColor: themeColors.surfaceRaised, borderColor: themeColors.line }]}>
       {options.map(({ key, label }) => {
         const selected = value === key;
         return (
-          <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => onChange(key)} style={[styles.segment, selected && styles.segmentActive]}>
-            <Text numberOfLines={1} style={[styles.segmentText, selected && styles.segmentTextActive]}>{label}</Text>
+          <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => onChange(key)} style={[styles.segment, selected && { backgroundColor: themeColors.selected, borderColor: themeColors.selectedBorder }]}>
+            <Text numberOfLines={1} style={[styles.segmentText, { color: themeColors.muted }, selected && { color: themeColors.text }]}>{label}</Text>
           </Pressable>
         );
       })}
@@ -97,6 +104,7 @@ export function Button({
   loading?: boolean;
   accessibilityLabel?: string;
 }>) {
+  const { colors: themeColors } = useTheme();
   return (
     <Pressable
       accessibilityRole="button"
@@ -107,24 +115,26 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         styles[`button_${variant}`],
+        variant === 'primary' ? { backgroundColor: themeColors.gold } : variant === 'secondary' ? { backgroundColor: themeColors.selected, borderColor: themeColors.selectedBorder } : { borderColor: themeColors.selectedBorder },
         pressed && styles.pressed,
         (disabled || loading) && styles.disabled,
       ]}>
-      {loading ? <ActivityIndicator color={variant === 'primary' ? colors.primaryText : colors.text} /> : <View style={styles.buttonContent}>{Children.map(children, (child) => typeof child === 'string' || typeof child === 'number' ? <Text style={[styles.buttonText, variant === 'primary' && styles.buttonTextPrimary, variant === 'danger' && styles.buttonTextDanger]}>{child}</Text> : child)}</View>}
+      {loading ? <ActivityIndicator color={variant === 'primary' ? themeColors.primaryText : themeColors.text} /> : <View style={styles.buttonContent}>{Children.map(children, (child) => typeof child === 'string' || typeof child === 'number' ? <Text style={[styles.buttonText, { color: variant === 'primary' ? themeColors.primaryText : themeColors.text }, variant === 'primary' && styles.buttonTextPrimary]}>{child}</Text> : child)}</View>}
     </Pressable>
   );
 }
 
 export function Field({ label, error, ...props }: TextInputProps & { label: string; error?: string }) {
+  const { colors: themeColors } = useTheme();
   return (
     <View style={styles.fieldWrap}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={[styles.label, { color: themeColors.muted }]}>{label}</Text>
       <TextInput
         {...props}
         accessibilityLabel={props.accessibilityLabel ?? label}
-        placeholderTextColor={colors.faint}
+        placeholderTextColor={themeColors.faint}
         selectionColor={colors.gold}
-        style={[styles.input, props.multiline && styles.multiline, error ? styles.inputError : undefined, props.style]}
+        style={[styles.input, { color: themeColors.text, backgroundColor: themeColors.surface, borderColor: themeColors.line }, props.multiline && styles.multiline, error ? styles.inputError : undefined, props.style]}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -154,12 +164,12 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
   topGlow: { position: 'absolute', top: -140, left: -120, width: 420, height: 360, borderRadius: 210, backgroundColor: '#34141F', opacity: 0.45 },
   content: { flexGrow: 1, paddingHorizontal: 20, paddingTop: spacing.lg, paddingBottom: 128, gap: spacing.md },
-  eyebrow: { color: colors.gold, ...type.eyebrow },
-  title: { color: colors.text, ...type.title },
+  eyebrow: { color: colors.gold, fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'Avenir Next' }), ...type.eyebrow },
+  title: { color: colors.text, fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'Avenir Next' }), ...type.title },
   titleMedium: { ...type.titleMedium },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xs },
   section: { color: colors.text, ...type.section },
-  body: { color: colors.text, ...type.body },
+  body: { color: colors.text, fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'Avenir Next' }), ...type.body },
   muted: { color: colors.muted },
   card: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: radius.card, padding: 18, gap: spacing.sm },
   segmented: { flexDirection: 'row', gap: 4, padding: 5, borderRadius: radius.pill, backgroundColor: colors.surfaceSunken, borderWidth: 1, borderColor: '#2A2527' },
@@ -176,7 +186,7 @@ const styles = StyleSheet.create({
   button_secondary: { backgroundColor: colors.selected, borderWidth: 1, borderColor: colors.selectedBorder },
   button_ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.selectedBorder },
   button_danger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#5A2A33' },
-  buttonText: { color: colors.text, fontWeight: '700', fontSize: 14 },
+  buttonText: { color: colors.text, fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-medium', default: 'Avenir Next' }), fontWeight: '700', fontSize: 14 },
   buttonTextPrimary: { color: colors.primaryText, fontWeight: '800' },
   buttonTextDanger: { color: colors.danger },
   buttonContent: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },

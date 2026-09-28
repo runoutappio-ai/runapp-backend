@@ -10,6 +10,7 @@ import { TERMINAL_STATUSES } from '@/features/booking/model';
 import { useReservations } from '@/features/reservations/api';
 import { formatReservationWhen as formatWhen, ReservationListRow } from '@/features/reservations/ReservationListRow';
 import { colors, radius, spacing } from '@/theme/tokens';
+import { useTheme } from '@/theme/ThemeProvider';
 
 type Filter = 'upcoming' | 'previous' | 'all';
 const FILTERS: { key: Filter; label: string }[] = [
@@ -59,6 +60,7 @@ const MOODS = [
 
 export default function HomeScreen() {
   const { user } = useAuth();
+  const { colors: themeColors, isLight } = useTheme();
   const [now, setNow] = useState(() => Date.now());
   const [phraseIndex, setPhraseIndex] = useState(0);
   useEffect(() => {
@@ -82,39 +84,39 @@ export default function HomeScreen() {
   const showPrevious = filter !== 'upcoming';
 
   return (
-    <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
       <TopGlow />
-      <ScrollView contentContainerStyle={styles.content} refreshControl={<RefreshControl tintColor={colors.gold} refreshing={reservations.isRefetching} onRefresh={() => void reservations.refetch()} />}>
+      <ScrollView contentContainerStyle={[styles.content, { backgroundColor: themeColors.background }]} refreshControl={<RefreshControl tintColor={themeColors.gold} refreshing={reservations.isRefetching} onRefresh={() => void reservations.refetch()} />}>
         <View style={styles.revealHeader}>
           <View style={styles.revealCopy}>
-            <View style={styles.revealLabel}><View style={styles.revealDot} /><Text style={styles.revealLabelText}>Next reveal in</Text></View>
-            <Text numberOfLines={2} style={upcoming ? styles.countdown : styles.emptyPhrase}>{upcoming ? revealCountdown(upcoming.confirmedReservationAt ?? upcoming.reservationAt, now) : EMPTY_HOME_PHRASES[phraseIndex]}</Text>
-            <Text numberOfLines={1} style={styles.revealMeta}>{upcoming ? `${formatWhen(upcoming.reservationAt)} · Table for ${upcoming.partySize}` : 'Your next great table is waiting.'}</Text>
+            <View style={styles.revealLabel}><View style={[styles.revealDot, { backgroundColor: themeColors.gold }]} /><Text style={[styles.revealLabelText, { color: themeColors.goldSoft }]}>Next reveal in</Text></View>
+            <Text numberOfLines={2} style={[upcoming ? styles.countdown : styles.emptyPhrase, { color: themeColors.text }]}>{upcoming ? revealCountdown(upcoming.confirmedReservationAt ?? upcoming.reservationAt, now) : EMPTY_HOME_PHRASES[phraseIndex]}</Text>
+            <Text numberOfLines={1} style={[styles.revealMeta, { color: themeColors.gold }]}>{upcoming ? `${formatWhen(upcoming.reservationAt)} · Table for ${upcoming.partySize}` : 'Your next great table is waiting.'}</Text>
           </View>
           {user && upcoming ? <Pressable accessibilityRole="button" onPress={() => router.push(`/invite/${upcoming.id}`)} style={styles.inviteButton}><Text style={styles.inviteText}>Invite</Text></Pressable> : null}
         </View>
 
-        <View style={styles.hero}>
+        <View style={[styles.hero, isLight && { backgroundColor: '#B9D8E5', shadowColor: '#7EA9B8' }]}>
           <View pointerEvents="none" style={styles.heroShade} />
           <View pointerEvents="none" style={styles.heroGlow} />
-          <View style={styles.heroTop}><Eyebrow>Mystery dinner</Eyebrow><View style={styles.heroIcon}><Mail color={colors.text} size={18} strokeWidth={1.8} /></View></View>
+          <View style={styles.heroTop}><Eyebrow>Mystery dinner</Eyebrow><View style={[styles.heroIcon, isLight && { backgroundColor: 'rgba(24, 61, 56, 0.12)' }]}><Mail color={isLight ? themeColors.text : colors.text} size={18} strokeWidth={1.8} /></View></View>
           <View style={styles.heroCopy}>
-            <Text numberOfLines={2} style={styles.heroTitle}>Your next great table is waiting.</Text>
-            <Text numberOfLines={2} style={styles.heroBody}>Choose the mood. We’ll handle the surprise.</Text>
+            <Text numberOfLines={2} style={[styles.heroTitle, isLight && { color: themeColors.text }]}>Your next great table is waiting.</Text>
+            <Text numberOfLines={2} style={[styles.heroBody, isLight && { color: themeColors.textSoft }]}>Choose the mood. We’ll handle the surprise.</Text>
           </View>
-          <Pressable accessibilityRole="button" onPress={startBooking} style={styles.heroButton}><Text style={styles.heroButtonText}>{hasDraft && user ? 'Continue reservation' : 'Start reservation'}</Text></Pressable>
+          <Pressable accessibilityRole="button" onPress={startBooking} style={[styles.heroButton, isLight && { backgroundColor: themeColors.text }]}><Text style={[styles.heroButtonText, isLight && { color: themeColors.primaryText }]}>{hasDraft && user ? 'Continue reservation' : 'Start reservation'}</Text></Pressable>
         </View>
 
         {user ? <View style={styles.moods}>
           {MOODS.map(({ label, vibe, Icon, color, background }) => (
             <Pressable key={label} accessibilityRole="button" onPress={() => { reset(); update({ vibe }); router.push('/booking'); }} style={styles.mood}>
               <View style={[styles.moodIcon, { backgroundColor: background }]}><Icon color={color} size={21} strokeWidth={1.9} /></View>
-              <Text numberOfLines={1} style={styles.moodLabel}>{label}</Text>
+              <Text numberOfLines={1} style={[styles.moodLabel, { color: themeColors.textSoft }]}>{label}</Text>
             </Pressable>
           ))}
         </View> : null}
 
-        <View style={styles.listCard}>
+        <View style={[styles.listCard, { backgroundColor: themeColors.surface, borderColor: themeColors.line }]}>
           <Segmented options={FILTERS} value={filter} onChange={setFilter} />
 
           {user && reservations.error ? <InlineError message={reservations.error.message} onRetry={() => void reservations.refetch()} /> : null}
@@ -123,7 +125,7 @@ export default function HomeScreen() {
           {user && !reservations.error && showUpcoming ? (upcoming ? (
             <View>
               <ReservationListRow item={upcoming} last />
-              <View style={styles.note}><Info color={colors.muted} size={14} /><Text style={styles.noteText}>Restaurant details stay sealed until the reveal is available.</Text></View>
+              <View style={styles.note}><Info color={themeColors.muted} size={14} /><Text style={[styles.noteText, { color: themeColors.muted }]}>Restaurant details stay sealed until the reveal is available.</Text></View>
             </View>
           ) : <Text style={styles.empty}>Nothing booked yet. Start a reservation and let us plan the night.</Text>) : null}
 

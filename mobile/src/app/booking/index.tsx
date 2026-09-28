@@ -43,6 +43,7 @@ import { mockPaymentProvider, requireCapturedPayment } from '@/features/booking/
 import { createReservation, payReservation, reservationKeys } from '@/features/reservations/api';
 import { colors, radius, spacing } from '@/theme/tokens';
 import type { LocationCandidate } from '@/types/api';
+import { useTheme } from '@/theme/ThemeProvider';
 
 const STEPS = ['Your table', 'Budget & mood', 'Location', 'Payment'];
 const VIBE_EMOJI: Record<string, string> = {
@@ -72,9 +73,10 @@ function endTime(value: string) {
   return timeString(Math.min(23 * 60, hours * 60 + minutes + 60));
 }
 function Chip({ label, selected, onPress }: { label: string; selected: boolean; onPress: () => void }) {
+  const { colors: themeColors } = useTheme();
   return (
-    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={onPress} style={[styles.chip, selected && styles.chipSelected]}>
-      <Text style={[styles.chipText, selected && styles.chipTextSelected]}>{label}</Text>
+    <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={onPress} style={[styles.chip, { backgroundColor: themeColors.surface, borderColor: themeColors.line }, selected && { backgroundColor: themeColors.accentSurface, borderColor: themeColors.accentBorder }]}>
+      <Text style={[styles.chipText, { color: themeColors.muted }, selected && { color: themeColors.text, fontWeight: '700' }]}>{label}</Text>
     </Pressable>
   );
 }
@@ -94,6 +96,7 @@ function DiscreteRail({
   onChange: (value: number) => void;
   label: string;
 }) {
+  const { colors: themeColors, isLight } = useTheme();
   const [width, setWidth] = useState(1);
   const clamped = Math.min(maximum, Math.max(minimum, value));
   const position = ((clamped - minimum) / Math.max(1, maximum - minimum)) * 100;
@@ -115,15 +118,16 @@ function DiscreteRail({
       onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
       onPress={(event: GestureResponderEvent) => updateFromX(event.nativeEvent.locationX)}
       style={styles.railTouch}>
-      <View style={styles.rail} />
-      <View style={[styles.railFill, { width: `${position}%` }]} />
-      <View style={[styles.railDot, { left: `${position}%` }]} />
+      <View style={[styles.rail, { backgroundColor: isLight ? themeColors.line : '#211C1D' }]} />
+      <View style={[styles.railFill, { width: `${position}%`, backgroundColor: themeColors.gold }]} />
+      <View style={[styles.railDot, { left: `${position}%`, backgroundColor: isLight ? themeColors.surface : themeColors.text, borderColor: themeColors.gold, shadowColor: themeColors.gold }]} />
     </Pressable>
   );
 }
 
 export default function BookingScreen() {
   const { user } = useAuth();
+  const { colors: themeColors, isLight } = useTheme();
   const { draft, update, reset } = useBookingDraft();
   const step = Math.min(draft.step, STEPS.length - 1);
   const [error, setError] = useState('');
@@ -222,26 +226,26 @@ export default function BookingScreen() {
         : Boolean(draft.paymentMethod);
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]}>
       <View pointerEvents="none" style={styles.backgroundFade}>
         <Svg width="100%" height="100%" preserveAspectRatio="none">
           <Defs>
             <LinearGradient id="bookingBackgroundFade" x1="0" y1="0" x2="0.9" y2="1">
-              <Stop offset="0" stopColor="#24101A" stopOpacity="1" />
-              <Stop offset="0.42" stopColor="#140B11" stopOpacity="1" />
-              <Stop offset="1" stopColor="#0D0B0C" stopOpacity="1" />
+              <Stop offset="0" stopColor={isLight ? '#D7BBC2' : '#24101A'} stopOpacity="1" />
+              <Stop offset="0.42" stopColor={isLight ? '#F2E5E5' : '#140B11'} stopOpacity="1" />
+              <Stop offset="1" stopColor={isLight ? '#F8F3EE' : '#0D0B0C'} stopOpacity="1" />
             </LinearGradient>
           </Defs>
           <Rect width="100%" height="100%" fill="url(#bookingBackgroundFade)" />
         </Svg>
       </View>
       <View style={styles.top}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={back} style={styles.topButton}><ChevronLeft color={colors.text} size={22} /></Pressable>
-        <View style={styles.progressCopy}><Text style={styles.progressStep}>Step {step + 1} of {STEPS.length}</Text><Text style={styles.progress}>{STEPS[step]}</Text></View>
-        <Pressable accessibilityRole="button" accessibilityLabel="Close booking" onPress={() => router.replace('/')} style={styles.topButton}><X color={colors.text} size={20} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={back} style={styles.topButton}><ChevronLeft color={themeColors.text} size={22} /></Pressable>
+        <View style={styles.progressCopy}><Text style={[styles.progressStep, { color: themeColors.goldSoft }]}>Step {step + 1} of {STEPS.length}</Text><Text style={[styles.progress, { color: themeColors.text }]}>{STEPS[step]}</Text></View>
+        <Pressable accessibilityRole="button" accessibilityLabel="Close booking" onPress={() => router.replace('/')} style={styles.topButton}><X color={themeColors.text} size={20} /></Pressable>
       </View>
-      <View style={styles.progressTrack}><View style={[styles.progressFill, { width: `${((step + 1) / STEPS.length) * 100}%` }]} /></View>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <View style={[styles.progressTrack, { backgroundColor: themeColors.line }]}><View style={[styles.progressFill, { width: `${((step + 1) / STEPS.length) * 100}%`, backgroundColor: themeColors.gold }]} /></View>
+      <ScrollView contentContainerStyle={[styles.content, { backgroundColor: themeColors.background }]} keyboardShouldPersistTaps="handled">
         {step === 0 ? (
           <>
             <View style={styles.stepHeader}>
@@ -249,26 +253,26 @@ export default function BookingScreen() {
               <Title>Who, and when?</Title>
             </View>
             <View style={styles.peopleCounter}>
-              <Pressable accessibilityLabel="Remove one guest" disabled={draft.partySize <= 2} onPress={() => update({ partySize: draft.partySize - 1, totalBudget: Math.max((draft.partySize - 1) * 50, draft.totalBudget) })} style={[styles.counterButton, draft.partySize <= 2 && styles.disabled]}><Minus color={colors.gold} size={20} /></Pressable>
-              <View style={styles.peopleValue}><Text style={styles.count}>{draft.partySize}</Text><Text style={styles.peopleLabel}>people</Text><Text style={styles.peopleEmoji}>{Array.from({ length: draft.partySize }, () => '🧑').join(' ')}</Text></View>
-              <Pressable accessibilityLabel="Add one guest" disabled={draft.partySize >= 6} onPress={() => update({ partySize: draft.partySize + 1, totalBudget: Math.max((draft.partySize + 1) * 50, draft.totalBudget) })} style={[styles.counterButton, draft.partySize >= 6 && styles.disabled]}><Plus color={colors.gold} size={20} /></Pressable>
+              <Pressable accessibilityLabel="Remove one guest" disabled={draft.partySize <= 2} onPress={() => update({ partySize: draft.partySize - 1, totalBudget: Math.max((draft.partySize - 1) * 50, draft.totalBudget) })} style={[styles.counterButton, { backgroundColor: themeColors.surface, borderColor: themeColors.selectedBorder }, draft.partySize <= 2 && styles.disabled]}><Minus color={themeColors.gold} size={20} /></Pressable>
+              <View style={styles.peopleValue}><Text style={[styles.count, { color: themeColors.text }]}>{draft.partySize}</Text><Text style={[styles.peopleLabel, { color: themeColors.muted }]}>people</Text><Text style={styles.peopleEmoji}>{Array.from({ length: draft.partySize }, () => '🧑').join(' ')}</Text></View>
+              <Pressable accessibilityLabel="Add one guest" disabled={draft.partySize >= 6} onPress={() => update({ partySize: draft.partySize + 1, totalBudget: Math.max((draft.partySize + 1) * 50, draft.totalBudget) })} style={[styles.counterButton, { backgroundColor: themeColors.surface, borderColor: themeColors.selectedBorder }, draft.partySize >= 6 && styles.disabled]}><Plus color={themeColors.gold} size={20} /></Pressable>
             </View>
             <View style={styles.divider} />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickDates}>
               {quickDates.map((date, index) => {
                 const selected = effectiveDate === dateString(date);
                 const label = index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : new Intl.DateTimeFormat('en-AE', { weekday: 'short' }).format(date);
-                return <Pressable key={date.toISOString()} onPress={() => update({ date: dateString(date) })} style={[styles.dateChip, selected && styles.dateChipSelected]}><Text style={[styles.dateLabel, selected && styles.selectedText]}>{label}</Text><Text style={[styles.dateValue, selected && styles.selectedText]}>{displayDate(date)}</Text></Pressable>;
+              return <Pressable key={date.toISOString()} onPress={() => update({ date: dateString(date) })} style={[styles.dateChip, { backgroundColor: themeColors.surface, borderColor: themeColors.line }, selected && [styles.dateChipSelected, { backgroundColor: themeColors.accentSurface, borderColor: themeColors.accentBorder }]]}><Text style={[styles.dateLabel, { color: themeColors.textSoft }, selected && styles.selectedText]}>{label}</Text><Text style={[styles.dateValue, { color: themeColors.muted }, selected && styles.selectedText]}>{displayDate(date)}</Text></Pressable>;
             })}
             </ScrollView>
             <Text style={styles.fieldHint}>Or choose another date</Text>
-            <View style={styles.datePicker}>
+            <View style={[styles.datePicker, { backgroundColor: themeColors.surface, borderColor: themeColors.line }]}>
               <DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} />
               <Text style={styles.dateTimeValue}>{draft.time}–{endTime(draft.time)}</Text>
             </View>
             <View style={styles.mealBadge}><Text style={styles.mealBadgeText}>{timeMinutes < 11 * 60 ? 'BREAKFAST' : timeMinutes < 16 * 60 ? 'LUNCH' : 'DINNER'}</Text></View>
             <DiscreteRail value={timeMinutes} minimum={7 * 60} maximum={22 * 60} step={15} label="Reservation start time" onChange={(value) => update({ time: timeString(value) })} />
-            <View style={styles.railLabels}><Text style={styles.railLabel}>07:00</Text><Text style={styles.railLabel}>11:00</Text><Text style={styles.railLabel}>15:00</Text><Text style={styles.railLabel}>19:00</Text><Text style={styles.railLabel}>23:00</Text></View>
+            <View style={styles.railLabels}><Text style={[styles.railLabel, { color: themeColors.muted }]}>07:00</Text><Text style={[styles.railLabel, { color: themeColors.muted }]}>11:00</Text><Text style={[styles.railLabel, { color: themeColors.muted }]}>15:00</Text><Text style={[styles.railLabel, { color: themeColors.muted }]}>19:00</Text><Text style={[styles.railLabel, { color: themeColors.muted }]}>23:00</Text></View>
             {!reservationInFuture ? <InlineError message="Choose a future time in Dubai." /> : null}
           </>
         ) : null}
@@ -280,22 +284,22 @@ export default function BookingScreen() {
               <Title>How much, and what mood?</Title>
               <Body muted>Steps of AED 50 — minimum AED 50 a person, cap AED 1,000.</Body>
             </View>
-            <View style={styles.sliderLabelRow}><Text style={styles.sliderTitle}>Maximum table budget</Text><Text style={styles.sliderValue}>AED {draft.totalBudget}</Text></View>
+            <View style={styles.sliderLabelRow}><Text style={[styles.sliderTitle, { color: themeColors.text }]}>Maximum table budget</Text><Text style={[styles.sliderValue, { color: themeColors.gold }]}>AED {draft.totalBudget}</Text></View>
             <DiscreteRail value={draft.totalBudget} minimum={minBudget} maximum={1000} step={50} label="Maximum table budget" onChange={(totalBudget) => update({ totalBudget })} />
-            <View style={styles.tipBubble}><Text style={styles.tipText}>{draft.totalBudget <= minBudget ? '🥤 The waiter will refill your water and nothing else.' : draft.totalBudget < 400 ? '🍜 Relaxed, delicious, and comfortably within budget.' : '🥂 A table made for a proper night out.'}</Text></View>
+            <View style={[styles.tipBubble, { backgroundColor: isLight ? themeColors.surfaceRaised : '#1D1512', borderColor: isLight ? themeColors.border : '#33261C' }]}><Text style={[styles.tipText, { color: themeColors.textSoft }]}>{draft.totalBudget <= minBudget ? '🥤 The waiter will refill your water and nothing else.' : draft.totalBudget < 400 ? '🍜 Relaxed, delicious, and comfortably within budget.' : '🥂 A table made for a proper night out.'}</Text></View>
             <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>Outing vibe</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Outing vibe</Text>
             <View style={styles.chips}>{VIBES.map((vibe) => <Chip key={vibe} label={`${VIBE_EMOJI[vibe]} ${vibe}`} selected={draft.vibe === vibe} onPress={() => update({ vibe })} />)}</View>
-            <View style={styles.tipBubble}><Text style={styles.tipText}>{VIBE_EMOJI[draft.vibe]} {draft.vibe === 'Casual' ? 'Zero dress code, zero stress — flip-flops fully authorized.' : `We’ll shape the surprise around a ${draft.vibe.toLowerCase()} mood.`}</Text></View>
+            <View style={[styles.tipBubble, { backgroundColor: isLight ? themeColors.surfaceRaised : '#1D1512', borderColor: isLight ? themeColors.border : '#33261C' }]}><Text style={[styles.tipText, { color: themeColors.textSoft }]}>{VIBE_EMOJI[draft.vibe]} {draft.vibe === 'Casual' ? 'Zero dress code, zero stress — flip-flops fully authorized.' : `We’ll shape the surprise around a ${draft.vibe.toLowerCase()} mood.`}</Text></View>
             <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>Tastes</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>Tastes</Text>
             <Body muted>Anything you’d rather rule out tonight?</Body>
-            <View style={styles.segmented}>
-              <Pressable onPress={() => { setPickingTastes(false); update({ excludedCuisineTypes: [] }); }} style={[styles.segment, !pickingTastes && styles.segmentSelected]}><Text style={styles.segmentText}>No, open to anything</Text></Pressable>
-              <Pressable onPress={() => setPickingTastes(true)} style={[styles.segment, pickingTastes && styles.segmentSelected]}><Text style={styles.segmentText}>Yes, let me pick</Text></Pressable>
+            <View style={[styles.segmented, { backgroundColor: isLight ? themeColors.surfaceRaised : '#0C0B0C', borderColor: themeColors.line }]}>
+              <Pressable onPress={() => { setPickingTastes(false); update({ excludedCuisineTypes: [] }); }} style={[styles.segment, !pickingTastes && { backgroundColor: themeColors.selected, borderColor: themeColors.selectedBorder }]}><Text style={[styles.segmentText, { color: themeColors.textSoft }]}>No, open to anything</Text></Pressable>
+              <Pressable onPress={() => setPickingTastes(true)} style={[styles.segment, pickingTastes && { backgroundColor: themeColors.selected, borderColor: themeColors.selectedBorder }]}><Text style={[styles.segmentText, { color: themeColors.textSoft }]}>Yes, let me pick</Text></Pressable>
             </View>
             {pickingTastes ? <><View style={styles.chips}>{CUISINES.map((cuisine) => <Chip key={cuisine} label={cuisine} selected={draft.excludedCuisineTypes.includes(cuisine)} onPress={() => toggle('excludedCuisineTypes', cuisine, 3)} />)}</View><Body muted>{draft.excludedCuisineTypes.length}/3 excluded</Body></> : null}
-            <Pressable onPress={() => { setDietaryOpen((current) => !current); if (dietaryOpen) update({ dietaryPreferences: [], allergyNotes: '' }); }} style={styles.allergyToggle}><View style={[styles.checkbox, dietaryOpen && styles.checkboxChecked]}>{dietaryOpen ? <Check size={14} color={colors.primaryText} strokeWidth={3} /> : null}</View><Text style={styles.allergyText}>⚠️ Allergies or dietary conditions?</Text></Pressable>
+            <Pressable onPress={() => { setDietaryOpen((current) => !current); if (dietaryOpen) update({ dietaryPreferences: [], allergyNotes: '' }); }} style={[styles.allergyToggle, { backgroundColor: isLight ? themeColors.surface : colors.surface, borderColor: themeColors.line }]}><View style={[styles.checkbox, dietaryOpen && styles.checkboxChecked]}>{dietaryOpen ? <Check size={14} color={themeColors.primaryText} strokeWidth={3} /> : null}</View><Text style={[styles.allergyText, { color: themeColors.text }]}>⚠️ Allergies or dietary conditions?</Text></Pressable>
             {dietaryOpen ? <><View style={styles.chips}>{DIETARY.map((diet) => <Chip key={diet} label={diet} selected={draft.dietaryPreferences.includes(diet)} onPress={() => toggle('dietaryPreferences', diet)} />)}</View><Field label="Allergy notes" value={draft.allergyNotes} onChangeText={(allergyNotes) => update({ allergyNotes })} multiline maxLength={500} placeholder="Tell us what the restaurant needs to know" /></> : null}
           </>
         ) : null}
@@ -307,25 +311,25 @@ export default function BookingScreen() {
               <Title>First — where are you?</Title>
               <Body muted>We need to know this to measure how far away your restaurant is.</Body>
             </View>
-            <Pressable onPress={() => update({ anywhere: !draft.anywhere, ...(draft.anywhere ? { locationLabel: '', latitude: null, longitude: null, radiusKm: 5 } : { locationLabel: 'Anywhere in Dubai', latitude: 25.2048, longitude: 55.2708, radiusKm: 25 }) })} style={styles.anywhereToggle} accessibilityRole="checkbox" accessibilityState={{ checked: draft.anywhere }}>
+            <Pressable onPress={() => update({ anywhere: !draft.anywhere, ...(draft.anywhere ? { locationLabel: '', latitude: null, longitude: null, radiusKm: 5 } : { locationLabel: 'Anywhere in Dubai', latitude: 25.2048, longitude: 55.2708, radiusKm: 25 }) })} style={[styles.anywhereToggle, { backgroundColor: isLight ? themeColors.accentSurface : colors.accentSurface, borderColor: themeColors.accentBorder }]} accessibilityRole="checkbox" accessibilityState={{ checked: draft.anywhere }}>
               <View style={[styles.checkbox, draft.anywhere && styles.checkboxChecked]}>{draft.anywhere ? <Check size={14} color={colors.primaryText} strokeWidth={3} /> : null}</View>
-              <Text style={styles.anywhereText}>Take me wherever you want!</Text>
+              <Text style={[styles.anywhereText, { color: themeColors.text }]}>Take me wherever you want!</Text>
             </Pressable>
             {!draft.anywhere ? <>
               <Text style={styles.fieldHint}>Choose your area in Dubai</Text>
-              <Pressable accessibilityRole="button" onPress={() => setShowAreas((current) => !current)} style={styles.areaSelect}><Text style={[styles.areaSelectText, !draft.locationLabel && styles.mutedText]} numberOfLines={1}>{draft.locationLabel || 'Select an area'}</Text><ChevronDown color={colors.muted} size={18} /></Pressable>
+              <Pressable accessibilityRole="button" onPress={() => setShowAreas((current) => !current)} style={[styles.areaSelect, { backgroundColor: themeColors.surface, borderColor: themeColors.line }]}><Text style={[styles.areaSelectText, { color: draft.locationLabel ? themeColors.text : themeColors.muted }]} numberOfLines={1}>{draft.locationLabel || 'Select an area'}</Text><ChevronDown color={themeColors.muted} size={18} /></Pressable>
               {showAreas ? <View style={styles.areaGrid}>{DUBAI_AREAS.map((area) => <Chip key={area.name} label={area.name} selected={draft.locationLabel.startsWith(area.name)} onPress={() => void selectArea(area)} />)}</View> : null}
               <View style={styles.orRow}><View style={styles.orLine} /><Text style={styles.orText}>OR</Text><View style={styles.orLine} /></View>
               <Button variant="secondary" onPress={() => void locateDevice()}><LocateFixed color={colors.text} size={16} /> Use my current location</Button>
               {locationStatus ? <Card><View style={styles.inline}><MapPin color={colors.gold} size={16} /><Body>{locationStatus}</Body></View></Card> : null}
             </> : null}
-            {draft.anywhere ? <Card style={styles.anywhereMessage}><Text style={styles.anywhereTitle}>This is the attitude.</Text><Body muted>This is exactly the kind of client we love at Run Out. We won’t disappoint you.</Body></Card> : <>
+            {draft.anywhere ? <Card style={{ ...styles.anywhereMessage, ...(isLight ? { backgroundColor: themeColors.surfaceRaised, borderColor: themeColors.border } : {}) }}><Text style={[styles.anywhereTitle, { color: themeColors.gold }]}>This is the attitude.</Text><Body muted>This is exactly the kind of client we love at Run Out. We won’t disappoint you.</Body></Card> : <>
             <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>How far are you willing to travel?</Text>
+            <Text style={[styles.sectionTitle, { color: themeColors.text }]}>How far are you willing to travel?</Text>
               <Body muted>Set the farthest you’re willing to travel from there.</Body>
-              <View style={styles.sliderLabelRow}><Text style={styles.sliderTitle}>Travel distance</Text><Text style={styles.sliderValue}>{draft.radiusKm} km</Text></View>
+              <View style={styles.sliderLabelRow}><Text style={[styles.sliderTitle, { color: themeColors.text }]}>Travel distance</Text><Text style={[styles.sliderValue, { color: themeColors.gold }]}>{draft.radiusKm} km</Text></View>
               <DiscreteRail value={draft.radiusKm} minimum={1} maximum={25} step={1} label="Maximum travel distance in kilometres" onChange={(radiusKm) => update({ radiusKm })} />
-              <View style={styles.distanceLabels}><Text style={styles.railLabel}>1 km</Text><Text style={styles.railLabel}>25 km</Text></View>
+              <View style={styles.distanceLabels}><Text style={[styles.railLabel, { color: themeColors.muted }]}>1 km</Text><Text style={[styles.railLabel, { color: themeColors.muted }]}>25 km</Text></View>
               <View style={styles.chipsCentered}>{[1, 3, 5, 10, 25].map((km) => <Chip key={km} label={`${km} km`} selected={draft.radiusKm === km} onPress={() => update({ radiusKm: km })} />)}</View>
             </>}
             {!canContinue ? <Body muted>Choose an area or use your device location to continue.</Body> : null}
@@ -340,15 +344,15 @@ export default function BookingScreen() {
               <Body muted>Complete the mock payment to secure your mystery table. No real charge is made in this demo.</Body>
             </View>
             <Card style={styles.paymentSummary}>
-              <View style={styles.summaryRow}><Body>Reservation service fee</Body><Text style={styles.struck}>AED 0</Text></View>
+              <View style={styles.summaryRow}><Body>Reservation service fee</Body><Text style={[styles.struck, { color: themeColors.muted }]}>AED 0</Text></View>
               <View style={styles.summaryDivider} />
-              <View style={styles.summaryRow}><Body>Mock payment total</Body><Text style={styles.summaryTotal}>AED {draft.totalBudget}</Text></View>
+              <View style={styles.summaryRow}><Body>Mock payment total</Body><Text style={[styles.summaryTotal, { color: themeColors.text }]}>AED {draft.totalBudget}</Text></View>
               <View style={styles.summaryRow}><Body muted>Reservation budget for {draft.partySize}</Body><Body muted>AED {draft.totalBudget}</Body></View>
             </Card>
             <View style={styles.paymentMethods}>{PAYMENT_METHODS.map(({ id, label, Icon }) => { const selected = draft.paymentMethod === id; return <Pressable key={id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => update({ paymentMethod: id })} style={[styles.paymentMethod, selected && styles.paymentMethodSelected]}><Icon color={selected ? colors.gold : colors.textSoft} size={24} strokeWidth={1.7} /><Text style={styles.paymentLabel}>{label}</Text>{selected ? <View style={styles.paymentCheck}><Check size={12} color={colors.primaryText} strokeWidth={3} /></View> : null}</Pressable>; })}</View>
             <View style={styles.demoNote}><LockKeyhole size={16} color={colors.warning} /><Body muted>Demo checkout — nothing is charged.</Body></View>
-            {!user ? <Card style={styles.accountNote}><Text style={styles.accountTitle}>Create your account to pay</Text><Body muted>You can plan the whole mystery as a guest. We’ll ask you to register only when you’re ready to seal the reservation.</Body></Card> : null}
-            <Card style={styles.envelopePromise}><Text style={styles.envelopePromiseTitle}>✉️ Your sealed reveal</Text><Body muted>After payment, the restaurant and menu go into a sealed envelope. It opens with an animation exactly at your confirmed reservation time.</Body></Card>
+            {!user ? <Card style={{ ...styles.accountNote, ...(isLight ? { backgroundColor: themeColors.accentSurface, borderColor: themeColors.accentBorder } : {}) }}><Text style={[styles.accountTitle, { color: themeColors.text }]}>Create your account to pay</Text><Body muted>You can plan the whole mystery as a guest. We’ll ask you to register only when you’re ready to seal the reservation.</Body></Card> : null}
+            <Card style={{ ...styles.envelopePromise, ...(isLight ? { backgroundColor: themeColors.surfaceRaised, borderColor: themeColors.border } : {}) }}><Text style={[styles.envelopePromiseTitle, { color: themeColors.text }]}>✉️ Your sealed reveal</Text><Body muted>After payment, the restaurant and menu go into a sealed envelope. It opens with an animation exactly at your confirmed reservation time.</Body></Card>
             {error ? <InlineError message={error} /> : null}
             <Button variant="ghost" onPress={back}>← Back</Button>
             <Button disabled={!draft.paymentMethod} loading={submitting} onPress={() => void confirm()}>{draft.paymentMethod ? (user ? `Pay AED ${draft.totalBudget} & seal envelope` : 'Create account to continue') : 'Choose how to pay'}</Button>
