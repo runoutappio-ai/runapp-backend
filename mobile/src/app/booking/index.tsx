@@ -29,6 +29,7 @@ import {
   X,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Defs, LinearGradient, Stop, Rect } from 'react-native-svg';
 import { useAuth } from '@/auth/AuthProvider';
 import { api } from '@/api/client';
 import { queryClient } from '@/api/query';
@@ -222,6 +223,18 @@ export default function BookingScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
+      <View pointerEvents="none" style={styles.backgroundFade}>
+        <Svg width="100%" height="100%" preserveAspectRatio="none">
+          <Defs>
+            <LinearGradient id="bookingBackgroundFade" x1="0" y1="0" x2="0.9" y2="1">
+              <Stop offset="0" stopColor="#321322" stopOpacity="1" />
+              <Stop offset="0.42" stopColor="#190D14" stopOpacity="1" />
+              <Stop offset="1" stopColor="#0D0B0C" stopOpacity="1" />
+            </LinearGradient>
+          </Defs>
+          <Rect width="100%" height="100%" fill="url(#bookingBackgroundFade)" />
+        </Svg>
+      </View>
       <View style={styles.top}>
         <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={back} style={styles.topButton}><ChevronLeft color={colors.text} size={22} /></Pressable>
         <View style={styles.progressCopy}><Text style={styles.progressStep}>Step {step + 1} of {STEPS.length}</Text><Text style={styles.progress}>{STEPS[step]}</Text></View>
@@ -234,7 +247,6 @@ export default function BookingScreen() {
             <View style={styles.stepHeader}>
               <Eyebrow>Your table</Eyebrow>
               <Title>Who, and when?</Title>
-              <Body muted>Tables for two to six. We’ll size everything else to your party.</Body>
             </View>
             <View style={styles.peopleCounter}>
               <Pressable accessibilityLabel="Remove one guest" disabled={draft.partySize <= 2} onPress={() => update({ partySize: draft.partySize - 1, totalBudget: Math.max((draft.partySize - 1) * 50, draft.totalBudget) })} style={[styles.counterButton, draft.partySize <= 2 && styles.disabled]}><Minus color={colors.gold} size={20} /></Pressable>
@@ -242,17 +254,18 @@ export default function BookingScreen() {
               <Pressable accessibilityLabel="Add one guest" disabled={draft.partySize >= 6} onPress={() => update({ partySize: draft.partySize + 1, totalBudget: Math.max((draft.partySize + 1) * 50, draft.totalBudget) })} style={[styles.counterButton, draft.partySize >= 6 && styles.disabled]}><Plus color={colors.gold} size={20} /></Pressable>
             </View>
             <View style={styles.divider} />
-            <Text style={styles.sectionTitle}>When?</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickDates}>
               {quickDates.map((date, index) => {
                 const selected = effectiveDate === dateString(date);
                 const label = index === 0 ? 'Today' : index === 1 ? 'Tomorrow' : new Intl.DateTimeFormat('en-AE', { weekday: 'short' }).format(date);
                 return <Pressable key={date.toISOString()} onPress={() => update({ date: dateString(date) })} style={[styles.dateChip, selected && styles.dateChipSelected]}><Text style={[styles.dateLabel, selected && styles.selectedText]}>{label}</Text><Text style={[styles.dateValue, selected && styles.selectedText]}>{displayDate(date)}</Text></Pressable>;
-              })}
+            })}
             </ScrollView>
             <Text style={styles.fieldHint}>Or choose another date</Text>
-            <View style={styles.datePicker}><DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} /></View>
-            <View style={styles.timeHeader}><Text style={styles.sliderTitle}>Start time</Text><Text style={styles.sliderValue}>{draft.time}–{endTime(draft.time)}</Text></View>
+            <View style={styles.dateTimeRow}>
+              <View style={styles.datePicker}><DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} /></View>
+              <Text style={styles.dateTimeValue}>{draft.time}–{endTime(draft.time)}</Text>
+            </View>
             <View style={styles.mealBadge}><Text style={styles.mealBadgeText}>{timeMinutes < 11 * 60 ? 'BREAKFAST' : timeMinutes < 16 * 60 ? 'LUNCH' : 'DINNER'}</Text></View>
             <DiscreteRail value={timeMinutes} minimum={7 * 60} maximum={22 * 60} step={15} label="Reservation start time" onChange={(value) => update({ time: timeString(value) })} />
             <View style={styles.railLabels}><Text style={styles.railLabel}>07:00</Text><Text style={styles.railLabel}>11:00</Text><Text style={styles.railLabel}>15:00</Text><Text style={styles.railLabel}>19:00</Text><Text style={styles.railLabel}>23:00</Text></View>
@@ -333,7 +346,14 @@ export default function BookingScreen() {
           </>
         ) : null}
       </ScrollView>
-      {step < STEPS.length - 1 ? <View style={styles.footer}><Button disabled={!canContinue} onPress={next}>Next →</Button></View> : null}
+      {step < STEPS.length - 1 ? (
+        <View style={styles.footer}>
+          <View style={styles.footerActions}>
+            <View style={styles.backButton}><Button variant="ghost" onPress={back}>← Back</Button></View>
+            <View style={styles.nextButton}><Button disabled={!canContinue} onPress={next}>Next →</Button></View>
+          </View>
+        </View>
+      ) : null}
       <AppTabBar />
     </SafeAreaView>
   );
@@ -341,6 +361,7 @@ export default function BookingScreen() {
 
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.background },
+  backgroundFade: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
   top: { height: 56, paddingHorizontal: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   progressCopy: { alignItems: 'center', gap: 1 },
@@ -350,7 +371,10 @@ const styles = StyleSheet.create({
   progressFill: { height: 3, borderRadius: 2, backgroundColor: colors.gold },
   content: { paddingHorizontal: 20, paddingTop: spacing.lg, paddingBottom: 210, gap: 14 },
   stepHeader: { gap: 6, marginBottom: 4 },
-  footer: { position: 'absolute', bottom: 76, left: 0, right: 0, alignItems: 'flex-end', paddingHorizontal: 20, paddingTop: 12, paddingBottom: spacing.md, backgroundColor: '#0E0C0D', borderTopWidth: StyleSheet.hairlineWidth, borderColor: colors.border },
+  footer: { position: 'absolute', bottom: 100, left: 0, right: 0, paddingHorizontal: 20, paddingTop: 10, paddingBottom: 12, backgroundColor: 'transparent' },
+  footerActions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  backButton: { borderRadius: radius.pill, shadowColor: '#000000', shadowOpacity: 0.22, shadowRadius: 10, shadowOffset: { width: 0, height: 5 }, elevation: 4 },
+  nextButton: { minWidth: 142, borderRadius: radius.pill, shadowColor: colors.gold, shadowOpacity: 0.16, shadowRadius: 12, shadowOffset: { width: 0, height: 5 }, elevation: 5 },
   disabled: { opacity: 0.35 },
   mutedText: { color: colors.muted },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: spacing.sm, backgroundColor: colors.border },
@@ -368,8 +392,9 @@ const styles = StyleSheet.create({
   dateLabel: { color: colors.textSoft, fontSize: 13, fontWeight: '700' },
   dateValue: { color: colors.muted, fontSize: 11.5, marginTop: 2 },
   selectedText: { color: colors.text },
-  datePicker: { minHeight: 50, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.sm, paddingHorizontal: 12, alignItems: 'flex-start', justifyContent: 'center' },
-  timeHeader: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: spacing.sm },
+  dateTimeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  datePicker: { flex: 1, minHeight: 50, borderWidth: 1, borderColor: colors.line, backgroundColor: colors.surface, borderRadius: radius.sm, paddingHorizontal: 12, alignItems: 'flex-start', justifyContent: 'center' },
+  dateTimeValue: { color: colors.gold, fontSize: 16, fontWeight: '800', minWidth: 104, textAlign: 'right' },
   sliderLabelRow: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', marginTop: spacing.sm },
   sliderTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   sliderValue: { color: colors.gold, fontSize: 16, fontWeight: '800' },
