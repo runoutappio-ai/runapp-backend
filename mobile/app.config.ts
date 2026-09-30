@@ -58,7 +58,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
   ],
-  experiments: { typedRoutes: true, reactCompiler: true },
+  web: {
+    output: 'single',
+    bundler: 'metro',
+    favicon: './assets/images/favicon.png',
+  },
+  experiments: {
+    typedRoutes: true,
+    reactCompiler: true,
+    // The hosted web demo lives at /app/ (the presentation deck is served at the site root).
+    ...(process.env.EXPO_PUBLIC_DEMO_MODE === 'true' ? { baseUrl: '/app' } : {}),
+  },
   extra: {
     apiUrl: process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:8080',
     keycloakUrl: process.env.EXPO_PUBLIC_KEYCLOAK_URL ?? 'http://localhost:8081',

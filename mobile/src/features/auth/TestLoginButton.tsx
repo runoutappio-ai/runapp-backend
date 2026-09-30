@@ -18,9 +18,13 @@ export function TestLoginButton() {
   return (
     <>
       {error ? <InlineError message={error} /> : null}
-      <Button variant="ghost" loading={busy} onPress={() => void run()} accessibilityLabel="Test login">
-        <FlaskConical size={15} color={colors.gold} /> Test login
-      </Button>
+      {config.demoMode ? (
+        <Button loading={busy} onPress={() => void run()} accessibilityLabel="Enter the demo">Enter the demo</Button>
+      ) : (
+        <Button variant="ghost" loading={busy} onPress={() => void run()} accessibilityLabel="Test login">
+          <FlaskConical size={15} color={colors.gold} /> Test login
+        </Button>
+      )}
     </>
   );
 }

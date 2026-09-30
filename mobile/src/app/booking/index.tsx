@@ -1,8 +1,8 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   type AccessibilityActionEvent,
   type GestureResponderEvent,
-  type LayoutChangeEvent,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -97,31 +97,51 @@ function DiscreteRail({
   label: string;
 }) {
   const { colors: themeColors, isLight } = useTheme();
-  const [width, setWidth] = useState(1);
+  const railRef = useRef<View>(null);
+  const bounds = useRef({ left: 0, width: 1 });
   const clamped = Math.min(maximum, Math.max(minimum, value));
   const position = ((clamped - minimum) / Math.max(1, maximum - minimum)) * 100;
-  const updateFromX = (x: number) => {
-    const raw = minimum + (Math.max(0, Math.min(width, x)) / width) * (maximum - minimum);
-    onChange(Math.min(maximum, Math.max(minimum, Math.round(raw / step) * step)));
+  // Track where the rail sits on screen so a tap or drag anywhere maps to a value.
+  // On web we read the DOM rect (correct even when the demo phone frame is scaled).
+  const measureRail = () => {
+    const node = railRef.current as unknown as { getBoundingClientRect?: () => DOMRect } | null;
+    if (Platform.OS === 'web' && node?.getBoundingClientRect) {
+      const rect = node.getBoundingClientRect();
+      bounds.current = { left: rect.left + (typeof window !== 'undefined' ? window.scrollX : 0), width: Math.max(1, rect.width) };
+      return;
+    }
+    railRef.current?.measure((_x, _y, width, _height, pageX) => { bounds.current = { left: pageX, width: Math.max(1, width) }; });
+  };
+  const updateFromPageX = (pageX: number) => {
+    const { left, width } = bounds.current;
+    const ratio = Math.max(0, Math.min(1, (pageX - left) / width));
+    const next = Math.min(maximum, Math.max(minimum, Math.round((minimum + ratio * (maximum - minimum)) / step) * step));
+    if (next !== clamped) onChange(next);
   };
   const onAccessibilityAction = (event: AccessibilityActionEvent) => {
     const delta = event.nativeEvent.actionName === 'increment' ? step : -step;
     onChange(Math.min(maximum, Math.max(minimum, clamped + delta)));
   };
   return (
-    <Pressable
+    <View
+      ref={railRef}
+      accessible
       accessibilityRole="adjustable"
       accessibilityLabel={label}
       accessibilityValue={{ min: minimum, max: maximum, now: clamped }}
       accessibilityActions={[{ name: 'increment' }, { name: 'decrement' }]}
       onAccessibilityAction={onAccessibilityAction}
-      onLayout={(event: LayoutChangeEvent) => setWidth(event.nativeEvent.layout.width)}
-      onPress={(event: GestureResponderEvent) => updateFromX(event.nativeEvent.locationX)}
-      style={styles.railTouch}>
-      <View style={[styles.rail, { backgroundColor: isLight ? themeColors.line : '#211C1D' }]} />
-      <View style={[styles.railFill, { width: `${position}%`, backgroundColor: themeColors.gold }]} />
-      <View style={[styles.railDot, { left: `${position}%`, backgroundColor: isLight ? themeColors.surface : themeColors.text, borderColor: themeColors.gold, shadowColor: themeColors.gold }]} />
-    </Pressable>
+      onLayout={measureRail}
+      onStartShouldSetResponder={() => true}
+      onMoveShouldSetResponder={() => true}
+      onResponderTerminationRequest={() => false}
+      onResponderGrant={(event: GestureResponderEvent) => { measureRail(); updateFromPageX(event.nativeEvent.pageX); }}
+      onResponderMove={(event: GestureResponderEvent) => updateFromPageX(event.nativeEvent.pageX)}
+      style={[styles.railTouch, Platform.OS === 'web' && styles.railWeb]}>
+      <View pointerEvents="none" style={[styles.rail, { backgroundColor: isLight ? themeColors.line : '#211C1D' }]} />
+      <View pointerEvents="none" style={[styles.railFill, { width: `${position}%`, backgroundColor: themeColors.gold }]} />
+      <View pointerEvents="none" style={[styles.railDot, { left: `${position}%`, backgroundColor: isLight ? themeColors.surface : themeColors.text, borderColor: themeColors.gold, shadowColor: themeColors.gold }]} />
+    </View>
   );
 }
 
@@ -267,7 +287,7 @@ export default function BookingScreen() {
             </ScrollView>
             <Text style={styles.fieldHint}>Or choose another date</Text>
             <View style={[styles.datePicker, { backgroundColor: themeColors.surface, borderColor: themeColors.line }]}>
-              <DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} />
+              {Platform.OS === 'web' ? <Text style={styles.dateTimeValue}>{effectiveDate}</Text> : <DateTimePicker value={selectedDate} minimumDate={today} mode="date" display="compact" themeVariant="dark" onValueChange={(_, date) => update({ date: dateString(date) })} />}
               <Text style={styles.dateTimeValue}>{draft.time}–{endTime(draft.time)}</Text>
             </View>
             <View style={styles.mealBadge}><Text style={styles.mealBadgeText}>{timeMinutes < 11 * 60 ? 'BREAKFAST' : timeMinutes < 16 * 60 ? 'LUNCH' : 'DINNER'}</Text></View>
@@ -412,6 +432,7 @@ const styles = StyleSheet.create({
   sliderValue: { color: colors.gold, fontSize: 16, fontWeight: '800' },
   mealBadge: { alignSelf: 'center', paddingHorizontal: 12, paddingVertical: 5, borderRadius: radius.pill, backgroundColor: '#2A1A14', borderWidth: 1, borderColor: colors.accentBorder },
   mealBadgeText: { color: colors.gold, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
+  railWeb: { cursor: 'pointer', userSelect: 'none', touchAction: 'none' } as object,
   railTouch: { height: 44, justifyContent: 'center', marginHorizontal: 4 },
   rail: { height: 6, borderRadius: 3, backgroundColor: '#211C1D' },
   railFill: { position: 'absolute', left: 0, height: 6, borderRadius: 3, backgroundColor: colors.red },

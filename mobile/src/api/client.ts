@@ -33,6 +33,10 @@ async function parseFailure(response: Response): Promise<ApiError> {
 }
 
 async function request(url: string, init: RequestInit) {
+  if (config.demoMode) {
+    const { demoFetch } = await import('@/demo/server');
+    return demoFetch(url, init);
+  }
   try {
     return await fetch(url, init);
   } catch {

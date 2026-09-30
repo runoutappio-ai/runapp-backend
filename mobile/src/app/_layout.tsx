@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { Stack, router } from 'expo-router';
 import * as Notifications from 'expo-notifications';
@@ -10,6 +10,10 @@ import { BookingDraftProvider } from '@/features/booking/BookingDraftProvider';
 import { installQueryLifecycle, queryClient } from '@/api/query';
 import { colors } from '@/theme/tokens';
 import { ThemeProvider, useTheme } from '@/theme/ThemeProvider';
+import { installWebFontFallbacks } from '@/theme/webFonts';
+import { WebPhoneFrame } from '@/components/WebPhoneFrame';
+
+installWebFontFallbacks();
 
 function Navigation() {
   const { user, ready } = useAuth();
@@ -47,11 +51,16 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
         <ThemeProvider>
-          <ThemedApp />
+          <WebFrame><ThemedApp /></WebFrame>
         </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );
+}
+
+/** On web, show the app inside an iPhone mockup on desktop screens (full screen on phones). */
+function WebFrame({ children }: { children: ReactNode }) {
+  return <WebPhoneFrame>{children}</WebPhoneFrame>;
 }
 
 function ThemedApp() {
@@ -59,4 +68,6 @@ function ThemedApp() {
   return <AuthProvider><BookingDraftProvider><StatusBar style={isLight ? 'dark' : 'light'} /><Navigation /></BookingDraftProvider></AuthProvider>;
 }
 
-const styles = StyleSheet.create({ loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background } });
+const styles = StyleSheet.create({
+  loading: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.background },
+});

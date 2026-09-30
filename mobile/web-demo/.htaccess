@@ -1,0 +1,22 @@
+# Run Out site: presentation deck at the root, web app (single-page) under /app/.
+Options -MultiViews
+DirectoryIndex index.html
+RewriteEngine On
+RewriteBase /
+
+# Real files and folders are served as-is.
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Any other /app/... path (e.g. /app/reservation/123) is handled by the app.
+RewriteRule ^app/ app/index.html [L]
+
+<IfModule mod_headers.c>
+  <FilesMatch "\.(js|css|png|jpg|svg|ico|ttf|woff2?)$">
+    Header set Cache-Control "public, max-age=31536000, immutable"
+  </FilesMatch>
+  <FilesMatch "\.html$">
+    Header set Cache-Control "no-cache"
+  </FilesMatch>
+</IfModule>

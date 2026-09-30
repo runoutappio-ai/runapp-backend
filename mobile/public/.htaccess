@@ -1,0 +1,10 @@
+# Run Out web app, served from /app/ (single-page app routing for Apache/Hostinger).
+# Any /app/... path that is not a real file is handled by /app/index.html,
+# so deep links like /app/reservation/abc work on refresh.
+Options -MultiViews
+RewriteEngine On
+RewriteBase /app/
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+RewriteRule ^ index.html [L]

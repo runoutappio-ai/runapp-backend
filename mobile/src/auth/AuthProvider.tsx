@@ -24,12 +24,15 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+// In the web demo there is no Keycloak to discover, so hand AuthSession a static (unused) document.
+const DEMO_DISCOVERY: AuthSession.DiscoveryDocument = { authorizationEndpoint: 'https://demo.invalid/auth', tokenEndpoint: 'https://demo.invalid/token' };
+
 export function AuthProvider({ children }: PropsWithChildren) {
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [busy, setBusy] = useState(false);
   const tokensRef = useRef<TokenResponse | null>(null);
-  const discovery = AuthSession.useAutoDiscovery(keycloakIssuer);
+  const discovery = AuthSession.useAutoDiscovery(config.demoMode ? DEMO_DISCOVERY : keycloakIssuer);
   const redirectUri = AuthSession.makeRedirectUri({ native: config.redirectUri });
   const [request, response, promptAsync] = AuthSession.useAuthRequest(
     {
@@ -152,9 +155,10 @@ export function AuthProvider({ children }: PropsWithChildren) {
   }, [expire]);
 
   const signInWithGoogle = useCallback(async () => {
+    if (config.demoMode && config.testLogin) { await signIn(config.testLogin.email, config.testLogin.password); return; }
     if (!request || !discovery) throw new Error('Google sign-in is still loading. Please try again.');
     await promptAsync();
-  }, [discovery, promptAsync, request]);
+  }, [discovery, promptAsync, request, signIn]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
