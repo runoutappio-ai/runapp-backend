@@ -82,6 +82,7 @@ export function SealedEnvelope({ open = false, letterTitle = 'YOUR MENU', childr
           <View style={styles.pocket} />
           <View style={styles.pocketLining} />
         </View>
+        <Animated.View style={[styles.closedFlap, styles.closedFlapLine, closedFlap]} />
         <Animated.View style={[styles.closedFlap, closedFlap]} />
         <Animated.View style={[styles.seal, sealMotion]}>
           <View style={styles.sealRing}>
@@ -102,21 +103,22 @@ export function SealedEnvelope({ open = false, letterTitle = 'YOUR MENU', childr
 const styles = StyleSheet.create({
   root: { width: '100%', alignItems: 'center' },
   stage: { width: W, height: H + RISE + 8, marginTop: 4 },
-  back: { position: 'absolute', bottom: 0, width: W, height: H, borderRadius: 16, backgroundColor: '#2E0F1A', borderWidth: 1, borderColor: 'rgba(235, 196, 108, 0.25)' },
-  openFlap: { position: 'absolute', bottom: H - 1, left: 0, width: 0, height: 0, borderLeftWidth: W / 2, borderRightWidth: W / 2, borderBottomWidth: FLAP, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#5A1B30', transformOrigin: 'bottom' },
-  letter: { position: 'absolute', bottom: 14, left: 20, width: W - 40, height: H - 30, borderRadius: 6, backgroundColor: '#F6EEDD', padding: 8, shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
+  back: { position: 'absolute', bottom: 0, width: W, height: H, borderRadius: 16, backgroundColor: '#E2D2B2', borderWidth: 1, borderColor: '#D9C49A' },
+  openFlap: { position: 'absolute', bottom: H - 1, left: 0, width: 0, height: 0, borderLeftWidth: W / 2, borderRightWidth: W / 2, borderBottomWidth: FLAP, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: '#E4D3B2', transformOrigin: 'bottom' },
+  letter: { position: 'absolute', bottom: 14, left: 20, width: W - 40, height: H - 30, borderRadius: 6, backgroundColor: '#FFFDF7', padding: 8, shadowColor: '#000', shadowOpacity: 0.28, shadowRadius: 10, shadowOffset: { width: 0, height: 4 }, elevation: 4 },
   letterFrame: { flex: 1, borderWidth: 1, borderColor: '#C9A55A', borderRadius: 3, alignItems: 'center', paddingTop: 16, gap: 6 },
   letterEyebrow: { color: '#8A6A3A', fontSize: 9, fontWeight: '700', letterSpacing: 3 },
   letterTitle: { color: '#3A1321', fontFamily: SERIF_ITALIC, fontStyle: 'italic', fontSize: 24 },
   letterRule: { width: 56, height: 1, backgroundColor: '#C9A55A' },
   pocketClip: { position: 'absolute', bottom: 0, width: W, height: H, borderRadius: 16, overflow: 'hidden' },
   // Zero-size box with four borders = the classic envelope pocket (left, right, bottom folds; open top).
-  pocket: { width: 0, height: 0, borderLeftWidth: W / 2, borderRightWidth: W / 2, borderTopWidth: Math.round(H * 0.44), borderBottomWidth: H - Math.round(H * 0.44), borderTopColor: 'transparent', borderLeftColor: '#6A2037', borderRightColor: '#76263F', borderBottomColor: '#5C1B30' },
-  pocketLining: { position: 'absolute', left: 12, right: 12, bottom: 10, height: 1, backgroundColor: 'rgba(235, 196, 108, 0.35)' },
-  closedFlap: { position: 'absolute', bottom: H - FLAP, left: 0, width: 0, height: 0, borderLeftWidth: W / 2, borderRightWidth: W / 2, borderTopWidth: FLAP, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#83294A', transformOrigin: 'top' },
-  seal: { position: 'absolute', bottom: H - FLAP - 24, left: W / 2 - 25, width: 50, height: 50, borderRadius: 25, backgroundColor: colors.gold, alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 6 },
-  sealRing: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(58, 19, 33, 0.35)', flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', paddingTop: 7 },
-  sealR: { color: '#3A1321', fontFamily: SERIF_ITALIC, fontStyle: 'italic', fontSize: 20, fontWeight: '600' },
-  sealO: { color: '#3A1321', fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, fontWeight: '600', marginLeft: -3 },
+  pocket: { width: 0, height: 0, borderLeftWidth: W / 2, borderRightWidth: W / 2, borderTopWidth: Math.round(H * 0.44), borderBottomWidth: H - Math.round(H * 0.44), borderTopColor: 'transparent', borderLeftColor: '#F1E6D0', borderRightColor: '#EDE0C6', borderBottomColor: '#E8D9BB' },
+  pocketLining: { position: 'absolute', left: 12, right: 12, bottom: 10, height: 1, backgroundColor: 'rgba(185, 150, 90, 0.45)' },
+  closedFlap: { position: 'absolute', bottom: H - FLAP, left: 0, width: 0, height: 0, borderLeftWidth: W / 2, borderRightWidth: W / 2, borderTopWidth: FLAP, borderLeftColor: 'transparent', borderRightColor: 'transparent', borderTopColor: '#EADCBE', transformOrigin: 'top' },
+  closedFlapLine: { borderTopWidth: FLAP + 1.5, borderTopColor: '#CDB27A' },
+  seal: { position: 'absolute', bottom: H - FLAP - 24, left: W / 2 - 25, width: 50, height: 50, borderRadius: 25, backgroundColor: '#7A2842', alignItems: 'center', justifyContent: 'center', shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: 6, shadowOffset: { width: 0, height: 3 }, elevation: 6 },
+  sealRing: { width: 40, height: 40, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(235, 196, 108, 0.45)', flexDirection: 'row', alignItems: 'baseline', justifyContent: 'center', paddingTop: 7 },
+  sealR: { color: colors.gold, fontFamily: SERIF_ITALIC, fontStyle: 'italic', fontSize: 20, fontWeight: '600' },
+  sealO: { color: colors.gold, fontFamily: SERIF, fontStyle: 'italic', fontSize: 14, fontWeight: '600', marginLeft: -3 },
   contents: { width: '100%', gap: 14, marginTop: 4 },
 });

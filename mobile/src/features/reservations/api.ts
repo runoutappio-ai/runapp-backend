@@ -3,6 +3,8 @@ import { randomUUID } from 'expo-crypto';
 import { api } from '@/api/client';
 import type { CreateReservationPayload, Reservation, ReservationReveal } from '@/types/api';
 
+import { withEffectiveStatus } from './status';
+
 export const reservationKeys = {
   all: ['reservations'] as const,
   detail: (id: string) => ['reservations', id] as const,
@@ -18,7 +20,7 @@ export function getRevealRefetchInterval(reveal: ReservationReveal | undefined, 
 }
 
 export function useReservations(enabled = true) {
-  return useQuery({ queryKey: reservationKeys.all, queryFn: () => api<Reservation[]>('/api/v1/reservations'), enabled });
+  return useQuery({ queryKey: reservationKeys.all, queryFn: () => api<Reservation[]>('/api/v1/reservations'), enabled, select: (items) => items.map((item) => withEffectiveStatus(item)) });
 }
 
 export function useReservation(id: string) {
@@ -26,6 +28,7 @@ export function useReservation(id: string) {
     queryKey: reservationKeys.detail(id),
     queryFn: () => api<Reservation>(`/api/v1/reservations/${id}`),
     enabled: Boolean(id),
+    select: (reservation) => withEffectiveStatus(reservation),
   });
 }
 

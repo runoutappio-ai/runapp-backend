@@ -1,6 +1,121 @@
 import type { CreateReservationPayload, ReservationStatus } from '@/types/api';
 
-export const VIBES = ['Casual', 'Date Night', 'Extreme', 'Birthday', 'Dress to Impress'] as const;
+export const VIBES = ['Casual', 'Date Night', 'Ladies’ Night', 'Guys’ Night', 'Extreme', 'Birthday', 'Dress to Impress'] as const;
+
+/** Cheeky one-liners shown under the chosen vibe; a new one is picked every time a vibe is tapped. */
+export const VIBE_LINES: Record<string, string[]> = {
+  Casual: [
+    'Zero dress code, zero stress — flip-flops fully authorised.',
+    'Come as you are. Yes, even in that hoodie.',
+    'Low effort, high flavour. The dream.',
+    'Sweatpants energy, five-star appetite.',
+  ],
+  'Date Night': [
+    'Candles, good food and zero awkward silences. Hopefully.',
+    'Dress to impress — they’ll be looking at you, not the menu.',
+    'If this goes well, you owe us a wedding invite.',
+    'Pro tip: let them have the last bite. Trust us.',
+    'Butterflies included. Breath mints not.',
+  ],
+  'Ladies’ Night': [
+    'Heels optional, gossip mandatory.',
+    'What happens at dinner stays in the group chat.',
+    'Table for queens. Kings may wave from a distance.',
+    'Bring the stories you can’t post online.',
+    'Fully booked: one table, zero boyfriends.',
+  ],
+  'Guys’ Night': [
+    'Leave the group chat. Bring the appetite.',
+    'Loudest table in the room — we’ve warned the staff.',
+    'Whoever checks their phone first pays for dessert.',
+    'No small talk. Only big plates.',
+    'Bros before diets. Tonight, anyway.',
+  ],
+  Extreme: [
+    'Bring a spare tongue. You might need it.',
+    'Chilli level: call your mum first.',
+    'Only for the brave, the bold and the slightly reckless.',
+    'If you’re not sweating, we did it wrong.',
+  ],
+  Birthday: [
+    'Another year older, still the main character.',
+    'Candles on the cake, eyes on you.',
+    'Age is just a number. Dessert is a priority.',
+    'Make a wish — we already took care of the table.',
+  ],
+  'Dress to Impress': [
+    'Iron the shirt. Polish the shoes. Own the room.',
+    'Tonight the outfit gets its own reservation.',
+    'Best dressed table wins. You’re in the lead.',
+    'Overdressed is not a thing. Underdressed is.',
+  ],
+};
+
+/** Cheeky lines for the per-person budget slider, one pool per AED 50 step; a new one each time the value changes. */
+export const BUDGET_LINES: Record<number, string[]> = {
+  50: [
+    'The waiter will refill your water and nothing else.',
+    'Bold move. We respect the hustle.',
+    'Shawarma-level ambition. Respectable.',
+    'Your wallet called. It says thank you.',
+    'Budget mode: on. Expectations: managed.',
+  ],
+  100: [
+    'Relaxed, delicious, and comfortably within budget.',
+    'Good food, no regrets on payday.',
+    'Fancy enough to post, cheap enough to repeat.',
+    'The sweet spot between “treat” and “rent”.',
+  ],
+  150: [
+    'Now we’re talking. Napkins might even be cloth.',
+    'Enough for a starter you can’t pronounce.',
+    'You’re officially a “let’s split a dessert” person.',
+    'Mid-week treat or Friday flex — your call.',
+  ],
+  200: [
+    'A table made for a proper night out.',
+    'This is where waiters start remembering your name.',
+    'Dessert is no longer a debate.',
+    'Main-character budget unlocked.',
+  ],
+  250: [
+    'Sharing plates? Optional. Showing off? Encouraged.',
+    'The kind of dinner you text your friends about.',
+    'Somebody’s getting the tasting menu.',
+    'Your ex would be impressed. Just saying.',
+  ],
+  300: [
+    'Chef’s-table energy. Wear something nice.',
+    'Iron the shirt — this place has a dress code vibe.',
+    'You’re not hungry, you’re curious. Big difference.',
+    'Expect at least one dish served under a dome.',
+  ],
+  350: [
+    'High roller alert. The sommelier of mocktails awaits.',
+    'At this price the bread basket comes with a story.',
+    'Plates so pretty you’ll feel bad eating them. You won’t.',
+    'This is “celebrating something” money. Celebrate anyway.',
+  ],
+  400: [
+    'Go big or go home. Actually, don’t go home.',
+    'Gold-flake territory. Dubai would be proud.',
+    'Somebody got a bonus. We won’t tell.',
+    'Valet, velvet chairs, the works.',
+    'You’re basically funding the chef’s next holiday.',
+  ],
+};
+
+export function randomBudgetLine(perPerson: number, avoid?: string) {
+  const lines = BUDGET_LINES[perPerson] ?? BUDGET_LINES[100];
+  const pool = lines.length > 1 && avoid ? lines.filter((line) => line !== avoid) : lines;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+export function randomVibeLine(vibe: string, avoid?: string) {
+  const lines = VIBE_LINES[vibe] ?? [`We’ll shape the surprise around a ${vibe.toLowerCase()} mood.`];
+  const pool = lines.length > 1 && avoid ? lines.filter((line) => line !== avoid) : lines;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
 export const CUISINES = ['American', 'BBQ', 'Chinese', 'French', 'Greek', 'Indian', 'Italian', 'Japanese', 'Korean', 'Mediterranean', 'Mexican', 'Middle Eastern', 'Seafood', 'Steakhouse', 'Thai', 'Vegan'] as const;
 export const DIETARY = ['Vegetarian', 'Vegan', 'Halal', 'Gluten-free', 'Dairy-free', 'Nut-free'] as const;
 
@@ -33,6 +148,8 @@ export type BookingDraft = {
   dietaryPreferences: string[];
   allergyNotes: string;
   anywhere: boolean;
+  /** Only restaurants licensed to serve alcohol (21+). */
+  licensedVenue: boolean;
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
@@ -54,6 +171,7 @@ export const initialDraft: BookingDraft = {
   dietaryPreferences: [],
   allergyNotes: '',
   anywhere: false,
+  licensedVenue: false,
   locationLabel: '',
   latitude: null,
   longitude: null,
@@ -87,6 +205,7 @@ export function toReservationPayload(draft: BookingDraft): CreateReservationPayl
     vibe: draft.vibe,
     dietaryPreferences: draft.dietaryPreferences,
     allergyNotes: draft.allergyNotes.trim() || null,
+    licensedVenue: Boolean(draft.licensedVenue),
     locationLabel: draft.locationLabel,
     partySize: draft.partySize,
     budgetPerPerson: { amount: Math.round((totalBudget / draft.partySize) * 100) / 100, currency: 'AED' },

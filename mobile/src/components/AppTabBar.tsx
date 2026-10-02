@@ -7,6 +7,7 @@ import { useAuth } from '@/auth/AuthProvider';
 import { useBookingDraft } from '@/features/booking/BookingDraftProvider';
 import { colors } from '@/theme/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
+import { useGlassBar } from '@/components/Glass';
 
 type Props = { active?: 'index' | 'reservations' | 'discover' | 'profile' };
 const TABS = [
@@ -21,12 +22,13 @@ export function AppTabBar({ active }: Props) {
   const { user } = useAuth();
   const { colors: themeColors } = useTheme();
   const { reset } = useBookingDraft();
+  const glassBar = useGlassBar();
   const startBooking = () => { if (!user) reset(); router.push('/booking'); };
   const renderTab = ({ name, label, Icon }: (typeof TABS)[number]) => <Pressable key={name} accessibilityRole="tab" accessibilityLabel={label} accessibilityState={{ selected: active === name }} onPress={() => router.navigate((name === 'index' ? '/(tabs)' : `/(tabs)/${name}`) as never)} style={styles.tab}>
     <Icon color={active === name ? themeColors.text : themeColors.muted} size={23} strokeWidth={1.7} />
     <Text numberOfLines={1} style={[styles.label, { color: themeColors.muted }, active === name && { color: themeColors.text }]}>{label}</Text>
   </Pressable>;
-  return <View style={[styles.bar, { paddingBottom: Math.max(insets.bottom, 8), backgroundColor: themeColors.surface, borderTopColor: themeColors.border }]}>
+  return <View style={[styles.bar, glassBar, { paddingBottom: Math.max(insets.bottom, 8), borderTopColor: themeColors.glassDivider }]}>
     {TABS.slice(0, 2).map(renderTab)}
     <View style={styles.centerSlot}><Pressable accessibilityRole="button" accessibilityLabel="Start a reservation" onPress={startBooking} style={({ pressed }) => [styles.centerButton, pressed && styles.pressed]}><Monogram /></Pressable></View>
     {TABS.slice(2).map(renderTab)}

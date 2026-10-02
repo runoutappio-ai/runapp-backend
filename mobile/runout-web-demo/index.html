@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Run Out — Mystery dinners in Dubai</title>
+<meta name="description" content="Run Out: we choose the restaurant, the restaurant chooses the menu, you just show up. For restaurants and for guests.">
+<meta name="theme-color" content="#0B0909">
+<link rel="icon" href="app/favicon.ico">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500;1,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0909; --surface:#151113; --surface-2:#1C1618; --line:#2A2224; --line-soft:#1F191B;
+    --text:#F6EFE4; --soft:#D8D0D2; --muted:#A39C9E; --faint:#6F686A;
+    --gold:#E7C171; --gold-soft:#CDB89A; --wine:#6E2238; --wine-2:#3A1522; --wine-3:#8A2C44;
+    --cream:#F3E9D2; --ink:#2B1A12;
+    --serif:'Cormorant Garamond', 'Didot', Georgia, serif;
+    --sans:'Manrope', 'Avenir Next', 'Segoe UI', system-ui, sans-serif;
+    --pad:clamp(20px, 5vw, 72px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+  a{color:inherit}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+
+  /* ambient light */
+  .ambient{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .ambient::before{content:"";position:absolute;width:1100px;height:1100px;left:-420px;top:-560px;border-radius:50%;background:radial-gradient(circle,rgba(110,34,56,.45),rgba(110,34,56,0) 65%)}
+  .ambient::after{content:"";position:absolute;width:900px;height:900px;right:-380px;bottom:-520px;border-radius:50%;background:radial-gradient(circle,rgba(231,193,113,.10),rgba(231,193,113,0) 65%)}
+
+  /* chrome */
+  .top{position:fixed;top:0;left:0;right:0;z-index:5;background:linear-gradient(to bottom,var(--bg) 45%,rgba(11,9,9,0));display:flex;align-items:center;justify-content:space-between;padding:18px var(--pad);padding-top:max(18px, env(safe-area-inset-top))}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+  .seal{width:34px;height:34px;border-radius:50%;background:var(--gold);display:grid;place-items:center;color:var(--wine-2);font-family:var(--serif);font-style:italic;font-weight:600;font-size:17px;letter-spacing:-1px;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+  .brand b{font-weight:800;font-size:13px;letter-spacing:.24em}
+  .section-tag{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--gold-soft);transition:opacity .3s}
+  .skip{font-size:13px;font-weight:700;padding:10px 16px;border-radius:999px;border:1px solid var(--line);background:rgba(21,17,19,.7);text-decoration:none;white-space:nowrap}
+  .skip:hover{border-color:var(--gold);color:var(--gold)}
+  .bottom{position:fixed;left:0;right:0;bottom:0;z-index:5;background:linear-gradient(to top,var(--bg) 55%,rgba(11,9,9,0));display:flex;align-items:center;gap:18px;padding:16px var(--pad);padding-bottom:max(16px, env(safe-area-inset-bottom))}
+  .progress{flex:1;display:flex;gap:4px}
+  .progress button{flex:1;height:18px;display:flex;align-items:center;padding:0}
+  .progress button span{display:block;width:100%;height:3px;border-radius:2px;background:var(--line);transition:background .3s}
+  .progress button[aria-current="step"] span,.progress button.done span{background:var(--gold)}
+  .progress button.done span{opacity:.45}
+  .count{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;min-width:52px;text-align:center}
+  .nav{display:flex;gap:8px}
+  .nav button{width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(21,17,19,.7);display:grid;place-items:center}
+  .nav button:hover:not(:disabled){border-color:var(--gold)}
+  .nav button:disabled{opacity:.3;cursor:default}
+  .nav svg{width:18px;height:18px}
+
+  /* slides */
+  .deck{position:fixed;inset:0}
+  .slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:96px var(--pad) 100px;opacity:0;visibility:hidden;transform:translateX(40px);transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1),visibility 0s linear .6s;overflow-y:auto;overscroll-behavior:contain}
+  .slide.before{transform:translateX(-40px)}
+  .slide.active{opacity:1;visibility:visible;transform:none;transition:opacity .5s ease,transform .6s cubic-bezier(.2,.7,.2,1),visibility 0s}
+  .inner{width:100%;max-width:1180px;margin:auto}
+  .slide.active .rise{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+  .slide.active .rise.d1{animation-delay:.08s}.slide.active .rise.d2{animation-delay:.16s}.slide.active .rise.d3{animation-delay:.24s}.slide.active .rise.d4{animation-delay:.32s}.slide.active .rise.d5{animation-delay:.4s}
+  @keyframes rise{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.slide,.slide.active{transition:none}.slide.active .rise{animation:none}}
+
+  .kicker{font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+  h1,h2,h3{font-weight:600;letter-spacing:-.02em}
+  .display{font-family:var(--serif);font-weight:600;font-size:clamp(44px,6.4vw,92px);line-height:.98;letter-spacing:-.025em}
+  .display em,.h2 em{font-style:italic;color:var(--gold)}
+  .h2{font-family:var(--serif);font-weight:600;font-size:clamp(36px,4.6vw,64px);line-height:1.02;letter-spacing:-.02em}
+  .h3{font-size:clamp(19px,1.7vw,24px);font-weight:700;line-height:1.25;letter-spacing:-.01em}
+  .lede{font-size:clamp(16px,1.4vw,19px);line-height:1.6;color:var(--muted);max-width:620px}
+  .body{font-size:15.5px;line-height:1.65;color:var(--muted)}
+  .num{font-family:var(--serif);font-style:italic;font-size:22px;color:var(--gold);font-weight:600}
+  .source{display:inline-flex;gap:6px;align-items:center;font-size:12px;color:var(--faint);text-decoration:none;border-bottom:1px solid var(--line);padding-bottom:2px;margin-top:18px}
+  .source:hover{color:var(--gold-soft)}
+  .card{background:linear-gradient(180deg,var(--surface-2),var(--surface));border:1px solid var(--line-soft);border-radius:24px;padding:clamp(22px,2.6vw,34px)}
+  .grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .stack{display:flex;flex-direction:column;gap:14px}
+  .icon{width:44px;height:44px;border-radius:50%;background:#2A1A14;color:var(--gold);display:grid;place-items:center;margin-bottom:18px}
+  .icon svg{width:20px;height:20px}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:8px 13px;border-radius:999px;border:1px solid var(--line);background:var(--bg);font-size:13px;font-weight:600;color:var(--soft)}
+  .chip.on{border-color:rgba(231,193,113,.55);background:var(--wine-2);color:var(--text)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:22px}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:16px 26px;border-radius:999px;background:var(--gold);color:#251316;font-weight:800;font-size:15px;text-decoration:none;transition:transform .2s}
+  .btn:hover{transform:translateY(-2px)}
+  .btn svg{width:18px;height:18px}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .btn.ghost:hover{border-color:var(--gold)}
+
+  /* cover */
+  .cover{display:grid;grid-template-columns:1.25fr .9fr;gap:64px;align-items:center}
+  .cover .display{margin:18px 0 22px}
+  .paths{display:flex;flex-direction:column;gap:14px}
+  .path{display:flex;align-items:center;gap:18px;text-align:left;padding:22px 24px;border-radius:22px;border:1px solid var(--line);background:rgba(21,17,19,.8);transition:border-color .2s,transform .2s}
+  .path:hover{border-color:rgba(231,193,113,.6);transform:translateX(4px)}
+  .path .icon{margin:0;flex:none}
+  .path small{display:block;font-size:11px;font-weight:800;letter-spacing:.2em;color:var(--gold-soft);text-transform:uppercase;margin-bottom:4px}
+  .path strong{font-size:18px;font-weight:700}
+  .path .arrow{margin-left:auto;color:var(--gold)}
+  .envelope{position:relative;width:min(100%,420px);aspect-ratio:1.55;margin:0 auto}
+  .env-back{position:absolute;inset:0;border-radius:18px;background:#2E0F1A;border:1px solid rgba(231,193,113,.22)}
+  .env-letter{position:absolute;left:8%;right:8%;top:-22%;bottom:12%;border-radius:8px;background:var(--cream);padding:10px;box-shadow:0 10px 30px rgba(0,0,0,.35);animation:peek 5s ease-in-out infinite}
+  .env-letter div{height:100%;border:1px solid #C9A55A;border-radius:4px;display:flex;flex-direction:column;align-items:center;padding-top:9%;gap:6px;color:var(--wine-2)}
+  .env-letter small{font-size:10px;letter-spacing:.3em;font-weight:700;color:#8A6A3A}
+  .env-letter span{font-family:var(--serif);font-style:italic;font-size:clamp(22px,2.4vw,30px)}
+  .env-front{position:absolute;inset:0;border-radius:18px;overflow:hidden}
+  .env-front i{position:absolute;inset:0}
+  .env-front .l{background:#6A2037;clip-path:polygon(0 0,50% 58%,0 100%)}
+  .env-front .r{background:#76263F;clip-path:polygon(100% 0,50% 58%,100% 100%)}
+  .env-front .b{background:#5C1B30;clip-path:polygon(0 100%,50% 50%,100% 100%)}
+  .env-seal{position:absolute;left:50%;top:52%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;background:var(--gold);display:grid;place-items:center;font-family:var(--serif);font-style:italic;font-weight:600;font-size:26px;color:var(--wine-2);box-shadow:0 6px 18px rgba(0,0,0,.45)}
+  @keyframes peek{0%,100%{transform:translateY(8%)}50%{transform:translateY(-4%)}}
+  @media (prefers-reduced-motion: reduce){.env-letter{animation:none}}
+
+  /* section openers */
+  .opener{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:end}
+  .opener .h2{margin-top:16px}
+  .agenda{list-style:none;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 28px;counter-reset:a}
+  .agenda li{counter-increment:a;display:flex;gap:12px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--line-soft);font-size:15px;font-weight:600;color:var(--soft)}
+  .agenda li::before{content:counter(a,decimal-leading-zero);font-family:var(--serif);font-style:italic;color:var(--gold);font-size:17px;min-width:24px}
+
+  /* stat slide */
+  .stat{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center}
+  .stat .h2{margin:14px 0 18px}
+  .bars{display:flex;flex-direction:column;gap:26px}
+  .bar-row small{display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--soft);margin-bottom:10px}
+  .bar-row small b{font-weight:800;color:var(--text)}
+  .bar{height:54px;border-radius:14px;background:var(--line-soft);overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:14px;transform-origin:left;transform:scaleX(0);transition:transform 1.1s cubic-bezier(.2,.7,.2,1) .25s}
+  .slide.active .bar i{transform:scaleX(1)}
+  .bar .ig{width:100%;background:linear-gradient(90deg,#4A3A3E,#6B5A5E)}
+  .bar .ro{width:40%;background:linear-gradient(90deg,var(--wine),var(--wine-3))}
+  .save{display:flex;gap:24px;margin-top:8px}
+  .save div{flex:1;border-top:1px solid var(--line);padding-top:16px}
+  .save strong{display:block;font-family:var(--serif);font-size:clamp(40px,4vw,56px);font-weight:600;line-height:1;color:var(--gold)}
+  .save span{font-size:13px;color:var(--muted)}
+
+  /* mini visuals */
+  .slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:22px}
+  .slot{padding:10px 0;text-align:center;border-radius:12px;border:1px solid var(--line);font-size:13px;font-weight:700;color:var(--faint);text-decoration:line-through;text-decoration-color:var(--line)}
+  .slot.open{color:var(--text);text-decoration:none;border-color:rgba(231,193,113,.5);background:var(--wine-2)}
+  .receipt{margin-top:22px;display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-radius:16px;background:var(--bg);border:1px solid var(--line)}
+  .receipt b{font-size:18px}
+  .paid{font-size:12px;font-weight:800;color:#58D68D;display:flex;align-items:center;gap:6px}
+  .paid svg{width:14px;height:14px}
+  .price{margin-top:22px;display:flex;align-items:center;gap:14px}
+  .tag{display:inline-flex;align-items:baseline;gap:8px;padding:12px 18px;border-radius:14px;background:var(--cream);color:var(--ink);font-family:var(--serif);font-size:24px;font-weight:600}
+  .tag small{font-family:var(--sans);font-size:11px;font-weight:700;letter-spacing:.14em;color:#8A6A3A}
+
+  .versus{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:30px}
+  .versus .card{display:flex;flex-direction:column;gap:10px}
+  .big{font-family:var(--serif);font-weight:600;font-size:clamp(56px,6vw,88px);line-height:.95;letter-spacing:-.02em}
+  .muted-card{background:transparent;border-style:dashed}
+  .muted-card .big{color:var(--faint)}
+  .wine-card{background:linear-gradient(145deg,var(--wine),#4A1628);border-color:#8C3B58}
+  .wine-card .big{color:var(--text)}
+  .wine-card p{color:#EFDCC8}
+
+  .loop{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:22px}
+  .loop .chip{background:var(--bg)}
+  .loop svg{width:14px;height:14px;color:var(--gold)}
+
+  /* quote slides */
+  .quote{max-width:980px}
+  .quote .display{font-size:clamp(40px,5.6vw,80px)}
+  .quote p.lede{margin-top:28px;font-size:clamp(17px,1.6vw,22px);max-width:760px;color:var(--soft)}
+  .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-top:40px}
+
+  .question{font-family:var(--serif);font-style:italic;font-weight:500;font-size:clamp(24px,2.4vw,34px);line-height:1.3;color:var(--soft);border-left:2px solid var(--gold);padding-left:24px}
+  .five{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-top:40px}
+  .five .card{padding:24px 20px;display:flex;flex-direction:column}
+  .five .num{margin-bottom:auto;padding-bottom:36px}
+  .five .h3{font-size:18px;margin-bottom:8px}
+  .five .body{font-size:14px}
+  .lines{display:flex;flex-direction:column;gap:6px}
+  .lines .display{font-size:clamp(38px,5.2vw,76px)}
+  .lines .display:last-child{color:var(--gold);font-style:italic}
+
+  /* responsive */
+  @media (max-width: 980px){
+    .five{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .five .card:last-child{grid-column:1/-1}
+  }
+  @media (max-width: 860px){
+    .cover,.opener,.stat,.grid2,.versus{grid-template-columns:1fr;gap:28px}
+    .cover .envelope{max-width:300px;margin-top:24px;order:-1}
+    .slide{align-items:flex-start;padding-top:84px;padding-bottom:96px}
+    .section-tag{display:none}
+    .agenda{grid-template-columns:1fr}
+  }
+  @media (max-width: 520px){
+    .five{grid-template-columns:1fr}
+    .five .num{padding-bottom:14px}
+    .skip span{display:none}
+    .brand b{display:none}
+    .count{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="brand" href="#1" aria-label="Run Out — back to start"><span class="seal" aria-hidden="true">Ro</span><b>RUN OUT</b></a>
+  <span class="section-tag" id="sectionTag" aria-live="polite"></span>
+  <a class="skip" href="app/"><span>Skip to the </span>live demo →</a>
+</header>
+
+<main class="deck" id="deck" aria-roledescription="presentation">
+
+  <!-- 1 · Cover -->
+  <section class="slide" data-section="" aria-label="Run Out">
+    <div class="inner cover">
+      <div>
+        <p class="kicker rise">Run Out · Dubai</p>
+        <h1 class="display rise d1">A mystery dinner, <em>sealed</em> until the night.</h1>
+        <p class="lede rise d2">We choose the restaurant. The restaurant chooses the menu. Guests just show up. One idea, two sides of the table.</p>
+        <div class="paths rise d3" style="margin-top:34px">
+          <button class="path" data-goto="restaurants">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18M5 11V7a7 7 0 0 1 14 0v4M4 15h16M7 19h10"/></svg></span>
+            <span><small>For restaurants</small><strong>Why your restaurant should join</strong></span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+          <button class="path" data-goto="guests">
+            <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.4L19 10l-5.1 1.6L12 17l-1.9-5.4L5 10l5.1-1.6z"/></svg></span>
+            <span><small>For guests</small><strong>Your next night out, made simple</strong></span>
+            <span class="arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
+      <div class="envelope rise d2" aria-hidden="true">
+        <div class="env-back"></div>
+        <div class="env-letter"><div><small>RUN OUT</small><span>Your menu</span></div></div>
+        <div class="env-front"><i class="l"></i><i class="r"></i><i class="b"></i></div>
+        <div class="env-seal">Ro</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · Restaurants opener -->
+  <section class="slide" id="restaurants" data-section="For restaurants" aria-label="Run Out for restaurants">
+    <div class="inner opener">
+      <div>
+        <p class="kicker rise">Run Out for restaurants</p>
+        <h2 class="h2 rise d1">Why your restaurant should <em>join</em> Run Out</h2>
+        <p class="lede rise d2" style="margin-top:22px">You choose the food. You choose the experience. We bring prepaid guests who are ready to show up.</p>
+      </div>
+      <ol class="agenda rise d3">
+        <li>Lower customer acquisition cost</li>
+        <li>Available tables become bookings</li>
+        <li>Committed revenue in advance</li>
+        <li>Full control of the menu</li>
+        <li>New customers, no constant discounts</li>
+        <li>No delivery-platform economics</li>
+        <li>A meal becomes an experience</li>
+        <li>Future regular customers</li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 3 · CAC -->
+  <section class="slide" data-section="For restaurants" aria-label="Lower customer acquisition cost">
+    <div class="inner stat">
+      <div>
+        <p class="num rise">01</p>
+        <h2 class="h2 rise d1">Lower customer <em>acquisition</em> cost</h2>
+        <p class="body rise d2">In one comparable UAE restaurant case, acquiring a customer through Instagram cost approximately AED&nbsp;95, compared with AED&nbsp;38 through a targeted restaurant platform — almost 60% lower.</p>
+        <a class="source rise d3" href="https://www.placesuae.com/case-study-doubled-visits/" target="_blank" rel="noopener">Source: Places UAE case study ↗</a>
+      </div>
+      <div class="card rise d2">
+        <div class="bars">
+          <div class="bar-row"><small><span>Instagram</span><b>AED 95</b></small><div class="bar"><i class="ig"></i></div></div>
+          <div class="bar-row"><small><span>Targeted restaurant platform</span><b>AED 38</b></small><div class="bar"><i class="ro"></i></div></div>
+          <div class="save">
+            <div><strong>~60%</strong><span>lower cost per customer</span></div>
+            <div><strong>AED 57</strong><span>potential saving per customer</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Tables + prepaid -->
+  <section class="slide" data-section="For restaurants" aria-label="Confirmed bookings and committed revenue">
+    <div class="inner grid2">
+      <article class="card rise">
+        <p class="num">02</p>
+        <h3 class="h3" style="margin:14px 0 10px">Turn available tables into confirmed bookings</h3>
+        <p class="body">You decide which dates, time slots and tables are available. Customers choose from those options and make a prepaid reservation.</p>
+        <div class="slots" aria-label="Example: you open 19:30 and 21:00">
+          <span class="slot">19:00</span><span class="slot open">19:30</span><span class="slot">20:00</span><span class="slot open">21:00</span>
+        </div>
+      </article>
+      <article class="card rise d1">
+        <p class="num">03</p>
+        <h3 class="h3" style="margin:14px 0 10px">Receive committed revenue in advance</h3>
+        <p class="body">Customers pay before arriving, helping reduce no-shows, last-minute cancellations and unpredictable revenue.</p>
+        <div class="receipt"><span><span class="body" style="font-size:13px">Table for 2 · Thu 20:00</span><br><b>Prepaid</b></span><span class="paid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Payment captured</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 5 · Menu + no discounts -->
+  <section class="slide" data-section="For restaurants" aria-label="Menu control and new customers">
+    <div class="inner grid2">
+      <article class="card rise">
+        <p class="num">04</p>
+        <h3 class="h3" style="margin:14px 0 10px">Keep full control of the menu</h3>
+        <p class="body">You decide the dishes, portions, ingredients, price, dates and capacity. Run Out does not dictate what you serve.</p>
+        <div class="chips"><span class="chip on">Dishes</span><span class="chip on">Portions</span><span class="chip on">Ingredients</span><span class="chip on">Price</span><span class="chip on">Dates</span><span class="chip on">Capacity</span></div>
+      </article>
+      <article class="card rise d1">
+        <p class="num">05</p>
+        <h3 class="h3" style="margin:14px 0 10px">Attract new customers without constant discounts</h3>
+        <p class="body">Run Out introduces your restaurant to people who may never have discovered it, without forcing you to reduce your public prices.</p>
+        <div class="price"><span class="tag"><small>PUBLIC PRICE</small>unchanged</span></div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 6 · Delivery -->
+  <section class="slide" data-section="For restaurants" aria-label="Avoid delivery-platform economics">
+    <div class="inner">
+      <p class="num rise">06</p>
+      <h2 class="h2 rise d1" style="margin-top:12px;max-width:820px">Avoid <em>delivery-platform</em> economics</h2>
+      <div class="versus">
+        <div class="card muted-card rise d2">
+          <span class="kicker" style="color:var(--faint)">Delivery platforms</span>
+          <span class="big">25–30%</span>
+          <p class="body">commission per order is commonly charged to restaurants.</p>
+          <a class="source" href="https://www.perceedigital.com/insights/restaurant-delivery-margins/" target="_blank" rel="noopener">Source: Percee Digital ↗</a>
+        </div>
+        <div class="card wine-card rise d3">
+          <span class="kicker">Run Out</span>
+          <span class="big">At your tables</span>
+          <p class="body">Run Out is designed to bring customers into your restaurant — not to take a delivery commission from your orders.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 7 · Experience + regulars -->
+  <section class="slide" data-section="For restaurants" aria-label="Experience and regular customers">
+    <div class="inner grid2">
+      <article class="card rise">
+        <p class="num">07</p>
+        <h3 class="h3" style="margin:14px 0 10px">Turn a meal into an experience</h3>
+        <p class="body">The mystery creates anticipation and curiosity. Guests are not simply booking a table — they are booking a story.</p>
+        <div class="chips"><span class="chip">Sealed envelope</span><span class="chip">Countdown</span><span class="chip on">The reveal</span></div>
+      </article>
+      <article class="card rise d1">
+        <p class="num">08</p>
+        <h3 class="h3" style="margin:14px 0 10px">Create future regular customers</h3>
+        <p class="body">A memorable first visit can lead to direct bookings, recommendations and repeat visits.</p>
+        <div class="loop" aria-label="First visit, then recommendations, direct bookings and repeat visits">
+          <span class="chip on">First visit</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <span class="chip">Recommendations</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <span class="chip">Direct bookings</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+          <span class="chip">Repeat visits</span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <!-- 8 · Restaurants close -->
+  <section class="slide" data-section="For restaurants" aria-label="Summary for restaurants">
+    <div class="inner quote">
+      <p class="kicker rise">For restaurants</p>
+      <h2 class="display rise d1" style="margin-top:18px">You choose the food.<br>You choose the <em>experience.</em></h2>
+      <p class="lede rise d2">Run Out brings you prepaid customers who are ready to show up and discover something new.</p>
+      <div class="cta-row rise d3">
+        <button class="btn ghost" data-goto="guests">What guests get →</button>
+        <a class="btn" href="app/">See the live demo <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 9 · Guests opener -->
+  <section class="slide" id="guests" data-section="For guests" aria-label="Run Out for guests">
+    <div class="inner opener" style="align-items:center">
+      <div>
+        <p class="kicker rise">Run Out for guests</p>
+        <h2 class="h2 rise d1">Your next night out, <em>made simple</em></h2>
+      </div>
+      <div class="stack">
+        <p class="question rise d2">How many times have you spent ages reading reviews, comparing restaurants and wondering where to go — only to end up at the same place again?</p>
+        <p class="lede rise d3" style="color:var(--soft)">With Run Out, you do not have to plan everything.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · Five points -->
+  <section class="slide" data-section="For guests" aria-label="Five reasons for guests">
+    <div class="inner">
+      <p class="kicker rise">What changes</p>
+      <h2 class="h2 rise d1" style="margin-top:14px">Less planning. <em>More night.</em></h2>
+      <div class="five">
+        <article class="card rise d1"><p class="num">01</p><h3 class="h3">No more endless reviews</h3><p class="body">Stop scrolling, comparing and second-guessing your decision.</p></article>
+        <article class="card rise d2"><p class="num">02</p><h3 class="h3">We choose the restaurant for you</h3><p class="body">Tell us your mood, budget and location. We’ll take care of the rest.</p></article>
+        <article class="card rise d3"><p class="num">03</p><h3 class="h3">No menu stress</h3><p class="body">When you arrive, the restaurant has already prepared a curated menu featuring its best sellers and signature dishes.</p></article>
+        <article class="card rise d4"><p class="num">04</p><h3 class="h3">Get more for your money</h3><p class="body">Your budget goes further, giving you more food and a better experience than you might get booking normally.</p></article>
+        <article class="card rise d5"><p class="num">05</p><h3 class="h3">Just show up and enjoy</h3><p class="body">No overthinking. No planning. No familiar default restaurant.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · Final CTA -->
+  <section class="slide" data-section="For guests" aria-label="Try the app">
+    <div class="inner quote">
+      <div class="lines">
+        <p class="display rise">You choose the mood.</p>
+        <p class="display rise d1">We choose the restaurant.</p>
+        <p class="display rise d2">The restaurant chooses the menu.</p>
+        <p class="display rise d3">You just show up.</p>
+      </div>
+      <div class="cta-row rise d4">
+        <a class="btn" href="app/">Try the app <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+        <button class="btn ghost" data-goto="restaurants">For restaurants</button>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="bottom">
+  <nav class="progress" id="progress" aria-label="Slides"></nav>
+  <span class="count" id="count" aria-live="polite"></span>
+  <div class="nav">
+    <button id="prev" aria-label="Previous slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button id="next" aria-label="Next slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var progress = document.getElementById('progress');
+  var count = document.getElementById('count');
+  var tag = document.getElementById('sectionTag');
+  var prev = document.getElementById('prev');
+  var next = document.getElementById('next');
+  var current = -1;
+
+  slides.forEach(function (slide, i) {
+    var b = document.createElement('button');
+    b.setAttribute('aria-label', 'Go to slide ' + (i + 1) + ': ' + slide.getAttribute('aria-label'));
+    b.innerHTML = '<span></span>';
+    b.addEventListener('click', function () { go(i); });
+    progress.appendChild(b);
+  });
+  var dots = progress.querySelectorAll('button');
+
+  function go(i, fromHash) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    if (i === current) return;
+    slides.forEach(function (s, j) {
+      s.classList.toggle('active', j === i);
+      s.classList.toggle('before', j < i);
+      s.setAttribute('aria-hidden', j === i ? 'false' : 'true');
+      if (j === i) s.scrollTop = 0;
+    });
+    dots.forEach(function (d, j) {
+      d.classList.toggle('done', j < i);
+      if (j === i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current');
+    });
+    current = i;
+    count.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
+    tag.textContent = slides[i].getAttribute('data-section') || '';
+    prev.disabled = i === 0;
+    next.disabled = i === slides.length - 1;
+    if (!fromHash) history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  function indexOfId(id) { for (var i = 0; i < slides.length; i++) if (slides[i].id === id) return i; return 0; }
+  document.querySelectorAll('[data-goto]').forEach(function (el) {
+    el.addEventListener('click', function () { go(indexOfId(el.getAttribute('data-goto'))); });
+  });
+  prev.addEventListener('click', function () { go(current - 1); });
+  next.addEventListener('click', function () { go(current + 1); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.target && /INPUT|TEXTAREA/.test(e.target.tagName)) return;
+    if (['ArrowRight', 'PageDown', ' '].indexOf(e.key) >= 0) { e.preventDefault(); go(current + 1); }
+    else if (['ArrowLeft', 'PageUp'].indexOf(e.key) >= 0) { e.preventDefault(); go(current - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(slides.length - 1);
+  });
+
+  // horizontal swipe (vertical scrolling inside a slide still works)
+  var sx = 0, sy = 0, tracking = false;
+  document.addEventListener('touchstart', function (e) { if (e.touches.length !== 1) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (!tracking) return; tracking = false;
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) go(current + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+
+  function fromHash() {
+    var n = parseInt((location.hash || '').replace('#', ''), 10);
+    return isNaN(n) ? 0 : n - 1;
+  }
+  window.addEventListener('hashchange', function () { go(fromHash(), true); });
+  go(fromHash(), true);
+})();
+</script>
+</body>
+</html>

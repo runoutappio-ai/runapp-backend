@@ -13,12 +13,17 @@ import {
   type ViewStyle,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { ChevronLeft } from 'lucide-react-native';
 import { colors, radius, spacing, type } from '@/theme/tokens';
 import { useTheme } from '@/theme/ThemeProvider';
+import { AmbientBackground, GlassSurface, useGlassPill } from '@/components/Glass';
 
-/** Soft wine glow that sits behind the top of every main screen. */
+export { AmbientBackground, GlassSurface } from '@/components/Glass';
+
+/** Ambient light behind the top of every main screen (blurred hero photo). Kept as TopGlow for existing imports. */
 export function TopGlow() {
-  return <View pointerEvents="none" style={styles.topGlow} />;
+  return <AmbientBackground />;
 }
 
 export function Screen({ children, scroll = true, glow = true }: PropsWithChildren<{ scroll?: boolean; glow?: boolean }>) {
@@ -27,11 +32,11 @@ export function Screen({ children, scroll = true, glow = true }: PropsWithChildr
     <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
       {glow ? <TopGlow /> : null}
       {scroll ? (
-        <ScrollView contentContainerStyle={[styles.content, { backgroundColor: themeColors.background }]} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {children}
         </ScrollView>
       ) : (
-        <View style={[styles.content, { backgroundColor: themeColors.background }]}>{children}</View>
+        <View style={styles.content}>{children}</View>
       )}
     </SafeAreaView>
   );
@@ -62,20 +67,20 @@ export function Body({ children, muted = false }: PropsWithChildren<{ muted?: bo
 }
 
 export function Card({ children, style }: PropsWithChildren<{ style?: ViewStyle }>) {
-  const { colors: themeColors } = useTheme();
-  return <View style={[styles.card, { backgroundColor: themeColors.surface, borderColor: themeColors.line }, style]}>{children}</View>;
+  return <GlassSurface style={[styles.card, style]}>{children}</GlassSurface>;
 }
 
-/** Pill segmented control — dark track, raised active pill. */
+/** Pill segmented control — glass track, brighter glass pill for the active option. */
 export function Segmented<T extends string>({ options, value, onChange }: { options: { key: T; label: string }[]; value: T; onChange: (value: T) => void }) {
   const { colors: themeColors } = useTheme();
+  const glassPill = useGlassPill();
   return (
-    <View accessibilityRole="tablist" style={[styles.segmented, { backgroundColor: themeColors.surfaceRaised, borderColor: themeColors.line }]}>
+    <View accessibilityRole="tablist" style={[styles.segmented, glassPill]}>
       {options.map(({ key, label }) => {
         const selected = value === key;
         return (
-          <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => onChange(key)} style={[styles.segment, selected && { backgroundColor: themeColors.selected, borderColor: themeColors.selectedBorder }]}>
-            <Text numberOfLines={1} style={[styles.segmentText, { color: themeColors.muted }, selected && { color: themeColors.text }]}>{label}</Text>
+          <Pressable key={key} accessibilityRole="tab" accessibilityState={{ selected }} onPress={() => onChange(key)} style={[styles.segment, selected && { backgroundColor: themeColors.glassActive, borderColor: themeColors.glassActiveBorder }]}>
+            <Text numberOfLines={1} style={[styles.segmentText, { color: themeColors.glassText }, selected && styles.segmentTextActive, selected && { color: themeColors.text }]}>{label}</Text>
           </Pressable>
         );
       })}
@@ -105,6 +110,7 @@ export function Button({
   accessibilityLabel?: string;
 }>) {
   const { colors: themeColors } = useTheme();
+  const glassPill = useGlassPill();
   return (
     <Pressable
       accessibilityRole="button"
@@ -115,11 +121,11 @@ export function Button({
       style={({ pressed }) => [
         styles.button,
         styles[`button_${variant}`],
-        variant === 'primary' ? { backgroundColor: themeColors.gold } : variant === 'secondary' ? { backgroundColor: themeColors.selected, borderColor: themeColors.selectedBorder } : { borderColor: themeColors.selectedBorder },
+        variant === 'primary' ? { backgroundColor: themeColors.gold } : variant === 'secondary' ? glassPill : variant === 'danger' ? { borderColor: 'rgba(255, 140, 134, 0.4)' } : { borderColor: themeColors.glassBorder },
         pressed && styles.pressed,
         (disabled || loading) && styles.disabled,
       ]}>
-      {loading ? <ActivityIndicator color={variant === 'primary' ? themeColors.primaryText : themeColors.text} /> : <View style={styles.buttonContent}>{Children.map(children, (child) => typeof child === 'string' || typeof child === 'number' ? <Text style={[styles.buttonText, { color: variant === 'primary' ? themeColors.primaryText : themeColors.text }, variant === 'primary' && styles.buttonTextPrimary]}>{child}</Text> : child)}</View>}
+      {loading ? <ActivityIndicator color={variant === 'primary' ? themeColors.primaryText : themeColors.text} /> : <View style={styles.buttonContent}>{Children.map(children, (child) => typeof child === 'string' || typeof child === 'number' ? <Text numberOfLines={1} style={[styles.buttonText, { color: variant === 'primary' ? themeColors.primaryText : variant === 'danger' ? themeColors.danger : themeColors.text }, variant === 'primary' && styles.buttonTextPrimary]}>{child}</Text> : child)}</View>}
     </Pressable>
   );
 }
@@ -128,13 +134,13 @@ export function Field({ label, error, ...props }: TextInputProps & { label: stri
   const { colors: themeColors } = useTheme();
   return (
     <View style={styles.fieldWrap}>
-      <Text style={[styles.label, { color: themeColors.muted }]}>{label}</Text>
+      <Text style={[styles.label, { color: themeColors.goldSoft }]}>{label}</Text>
       <TextInput
         {...props}
         accessibilityLabel={props.accessibilityLabel ?? label}
         placeholderTextColor={themeColors.faint}
         selectionColor={colors.gold}
-        style={[styles.input, { color: themeColors.text, backgroundColor: themeColors.surface, borderColor: themeColors.line }, props.multiline && styles.multiline, error ? styles.inputError : undefined, props.style]}
+        style={[styles.input, { color: themeColors.text, backgroundColor: themeColors.glassTrack, borderColor: themeColors.glassBorder }, props.multiline && styles.multiline, error ? styles.inputError : undefined, props.style]}
       />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
@@ -171,8 +177,8 @@ const styles = StyleSheet.create({
   section: { color: colors.text, ...type.section },
   body: { color: colors.text, fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif', default: 'Avenir Next' }), ...type.body },
   muted: { color: colors.muted },
-  card: { backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: radius.card, padding: 18, gap: spacing.sm },
-  segmented: { flexDirection: 'row', gap: 4, padding: 5, borderRadius: radius.pill, backgroundColor: colors.surfaceSunken, borderWidth: 1, borderColor: '#2A2527' },
+  card: { padding: 16, gap: spacing.sm },
+  segmented: { flexDirection: 'row', gap: 4, padding: 5, borderRadius: radius.pill },
   segment: { flex: 1, minHeight: 40, paddingHorizontal: 8, borderRadius: radius.pill, borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: colors.selected, borderColor: colors.selectedBorder },
   segmentText: { color: colors.muted, fontSize: 13.5, fontWeight: '600' },
@@ -181,11 +187,11 @@ const styles = StyleSheet.create({
   monoLetters: { flexDirection: 'row', alignItems: 'baseline', transform: [{ rotate: '-45deg' }] },
   monoR: { color: colors.gold, fontFamily: SERIF, fontStyle: 'italic', fontWeight: '600' },
   monoO: { color: colors.gold, fontFamily: SERIF, fontStyle: 'italic', fontWeight: '600', opacity: 0.9 },
-  button: { minHeight: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 22 },
+  button: { minHeight: 46, borderRadius: radius.pill, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 14 },
   button_primary: { backgroundColor: colors.gold },
-  button_secondary: { backgroundColor: colors.selected, borderWidth: 1, borderColor: colors.selectedBorder },
-  button_ghost: { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.selectedBorder },
-  button_danger: { backgroundColor: 'transparent', borderWidth: 1, borderColor: '#5A2A33' },
+  button_secondary: { borderWidth: 1 },
+  button_ghost: { backgroundColor: 'transparent', borderWidth: 1 },
+  button_danger: { backgroundColor: 'transparent', borderWidth: 1 },
   buttonText: { color: colors.text, fontFamily: Platform.select({ ios: 'Avenir Next', android: 'sans-serif-medium', default: 'Avenir Next' }), fontWeight: '700', fontSize: 14 },
   buttonTextPrimary: { color: colors.primaryText, fontWeight: '800' },
   buttonTextDanger: { color: colors.danger },
@@ -194,12 +200,32 @@ const styles = StyleSheet.create({
   disabled: { opacity: 0.45 },
   fieldWrap: { gap: 6 },
   label: { color: colors.goldSoft, fontWeight: '600', fontSize: 12.5 },
-  input: { minHeight: 48, borderWidth: 1, borderColor: colors.line, borderRadius: radius.sm, backgroundColor: colors.surface, color: colors.text, fontSize: 15, paddingHorizontal: 14 },
+  input: { minHeight: 44, borderWidth: 1, borderRadius: 12, color: colors.text, fontSize: 14.5, paddingHorizontal: 12 },
   multiline: { minHeight: 96, paddingTop: 12, textAlignVertical: 'top' },
   inputError: { borderColor: colors.red },
   error: { color: colors.danger, fontSize: 12.5, lineHeight: 17 },
-  errorCard: { backgroundColor: colors.dangerSurface, borderColor: '#4A2230' },
+  errorCard: { backgroundColor: 'rgba(50, 24, 35, 0.7)', borderColor: 'rgba(255, 140, 134, 0.25)' },
   center: { alignItems: 'center', paddingVertical: spacing.xl, gap: 6 },
   emptyTitle: { color: colors.text, fontSize: 16, fontWeight: '700' },
   emptyBody: { color: colors.muted, fontSize: 13, lineHeight: 19, textAlign: 'center' },
+});
+
+/** Round glass "back" button; falls back to `fallback` when there is no screen to go back to (e.g. a web reload). */
+export function BackButton({ fallback = '/(auth)', label = 'Go back' }: { fallback?: string; label?: string }) {
+  const glassPill = useGlassPill();
+  const { colors: themeColors } = useTheme();
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={8}
+      onPress={() => (router.canGoBack() ? router.back() : router.replace(fallback as never))}
+      style={({ pressed }) => [backStyles.button, glassPill, pressed && { opacity: 0.8 }]}>
+      <ChevronLeft color={themeColors.text} size={22} />
+    </Pressable>
+  );
+}
+
+const backStyles = StyleSheet.create({
+  button: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
 });

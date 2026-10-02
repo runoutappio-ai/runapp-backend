@@ -11,7 +11,7 @@ const WEIGHTS: [number, string[]][] = [
   [500, ['AvenirNext-Medium', 'Segoe UI Semibold', 'SegoeUI-Semibold', 'Roboto Medium', 'Roboto-Medium', 'HelveticaNeue-Medium', 'Arial']],
   [600, ['AvenirNext-DemiBold', 'Segoe UI Semibold', 'SegoeUI-Semibold', 'Roboto Medium', 'Roboto-Medium', 'HelveticaNeue-Medium', 'Arial Bold']],
   [700, ['AvenirNext-Bold', 'Segoe UI Bold', 'SegoeUI-Bold', 'Roboto Bold', 'Roboto-Bold', 'HelveticaNeue-Bold', 'Arial Bold', 'Arial-BoldMT', 'Noto Sans Bold', 'DejaVu Sans Bold', 'Liberation Sans Bold']],
-  [800, ['AvenirNext-Heavy', 'AvenirNext-Bold', 'Segoe UI Black', 'Roboto Black', 'Roboto-Black', 'Arial Black']],
+  [800, ['AvenirNext-Heavy', 'AvenirNext-Bold', 'Segoe UI Black', 'Roboto Black', 'Roboto-Black', 'Arial Black', 'Segoe UI Bold', 'Roboto Bold', 'Arial Bold', 'Noto Sans Bold', 'DejaVu Sans Bold', 'Liberation Sans Bold']],
 ];
 
 export function installWebFontFallbacks() {

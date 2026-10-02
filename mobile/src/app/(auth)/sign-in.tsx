@@ -5,7 +5,7 @@ import { Eye, EyeOff } from 'lucide-react-native';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/auth/AuthProvider';
-import { Button, Eyebrow, Field, InlineError, Screen, Title } from '@/components/ui';
+import { BackButton, Button, Eyebrow, Field, InlineError, Screen, Title } from '@/components/ui';
 import { colors, spacing } from '@/theme/tokens';
 import { loginSchema } from '@/auth/schemas';
 import { TestLoginButton } from '@/features/auth/TestLoginButton';
@@ -23,6 +23,7 @@ export default function SignInScreen() {
   });
   return (
     <Screen>
+      <BackButton />
       <View style={{ gap: 4, marginBottom: 8 }}><Eyebrow>Welcome back</Eyebrow><Title>Sign in</Title></View>
       {apiError ? <InlineError message={apiError} /> : null}
       <Controller control={control} name="email" render={({ field }) => <Field label="Email" autoCapitalize="none" autoComplete="email" keyboardType="email-address" value={field.value} onBlur={field.onBlur} onChangeText={field.onChange} error={errors.email?.message} />} />

@@ -5,7 +5,7 @@ import { ChevronDown } from 'lucide-react-native';
 import { Pressable, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/auth/AuthProvider';
-import { Button, Eyebrow, Field, InlineError, Screen, Title } from '@/components/ui';
+import { BackButton, Button, Eyebrow, Field, InlineError, Screen, Title } from '@/components/ui';
 import { registrationFormSchema } from '@/auth/schemas';
 import { useUpdateProfile } from '@/features/profile/api';
 import { DUBAI_AREAS } from '@/features/booking/model';
@@ -43,7 +43,8 @@ export default function RegisterScreen() {
     }
   });
   return <Screen>
-    <View style={{ gap: 4, marginBottom: 8 }}><Eyebrow>Join Run Out</Eyebrow><Title>Create your account</Title></View>
+    <BackButton />
+      <View style={{ gap: 4, marginBottom: 8 }}><Eyebrow>Join Run Out</Eyebrow><Title>Create your account</Title></View>
     <InlineError message="Use your details to receive reservation updates and invitations." />
     {apiError ? <InlineError message={apiError} /> : null}
     <View style={{ flexDirection: 'row', gap: 10 }}>

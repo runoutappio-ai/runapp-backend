@@ -73,6 +73,8 @@ export type CreateReservationPayload = {
   vibe: string;
   dietaryPreferences: string[];
   allergyNotes: string | null;
+  /** Only restaurants licensed to serve alcohol (21+). */
+  licensedVenue: boolean;
   locationLabel: string;
   partySize: number;
   budgetPerPerson: Money;

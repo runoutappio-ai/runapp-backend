@@ -8,6 +8,10 @@ export const darkTheme = {
   line: '#1F1B1C', text: '#F9F2E8', textSoft: '#D6D2D3', muted: '#9E9698', faint: '#77727A',
   gold: '#EBC46C', goldSoft: '#CDB89A', primaryText: '#251316', border: '#34262C', selected: '#231E1D',
   accentSurface: '#3A1522', accentBorder: 'rgba(235, 196, 108, 0.55)', selectedBorder: '#3A3234', success: '#58D68D', danger: '#FF8C86', white: '#FFFFFF',
+  // Glass (frosted) surfaces
+  glass: 'rgba(30, 12, 19, 0.42)', glassSolid: 'rgba(30, 14, 20, 0.86)', glassBorder: 'rgba(255, 255, 255, 0.14)', glassTrack: 'rgba(255, 255, 255, 0.06)',
+  glassActive: 'rgba(255, 255, 255, 0.16)', glassActiveBorder: 'rgba(255, 255, 255, 0.22)', glassPick: 'rgba(235, 196, 108, 0.18)', glassPickBorder: 'rgba(235, 196, 108, 0.7)',
+  glassText: 'rgba(255, 255, 255, 0.65)', glassDivider: 'rgba(255, 255, 255, 0.08)', bar: 'rgba(14, 12, 13, 0.72)', barSolid: 'rgba(14, 12, 13, 0.94)',
 } as const;
 
 export const lightTheme = {
@@ -15,6 +19,9 @@ export const lightTheme = {
   line: '#A9C8D5', text: '#123B35', textSoft: '#1F5048', muted: '#2D5E56', faint: '#486F68',
   gold: '#1E5A4D', goldSoft: '#2B6358', primaryText: '#F7FCFA', border: '#94B8C7', selected: '#C5DDE8',
   accentSurface: '#C9E0EB', accentBorder: '#4E8174', selectedBorder: '#9BBBC6', success: '#26754E', danger: '#9C3E48', white: '#FFFFFF',
+  glass: 'rgba(255, 255, 255, 0.55)', glassSolid: 'rgba(255, 255, 255, 0.9)', glassBorder: 'rgba(18, 59, 53, 0.14)', glassTrack: 'rgba(18, 59, 53, 0.06)',
+  glassActive: 'rgba(255, 255, 255, 0.85)', glassActiveBorder: 'rgba(18, 59, 53, 0.2)', glassPick: 'rgba(30, 90, 77, 0.14)', glassPickBorder: 'rgba(30, 90, 77, 0.7)',
+  glassText: 'rgba(18, 59, 53, 0.7)', glassDivider: 'rgba(18, 59, 53, 0.1)', bar: 'rgba(248, 243, 238, 0.78)', barSolid: 'rgba(248, 243, 238, 0.96)',
 } as const;
 
 type Theme = { [key in keyof typeof darkTheme]: string };

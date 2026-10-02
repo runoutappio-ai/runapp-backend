@@ -5,6 +5,7 @@ import { CalendarClock, ChevronLeft, LockKeyhole, MapPinned, Users } from 'lucid
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Body, Button, Card, Eyebrow, InlineError, Title, TopGlow } from '@/components/ui';
 import { AppTabBar } from '@/components/AppTabBar';
+import { useGlassPill } from '@/components/Glass';
 import { CANCELLABLE_STATUSES, STATUS_LABELS } from '@/features/booking/model';
 import { useCancelReservation, useDemoReveal, useReservation, useReveal } from '@/features/reservations/api';
 import { SealedEnvelope } from '@/features/home/SealedEnvelope';
@@ -27,6 +28,7 @@ export default function ReservationDetailScreen() {
   const cancellation = useCancelReservation(id);
   const [cancelled, setCancelled] = useState(false);
   const [demoMenuRevealed, setDemoMenuRevealed] = useState(false);
+  const glassPill = useGlassPill();
   const data = reservation.data;
   const revealStage = getRevealStage(reveal.data, demoReveal.data, demoMenuRevealed);
   const revealData = canRenderRestaurant(reveal.data) ? reveal.data : (demoReveal.data ?? reveal.data);
@@ -47,7 +49,7 @@ export default function ReservationDetailScreen() {
     <SafeAreaView style={styles.safe} edges={['top', 'left', 'right']}>
       <TopGlow />
       <View style={styles.topBar}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={styles.backButton}><ChevronLeft color={colors.text} size={22} /></Pressable>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))} style={[styles.backButton, glassPill]}><ChevronLeft color={colors.text} size={22} /></Pressable>
         <Text style={styles.topTitle}>Reservation</Text>
         <View style={styles.topSpacer} />
       </View>
@@ -82,8 +84,8 @@ const styles = StyleSheet.create({
   header: { gap: 4 },
   facts: { paddingVertical: 4, gap: 0 },
   fact: { flexDirection: 'row', gap: 12, alignItems: 'center', paddingVertical: 12 },
-  factDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
-  factIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#2A1A14', alignItems: 'center', justifyContent: 'center' },
+  factDivider: { borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: 'rgba(255, 255, 255, 0.1)' },
+  factIcon: { width: 32, height: 32, borderRadius: 16, backgroundColor: 'rgba(235, 196, 108, 0.16)', alignItems: 'center', justifyContent: 'center' },
   factText: { flex: 1, color: colors.text, fontSize: 14, fontWeight: '600' },
   section: { color: colors.text, fontSize: 16, fontWeight: '700' },
   sealed: { alignItems: 'center', gap: 10 },
