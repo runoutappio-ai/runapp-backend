@@ -187,19 +187,25 @@ export default function BookingScreen() {
   const perPerson = Math.min(PER_PERSON_MAX, Math.max(PER_PERSON_MIN, Math.round(draft.totalBudget / draft.partySize / 50) * 50));
   const setPartySize = (partySize: number) => update({ partySize, totalBudget: perPerson * partySize });
   const [budgetLine, setBudgetLine] = useState(() => randomBudgetLine(perPerson));
-  // AED 50–100 a person plus a licensed venue: a cheeky reality check.
+  // AED 50–100 a person plus alcohol or shisha: a cheeky reality check.
   const [boozePopup, setBoozePopup] = useState(false);
   const setPerPerson = (value: number) => {
     if (value === perPerson) return;
     update({ totalBudget: value * draft.partySize });
     setBudgetLine(randomBudgetLine(value));
-    if (draft.licensedVenue && value <= 100 && perPerson > 100) setBoozePopup(true);
+    if ((draft.licensedVenue || draft.shishaVenue) && value <= 100 && perPerson > 100) setBoozePopup(true);
   };
   const toggleLicensed = () => {
     const next = !draft.licensedVenue;
     update({ licensedVenue: next });
     if (next && perPerson <= 100) setBoozePopup(true);
   };
+  const toggleShisha = () => {
+    const next = !draft.shishaVenue;
+    update({ shishaVenue: next });
+    if (next && perPerson <= 100) setBoozePopup(true);
+  };
+  const selectedExtra = draft.licensedVenue && draft.shishaVenue ? 'alcohol and shisha' : draft.shishaVenue ? 'shisha' : 'alcohol';
   // Older drafts stored a free table total: snap it to the per-person scale once.
   useEffect(() => {
     if (draft.totalBudget !== perPerson * draft.partySize) update({ totalBudget: perPerson * draft.partySize });
@@ -394,6 +400,13 @@ export default function BookingScreen() {
                   <Text style={[styles.anywhereSub, muted]}>{draft.licensedVenue ? 'Noted. Everyone at the table must be 21+ — bring ID.' : 'Only restaurants licensed to serve alcohol · 21+'}</Text>
                 </View>
               </Pressable>
+              <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: Boolean(draft.shishaVenue) }} onPress={toggleShisha} style={[styles.anywhereRow, { borderTopColor: themeColors.glassDivider }]}>
+                <Checkbox checked={Boolean(draft.shishaVenue)} />
+                <View style={styles.anywhereCopy}>
+                  <Text style={[styles.anywhereTitle, { color: themeColors.text }]}>Shisha venue</Text>
+                  <Text style={[styles.anywhereSub, muted]}>{draft.shishaVenue ? 'Noted. We’ll match you with a restaurant that offers shisha.' : 'Only restaurants that offer shisha'}</Text>
+                </View>
+              </Pressable>
             </GlassSurface>
 
             <GlassSurface radius={18} style={styles.card}>
@@ -424,7 +437,7 @@ export default function BookingScreen() {
               <View style={[styles.hairline, { backgroundColor: themeColors.glassDivider }]} />
               <View style={styles.rowBetween}><Text style={[styles.summaryText, muted]}>Per person</Text><Text style={[styles.summaryText, { color: themeColors.text }]}>AED {perPerson} × {draft.partySize}</Text></View>
               <View style={styles.rowBaseline}><Text style={[styles.summaryTotalLabel, { color: themeColors.text }]}>Total</Text><Text style={[styles.summaryTotal, { color: themeColors.text }]}>AED {draft.totalBudget}</Text></View>
-              <Text style={[styles.smallLabel, muted]}>Budget for your table of {draft.partySize}{draft.anywhere ? ' · anywhere in Dubai' : draft.locationLabel ? ` · near ${draft.locationLabel.split(',')[0]}` : ''}{draft.licensedVenue ? ' · licensed venue' : ''}</Text>
+              <Text style={[styles.smallLabel, muted]}>Budget for your table of {draft.partySize}{draft.anywhere ? ' · anywhere in Dubai' : draft.locationLabel ? ` · near ${draft.locationLabel.split(',')[0]}` : ''}{draft.licensedVenue ? ' · licensed venue' : ''}{draft.shishaVenue ? ' · shisha' : ''}</Text>
             </GlassSurface>
 
             <View style={styles.paymentMethods}>{PAYMENT_METHODS.map(({ id, label, Icon }) => { const selected = draft.paymentMethod === id; return (
@@ -463,10 +476,10 @@ export default function BookingScreen() {
           <Animated.View entering={ZoomIn.springify().damping(14)} style={styles.popupWrap}>
             <GlassSurface radius={24} style={[styles.popup, { backgroundColor: themeColors.glassSolid }]}>
               <Text style={[styles.popupEyebrow, { color: themeColors.gold }]}>WAIT A SECOND</Text>
-              <Text style={[styles.popupTitle, { color: themeColors.text }]}>AED {perPerson} a person… and alcohol??</Text>
+              <Text style={[styles.popupTitle, { color: themeColors.text }]}>AED {perPerson} a person… and {selectedExtra}??</Text>
               <Text style={[styles.popupBody, { color: themeColors.glassText }]}>We do everything for you, but we don’t do magic.</Text>
               <Button onPress={() => { setPerPerson(150); setBoozePopup(false); }}>Raise to AED 150 a person</Button>
-              <Button variant="secondary" onPress={() => { update({ licensedVenue: false }); setBoozePopup(false); }}>Skip the drinks</Button>
+              <Button variant="secondary" onPress={() => { update({ licensedVenue: false, shishaVenue: false }); setBoozePopup(false); }}>Skip alcohol & shisha</Button>
             </GlassSurface>
           </Animated.View>
         </View>

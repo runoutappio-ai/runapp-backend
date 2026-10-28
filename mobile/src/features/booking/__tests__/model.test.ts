@@ -2,11 +2,13 @@ import { CANCELLABLE_STATUSES, DUBAI_AREAS, initialDraft, kilometresToMetres, ma
 import { locationPatch } from '../location';
 import { requireCapturedPayment } from '../payment';
 
-it('maps AED amounts, Dubai dates, and kilometres to backend fields', () => {
-  const payload = toReservationPayload({ ...initialDraft, partySize: 4, totalBudget: 600, date: '2030-05-20', time: '20:15', locationLabel: 'DIFC, Dubai', latitude: 25.2118, longitude: 55.2796, radiusKm: 7 });
+it('maps AED amounts, venue preferences, Dubai dates, and kilometres to backend fields', () => {
+  const payload = toReservationPayload({ ...initialDraft, partySize: 4, totalBudget: 600, date: '2030-05-20', time: '20:15', locationLabel: 'DIFC, Dubai', latitude: 25.2118, longitude: 55.2796, radiusKm: 7, licensedVenue: true, shishaVenue: true });
   expect(payload.reservationAt).toBe('2030-05-20T20:15:00+04:00');
   expect(payload.budgetPerPerson).toEqual({ amount: 150, currency: 'AED' });
   expect(payload.totalBudget).toEqual({ amount: 600, currency: 'AED' });
+  expect(payload.licensedVenue).toBe(true);
+  expect(payload.shishaVenue).toBe(true);
   expect(payload.searchArea.radiusMeters).toBe(7000); expect(kilometresToMetres(0.5)).toBe(500);
 });
 

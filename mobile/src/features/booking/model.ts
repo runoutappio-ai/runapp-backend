@@ -150,6 +150,8 @@ export type BookingDraft = {
   anywhere: boolean;
   /** Only restaurants licensed to serve alcohol (21+). */
   licensedVenue: boolean;
+  /** Only restaurants that offer shisha. */
+  shishaVenue: boolean;
   locationLabel: string;
   latitude: number | null;
   longitude: number | null;
@@ -172,6 +174,7 @@ export const initialDraft: BookingDraft = {
   allergyNotes: '',
   anywhere: false,
   licensedVenue: false,
+  shishaVenue: false,
   locationLabel: '',
   latitude: null,
   longitude: null,
@@ -206,6 +209,7 @@ export function toReservationPayload(draft: BookingDraft): CreateReservationPayl
     dietaryPreferences: draft.dietaryPreferences,
     allergyNotes: draft.allergyNotes.trim() || null,
     licensedVenue: Boolean(draft.licensedVenue),
+    shishaVenue: Boolean(draft.shishaVenue),
     locationLabel: draft.locationLabel,
     partySize: draft.partySize,
     budgetPerPerson: { amount: Math.round((totalBudget / draft.partySize) * 100) / 100, currency: 'AED' },

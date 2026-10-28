@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Run Out — Investor presentation</title>
+<meta name="description" content="Run Out investor presentation: mystery dinners in Dubai. We choose the restaurant, the restaurant chooses the menu, guests just show up.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D0B0C">
+<link rel="icon" href="logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0D0B0C; --text:#F9F2E8; --soft:#E4DCD6; --muted:rgba(255,255,255,.64); --faint:rgba(255,255,255,.42);
+    --gold:#EBC46C; --gold-soft:#CDB89A; --wine:#7A2842; --cream:#F4EBD8; --paper:#FFFDF7; --ink:#2B1A12;
+    --glass:rgba(30,12,19,.44); --glass-border:rgba(255,255,255,.14); --glass-track:rgba(255,255,255,.06);
+    --pick:rgba(235,196,108,.16); --pick-border:rgba(235,196,108,.65); --divider:rgba(255,255,255,.08);
+    --sans:'Avenir Next','Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+    --serif:'Didot','Bodoni 72',Georgia,'Times New Roman',serif;
+    --pad:clamp(18px,5vw,72px); --ease:cubic-bezier(.22,.8,.2,1);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+  a{color:inherit}
+  button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+  :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:8px}
+
+  .ambient{position:fixed;inset:0;pointer-events:none;overflow:hidden}
+  .ambient img{position:absolute;inset:-12%;width:124%;height:124%;object-fit:cover;filter:blur(46px) saturate(1.35);opacity:.5;animation:drift 38s ease-in-out infinite alternate}
+  .ambient::before{content:"";position:absolute;inset:0;background:radial-gradient(1200px 700px at 12% -10%,rgba(122,40,66,.38),transparent 60%),radial-gradient(900px 600px at 100% 110%,rgba(235,196,108,.10),transparent 60%),linear-gradient(to bottom,rgba(13,11,12,.35),rgba(13,11,12,.84) 55%,var(--bg))}
+  .ambient::after{content:"";position:absolute;inset:0;opacity:.06;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+  @keyframes drift{from{transform:scale(1.05)}to{transform:scale(1.12) translate3d(-2%,1.5%,0)}}
+
+  .glass{background:var(--glass);border:1px solid var(--glass-border);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);border-radius:22px;box-shadow:0 30px 80px -40px rgba(0,0,0,.8),inset 0 1px 0 rgba(255,255,255,.06)}
+  .pill{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);-webkit-backdrop-filter:blur(16px);backdrop-filter:blur(16px);border-radius:999px}
+
+  .top{position:fixed;top:0;left:0;right:0;z-index:5;display:flex;align-items:center;justify-content:space-between;padding:18px var(--pad);padding-top:max(18px,env(safe-area-inset-top))}
+  .brand{display:flex;align-items:center;gap:12px;text-decoration:none}
+  .brand img{width:34px;height:34px;border-radius:10px;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+  .brand b{font-weight:800;font-size:12px;letter-spacing:.3em}
+  .section-tag{font-family:var(--serif);font-size:11px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:var(--gold)}
+  .conf{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);padding:9px 14px}
+  .bottom{position:fixed;left:0;right:0;bottom:0;z-index:5;display:flex;align-items:center;gap:18px;padding:16px var(--pad);padding-bottom:max(16px,env(safe-area-inset-bottom));background:linear-gradient(to top,rgba(13,11,12,.92),rgba(13,11,12,0))}
+  .progress{flex:1;display:flex;gap:4px}
+  .progress button{flex:1;height:18px;display:flex;align-items:center;padding:0}
+  .progress button span{position:relative;display:block;width:100%;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+  .progress button span::after{content:"";position:absolute;inset:0;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .7s var(--ease)}
+  .progress button.done span::after{transform:scaleX(1);opacity:.45}
+  .progress button[aria-current="step"] span::after{transform:scaleX(1)}
+  .count{font-size:12px;font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;min-width:52px;text-align:center}
+  .nav{display:flex;gap:8px}
+  .nav button{width:44px;height:44px;display:grid;place-items:center}
+  .nav button:disabled{opacity:.3;cursor:default}
+  .nav svg{width:18px;height:18px}
+
+  .deck{position:fixed;inset:0}
+  .slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:92px var(--pad) 100px;opacity:0;visibility:hidden;transform:scale(1.03);filter:blur(10px);transition:opacity .7s var(--ease),transform .9s var(--ease),filter .7s var(--ease),visibility 0s linear .9s;overflow-y:auto;overscroll-behavior:contain}
+  .slide.before{transform:scale(.97)}
+  .slide.active{opacity:1;visibility:visible;transform:none;filter:none;transition:opacity .7s var(--ease) .1s,transform .9s var(--ease) .1s,filter .7s var(--ease) .1s,visibility 0s}
+  .inner{width:100%;max-width:1180px;margin:auto}
+  .rise{opacity:0}
+  .slide.active .rise{animation:rise .9s var(--ease) both;animation-delay:calc(.22s + var(--d,0) * .08s)}
+  @keyframes rise{from{opacity:0;transform:translateY(20px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
+
+  .eyebrow{font-family:var(--serif);font-size:11.5px;font-weight:700;letter-spacing:.26em;text-transform:uppercase;color:var(--gold)}
+  .display{font-weight:800;font-size:clamp(40px,5.6vw,82px);line-height:1.02;letter-spacing:-.035em}
+  .h2{font-weight:800;font-size:clamp(30px,3.7vw,52px);line-height:1.06;letter-spacing:-.03em;margin:12px 0 16px}
+  .h3{font-size:clamp(17px,1.4vw,20px);font-weight:800;line-height:1.25;letter-spacing:-.015em}
+  .gold{color:var(--gold)}
+  .lede{font-size:clamp(16px,1.35vw,19px);line-height:1.6;color:var(--muted);max-width:640px}
+  .body{font-size:14.5px;line-height:1.6;color:var(--muted)}
+  .body b{color:var(--text)}
+  .num{font-family:var(--serif);font-size:12px;font-weight:700;letter-spacing:.2em;color:var(--gold)}
+  .src{display:block;margin-top:10px;font-size:11px;line-height:1.4;color:var(--faint)}
+  .src a{color:var(--faint)}
+  .tag{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;background:var(--pick);border:1px solid var(--pick-border);color:var(--gold)}
+  .tag.dim{background:rgba(255,255,255,.06);border-color:var(--glass-border);color:var(--muted)}
+  .chip{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;border:1px solid var(--glass-border);background:var(--glass-track);font-size:12.5px;font-weight:600;color:var(--soft);white-space:nowrap}
+  .chip.on{border-color:var(--pick-border);background:var(--pick);color:#fff;font-weight:700}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  .grid3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+  .grid4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+  .card{padding:clamp(18px,2.2vw,28px);display:flex;flex-direction:column;gap:8px}
+  .stat strong{display:block;font-size:clamp(30px,3.2vw,46px);font-weight:800;letter-spacing:-.04em;line-height:1;color:var(--gold);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .stat span{display:block;font-size:13px;line-height:1.45;color:var(--muted);margin-top:8px}
+  .display.sm{font-size:clamp(34px,4.3vw,62px)}
+  .card .grid3 .stat strong{font-size:clamp(22px,2.1vw,30px)}
+  .split{display:grid;grid-template-columns:1fr 1.05fr;gap:56px;align-items:center}
+  .placeholder{color:var(--gold);border-bottom:1px dashed var(--gold)}
+
+  /* phones */
+  .phones{display:flex;justify-content:center;align-items:flex-end;gap:clamp(10px,1.6vw,22px)}
+  .phone{position:relative;width:clamp(150px,15vw,214px);aspect-ratio:390/844;border-radius:30px;padding:7px;background:#0B0B0C;border:1.5px solid #3A3A3E;box-shadow:0 40px 70px -30px rgba(0,0,0,.85)}
+  .phone img{display:block;width:100%;height:100%;object-fit:cover;border-radius:23px}
+  .phone.lift{transform:translateY(-26px)}
+  .phone figcaption{position:absolute;left:0;right:0;bottom:-30px;text-align:center;font-size:11.5px;font-weight:700;color:var(--muted)}
+  .phones.cap{padding-bottom:30px}
+
+  /* how it works */
+  .steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:30px;position:relative}
+  .step{padding:22px 20px;display:flex;flex-direction:column;gap:10px}
+  .step .n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--pick);border:1px solid var(--pick-border);color:var(--gold);font-family:var(--serif);font-size:13px;font-weight:700}
+  .step:last-child{border-color:var(--pick-border);background:linear-gradient(145deg,rgba(235,196,108,.12),rgba(122,40,66,.3))}
+
+  /* market */
+  .tam{display:flex;flex-direction:column;gap:12px}
+  .bar{position:relative;height:58px;border-radius:14px;background:rgba(255,255,255,.05);border:1px solid var(--divider);overflow:hidden}
+  .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:14px;transform:scaleX(0);transform-origin:left;transition:transform 1.2s var(--ease) .4s}
+  .slide.active .bar i{transform:scaleX(1)}
+  .bar b{position:absolute;left:18px;top:50%;transform:translateY(-50%);font-size:14px;font-weight:800;z-index:1}
+  .bar em{position:absolute;right:18px;top:50%;transform:translateY(-50%);font-style:normal;font-size:12px;color:var(--soft);z-index:1}
+  .b1 i{width:100%;background:linear-gradient(90deg,rgba(255,255,255,.10),rgba(255,255,255,.16))}
+  .b2 i{width:41.55%;background:linear-gradient(90deg,rgba(122,40,66,.75),rgba(122,40,66,.95))}
+  .b3 i{width:16%;background:linear-gradient(90deg,#C99A3F,var(--gold))}
+  .b3 b{color:#fff}
+
+  /* model */
+  .flow{display:grid;grid-template-columns:1fr auto 1fr auto 1fr;gap:10px;align-items:stretch;margin-top:26px}
+  .flow .card{text-align:left}
+  .flow .arrow{display:grid;place-items:center;color:var(--gold);font-size:22px}
+  .calc{margin-top:16px;padding:18px 20px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+  .calc div strong{display:block;font-size:22px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+  .calc div span{display:block;font-size:11.5px;color:var(--muted);margin-top:4px}
+  .calc .eq strong{color:var(--gold)}
+
+  /* competition */
+  .matrix{position:relative;aspect-ratio:1.25;padding:0}
+  .matrix .ax{position:absolute;background:rgba(255,255,255,.14)}
+  .matrix .ax.x{left:8%;right:6%;top:50%;height:1px}
+  .matrix .ax.y{top:8%;bottom:8%;left:50%;width:1px}
+  .matrix .lab{position:absolute;font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint)}
+  .dot{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;white-space:nowrap;opacity:0}
+  .slide.active .dot{animation:rise .8s var(--ease) both;animation-delay:calc(.6s + var(--i) * .12s)}
+  .dot i{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.55);flex:none}
+  .dot.ro i{width:18px;height:18px;background:var(--gold);box-shadow:0 0 0 6px rgba(235,196,108,.18),0 0 30px rgba(235,196,108,.5)}
+  .dot.ro{color:var(--gold);font-size:14px}
+  table.cmp{width:100%;border-collapse:collapse;font-size:13px}
+  table.cmp th,table.cmp td{padding:11px 10px;text-align:left;border-bottom:1px solid var(--divider);vertical-align:top}
+  table.cmp th{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--faint);font-weight:700}
+  table.cmp td{color:var(--muted)}
+  table.cmp td:first-child{color:var(--text);font-weight:700;white-space:nowrap}
+  table.cmp tr.us td{color:var(--text)}
+  table.cmp tr.us td:first-child{color:var(--gold)}
+
+  /* built */
+  .built{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:24px}
+  .built .card ul{list-style:none;display:flex;flex-direction:column;gap:7px;margin-top:6px}
+  .built .card li{font-size:13px;line-height:1.45;color:var(--muted);padding-left:16px;position:relative}
+  .built .card li::before{content:"";position:absolute;left:0;top:7px;width:6px;height:6px;border-radius:50%;background:var(--gold)}
+  .ok{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+
+  /* roadmap */
+  .road{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-top:26px;position:relative}
+  .road::before{content:"";position:absolute;left:24px;right:24px;top:21px;height:1.5px;background:linear-gradient(90deg,var(--gold),rgba(235,196,108,.2));transform:scaleX(0);transform-origin:left}
+  .slide.active .road::before{animation:line 1.6s var(--ease) .5s forwards}
+  @keyframes line{to{transform:scaleX(1)}}
+  .phase .pin{position:relative;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;background:var(--bg);border:1px solid var(--pick-border);color:var(--gold);font-family:var(--serif);font-size:12px;font-weight:700;margin-bottom:14px}
+  .phase:first-child .pin{background:var(--gold);color:#251316}
+  .phase .card{gap:6px}
+  .phase ul{list-style:none;display:flex;flex-direction:column;gap:6px;margin-top:4px}
+  .phase li{font-size:12.5px;line-height:1.45;color:var(--muted)}
+
+  /* ask */
+  .ask{display:grid;grid-template-columns:.9fr 1.1fr;gap:28px;align-items:stretch;margin-top:20px}
+  .ask .amount{display:flex;flex-direction:column;justify-content:center;gap:10px;border-color:var(--pick-border);background:linear-gradient(145deg,rgba(235,196,108,.12),rgba(122,40,66,.34))}
+  .ask .amount strong{font-size:clamp(34px,3.6vw,54px);font-weight:800;letter-spacing:-.04em}
+  .uses{display:flex;flex-direction:column;gap:10px}
+  .use{display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:start;padding:16px 18px}
+  .use .n{width:34px;height:34px;border-radius:50%;display:grid;place-items:center;background:var(--pick);border:1px solid var(--pick-border);color:var(--gold);font-family:var(--serif);font-size:12px;font-weight:700}
+
+  .btn{display:inline-flex;align-items:center;gap:10px;height:52px;padding:0 26px;border-radius:999px;background:var(--gold);color:#251316;font-weight:800;font-size:15px;text-decoration:none}
+  .btn.ghost{background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.16)}
+  .sources ol{columns:2;column-gap:40px;font-size:12px;line-height:1.55;color:var(--muted);padding-left:18px;margin-top:18px}
+  .sources li{margin-bottom:8px;break-inside:avoid}
+  .sources a{color:var(--soft)}
+
+  @media (prefers-reduced-motion: reduce){
+    .slide,.slide.active{transition:opacity .3s;filter:none;transform:none}
+    .rise,.dot{opacity:1!important;animation:none!important}
+    .bar i{transform:none;transition:none}
+    .road::before{transform:none;animation:none!important}
+    .ambient img{animation:none}
+  }
+  @media (max-width: 980px){
+    .grid4,.steps,.road{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .road::before{display:none}
+    .built{grid-template-columns:1fr}
+    .phone{width:clamp(120px,26vw,180px)}
+  }
+  @media (max-width: 860px){
+    .split,.grid2,.ask{grid-template-columns:1fr;gap:24px}
+    .grid3{grid-template-columns:1fr}
+    .flow{grid-template-columns:1fr}.flow .arrow{transform:rotate(90deg)}
+    .calc{grid-template-columns:1fr 1fr}
+    .slide{align-items:flex-start;padding-top:84px;padding-bottom:100px}
+    .section-tag,.conf{display:none}
+    .sources ol{columns:1}
+    .phones .phone:nth-child(n+4){display:none}
+  }
+  @media (max-width: 560px){
+    .grid4,.steps,.road{grid-template-columns:1fr}
+    .brand b,.count{display:none}
+    .phones .phone:nth-child(n+3){display:none}
+    table.cmp{font-size:11.5px}
+    table.cmp td:first-child{white-space:normal}
+    table.cmp th,table.cmp td{padding:9px 6px}
+    .matrix{aspect-ratio:1}
+    .phone.lift{transform:none}
+  }
+</style>
+</head>
+<body>
+<div class="ambient" aria-hidden="true"><img src="hero.jpg" alt=""></div>
+
+<header class="top">
+  <a class="brand" href="#1" aria-label="Run Out — back to start"><img src="logo.png" alt=""><b>RUN OUT</b></a>
+  <span class="section-tag" id="sectionTag" aria-live="polite"></span>
+  <span class="conf pill">Investor presentation · Confidential</span>
+</header>
+
+<main class="deck" id="deck" aria-roledescription="presentation">
+
+  <!-- 1 · Cover -->
+  <section class="slide" data-section="" aria-label="Run Out">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">Run Out · Dubai · Investor presentation</p>
+        <h1 class="display sm rise" style="--d:1;margin:18px 0 20px">The mystery dinner, <span class="gold">sealed</span> until the night.</h1>
+        <p class="lede rise" style="--d:2">Guests set the mood, the budget and the area. We choose the restaurant. The restaurant chooses the menu. Everything stays in a sealed envelope that opens at the table time.</p>
+        <p class="rise" style="--d:3;margin-top:26px"><span class="tag">Pre-launch · product built</span> <span class="tag dim">October 2026</span></p>
+      </div>
+      <div class="phones rise" style="--d:2">
+        <figure class="phone"><img src="img/home.jpg" alt="Run Out home screen with a sealed reservation"></figure>
+        <figure class="phone lift"><img src="img/envelope.jpg" alt="The envelope opening with the countdown to the reveal"></figure>
+        <figure class="phone"><img src="img/menu.jpg" alt="The revealed restaurant and menu"></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 2 · Problem -->
+  <section class="slide" data-section="Problem" aria-label="The problem">
+    <div class="inner">
+      <p class="eyebrow rise">The problem</p>
+      <h2 class="h2 rise" style="--d:1;max-width:900px">Choosing where to eat is exhausting for guests, and <span class="gold">winning new guests is expensive</span> for restaurants.</h2>
+      <div class="grid2" style="margin-top:22px">
+        <div class="card glass rise" style="--d:2">
+          <span class="tag dim" style="align-self:flex-start">Guests</span>
+          <div class="grid3" style="margin-top:10px">
+            <div class="stat"><strong>25 min</strong><span>to agree on a restaurant in a group of four or more</span></div>
+            <div class="stat"><strong>5+ h</strong><span>a year spent deciding where to eat out</span></div>
+            <div class="stat"><strong>1 in 2</strong><span>play it safe and return to the same places</span></div>
+          </div>
+          <span class="src">OnePoll survey for Meerkat Meals, UK, 2018 [1]</span>
+        </div>
+        <div class="card glass rise" style="--d:3">
+          <span class="tag dim" style="align-self:flex-start">Restaurants</span>
+          <div class="grid3" style="margin-top:10px">
+            <div class="stat"><strong>AED 72+</strong><span>average cost per Instagram ad action in F&amp;B: a click, not a cover [2]</span></div>
+            <div class="stat"><strong>25–30%</strong><span>commission charged per order by delivery platforms in the UAE [3]</span></div>
+            <div class="stat"><strong>13,000</strong><span>cafés and restaurants competing for attention in Dubai [4]</span></div>
+          </div>
+          <span class="src">USD 19.67 converted at AED 3.6725 per USD</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · Solution -->
+  <section class="slide" data-section="Solution" aria-label="The solution">
+    <div class="inner">
+      <p class="eyebrow rise">The solution</p>
+      <h2 class="h2 rise" style="--d:1">One tap. One budget. <span class="gold">One sealed envelope.</span></h2>
+      <p class="lede rise" style="--d:2">Run Out turns “where should we eat?” into a night out with a surprise built in, and turns empty tables into prepaid guests.</p>
+      <div class="steps">
+        <div class="step glass rise" style="--d:2"><span class="n">1</span><h3 class="h3">Guests set the brief</h3><p class="body">Party size, date and time, area and travel distance, budget per person (AED 50–400), vibe, cuisines to avoid, allergies.</p></div>
+        <div class="step glass rise" style="--d:3"><span class="n">2</span><h3 class="h3">They prepay</h3><p class="body">The table budget is paid up front. No-shows cost the guest, not the restaurant.</p></div>
+        <div class="step glass rise" style="--d:4"><span class="n">3</span><h3 class="h3">We match the restaurant</h3><p class="body">Our operations team picks a venue that fits every constraint. The restaurant designs the menu for that budget.</p></div>
+        <div class="step glass rise" style="--d:5"><span class="n">4</span><h3 class="h3">The envelope opens</h3><p class="body">Restaurant and menu stay sealed in the app with a countdown, and are revealed at the table time.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · Product -->
+  <section class="slide" data-section="Product" aria-label="The product">
+    <div class="inner">
+      <p class="eyebrow rise">The product · real screens from the working app</p>
+      <h2 class="h2 rise" style="--d:1">Built, working, and <span class="gold">ready for a pilot.</span></h2>
+      <div class="phones cap rise" style="--d:2;margin-top:24px">
+        <figure class="phone"><img src="img/step1.jpg" alt="Booking step 1"><figcaption>1 · Table &amp; place</figcaption></figure>
+        <figure class="phone"><img src="img/step2.jpg" alt="Booking step 2"><figcaption>2 · Budget &amp; mood</figcaption></figure>
+        <figure class="phone"><img src="img/payment.jpg" alt="Payment"><figcaption>3 · Prepay</figcaption></figure>
+        <figure class="phone"><img src="img/sealed.jpg" alt="Sealed reservation"><figcaption>Sealed</figcaption></figure>
+        <figure class="phone"><img src="img/revealed.jpg" alt="Revealed restaurant"><figcaption>The reveal</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 5 · Why restaurants -->
+  <section class="slide" data-section="Restaurants" aria-label="Why restaurants join">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">The supply side</p>
+        <h2 class="h2 rise" style="--d:1">Restaurants get prepaid new guests, <span class="gold">and own the first impression.</span></h2>
+        <p class="body rise" style="--d:2">A Run Out guest has never sat at their table. The restaurant decides the dishes, portions and price, so it decides how good that first experience will be. Done well, the guest comes back directly.</p>
+      </div>
+      <div class="grid2">
+        <div class="card glass rise" style="--d:2"><span class="num">01</span><h3 class="h3">Pay for guests, not ads</h3><p class="body">No upfront advertising spend. A platform fee per booking, only when a prepaid guest is on the way.</p></div>
+        <div class="card glass rise" style="--d:3"><span class="num">02</span><h3 class="h3">Prepaid, no no-shows</h3><p class="body">The table budget is captured before the guest arrives.</p></div>
+        <div class="card glass rise" style="--d:4"><span class="num">03</span><h3 class="h3">No discount wars</h3><p class="body">Public prices stay unchanged. The surprise is the value, not a coupon.</p></div>
+        <div class="card glass rise" style="--d:5"><span class="num">04</span><h3 class="h3">Fills quiet slots</h3><p class="body">Off-peak tables become bookings without a public promotion.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 6 · Why Dubai -->
+  <section class="slide" data-section="Market" aria-label="Why Dubai, why now">
+    <div class="inner">
+      <p class="eyebrow rise">Why Dubai, why now</p>
+      <h2 class="h2 rise" style="--d:1">A city that eats out, <span class="gold">and keeps growing.</span></h2>
+      <div class="grid4" style="margin-top:22px">
+        <div class="card glass stat rise" style="--d:2"><strong>19.59M</strong><span>international overnight visitors in 2025, a third record year, up 5% [5]</span></div>
+        <div class="card glass stat rise" style="--d:3"><strong>4.58M</strong><span>residents at the end of 2025, doubled in about 15 years [6]</span></div>
+        <div class="card glass stat rise" style="--d:4"><strong>2.9×</strong><span>dining-out occasions per resident per week in 2023, up from 1.8 [4]</span></div>
+        <div class="card glass stat rise" style="--d:5"><strong>26,000</strong><span>food establishments in Dubai; 1,500 opened in Jan–May 2024 alone [7]</span></div>
+      </div>
+      <p class="body rise" style="--d:6;margin-top:18px;max-width:820px">More choice every month means more decision fatigue for guests, and more competition for every new restaurant. Run Out sits exactly between the two.</p>
+    </div>
+  </section>
+
+  <!-- 7 · Market size -->
+  <section class="slide" data-section="Market" aria-label="Market size">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">Market size</p>
+        <h2 class="h2 rise" style="--d:1">A <span class="gold">USD 9.6B</span> full-service dining market in the UAE.</h2>
+        <p class="body rise" style="--d:2">The UAE foodservice market is valued at USD 23.21B in 2025 and forecast to reach USD 61.21B by 2031 (17.55% CAGR). Full-service restaurants, where Run Out operates, hold 41.55% of it [8].</p>
+        <p class="body rise" style="--d:3;margin-top:12px">Our first market is Dubai, launching with a focused set of neighbourhoods before expanding across the city and the wider UAE.</p>
+      </div>
+      <div class="glass card rise" style="--d:2">
+        <div class="tam">
+          <div class="bar b1"><i></i><b>UAE foodservice</b><em>USD 23.21B · 2025</em></div>
+          <div class="bar b2"><i></i><b>Full-service restaurants</b><em>≈ USD 9.6B · 41.55%</em></div>
+          <div class="bar b3"><i></i><b>Dubai launch</b><em>first city</em></div>
+        </div>
+        <span class="src">Full-service value calculated as 41.55% × USD 23.21B. Source [8]. The Dubai bar is illustrative, not a measured share.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 8 · Business model -->
+  <section class="slide" data-section="Business model" aria-label="Business model">
+    <div class="inner">
+      <p class="eyebrow rise">Business model</p>
+      <h2 class="h2 rise" style="--d:1">We earn when a <span class="gold">prepaid guest sits down.</span></h2>
+      <div class="flow">
+        <div class="card glass rise" style="--d:2"><span class="tag dim" style="align-self:flex-start">Guest</span><h3 class="h3">Prepays the table budget</h3><p class="body">AED 50–400 per person, captured in the app before the reveal.</p></div>
+        <div class="arrow rise" style="--d:3">→</div>
+        <div class="card glass rise" style="--d:3"><span class="tag" style="align-self:flex-start">Run Out</span><h3 class="h3">Keeps a platform fee</h3><p class="body">A percentage of each prepaid booking. No subscription for restaurants, no upfront ad spend.</p></div>
+        <div class="arrow rise" style="--d:4">→</div>
+        <div class="card glass rise" style="--d:4"><span class="tag dim" style="align-self:flex-start">Restaurant</span><h3 class="h3">Receives the rest</h3><p class="body">For a full, prepaid table it designed the menu for.</p></div>
+      </div>
+      <div class="calc glass rise" style="--d:5">
+        <div><strong>2 guests</strong><span>a table</span></div>
+        <div><strong>× AED 200</strong><span>per person</span></div>
+        <div><strong>= AED 400</strong><span>prepaid booking value</span></div>
+        <div class="eq"><strong>AED 40</strong><span>Run Out revenue at a 10% platform fee</span></div>
+      </div>
+      <p class="src rise" style="--d:6">Illustrative example. The platform fee rate is an assumption to be validated with launch restaurants. Optional later revenue: guest service fee, gift envelopes, corporate and hotel concierge bookings.</p>
+    </div>
+  </section>
+
+  <!-- 9 · Bottom-up -->
+  <section class="slide" data-section="Business model" aria-label="Path to the first million">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">Path to the first million</p>
+        <h2 class="h2 rise" style="--d:1">100 restaurants. <span class="gold">5 tables a week.</span></h2>
+        <p class="body rise" style="--d:2">A deliberately small scenario: about 0.8% of Dubai’s 13,000 cafés and restaurants, each filling five Run Out tables a week.</p>
+      </div>
+      <div class="glass card rise" style="--d:2">
+        <table class="cmp">
+          <tr><td>Partner restaurants</td><td>100</td></tr>
+          <tr><td>Run Out tables per restaurant per week</td><td>5</td></tr>
+          <tr><td>Bookings per year</td><td>26,000</td></tr>
+          <tr><td>Average booking value</td><td>AED 400 (2 × AED 200)</td></tr>
+          <tr><td>Prepaid booking value per year</td><td>AED 10.4M</td></tr>
+          <tr class="us"><td>Run Out revenue at 10%</td><td><b>AED 1.04M a year</b></td></tr>
+        </table>
+        <span class="src">Scenario for illustration only. All inputs are assumptions, not results.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 10 · Competition -->
+  <section class="slide" data-section="Competition" aria-label="Competition">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">Competition</p>
+        <h2 class="h2 rise" style="--d:1">Everyone helps you <em style="font-style:normal" class="gold">search</em>. We decide for you.</h2>
+        <table class="cmp rise" style="--d:2;margin-top:6px">
+          <tr><th>Who</th><th>What they do</th><th>Who decides</th></tr>
+          <tr><td>Maps &amp; review apps</td><td>Lists, ratings, reviews</td><td>The guest, after scrolling</td></tr>
+          <tr><td>Discount &amp; cashback apps</td><td>Deals on known restaurants</td><td>The guest, on price</td></tr>
+          <tr><td>Delivery apps</td><td>Food at home, 25–30% commission</td><td>The guest, at home</td></tr>
+          <tr><td>Social dining (Timeleft)</td><td>Dinners with strangers</td><td>The app picks the table, not the menu</td></tr>
+          <tr class="us"><td>Run Out</td><td>Sealed restaurant + chef-designed menu, prepaid</td><td>Run Out and the restaurant</td></tr>
+        </table>
+      </div>
+      <div class="glass matrix rise" style="--d:2" aria-label="Positioning map">
+        <span class="ax x"></span><span class="ax y"></span>
+        <span class="lab" style="left:50%;top:3%;transform:translateX(-50%)">Experience-led</span>
+        <span class="lab" style="left:50%;bottom:3%;transform:translateX(-50%)">Price / search-led</span>
+        <span class="lab" style="left:4%;top:53%">Guest decides</span>
+        <span class="lab" style="right:4%;top:53%">We decide</span>
+        <span class="dot" style="--i:0;left:24%;top:72%"><i></i>Maps &amp; reviews</span>
+        <span class="dot" style="--i:1;left:30%;top:84%"><i></i>Discount apps</span>
+        <span class="dot" style="--i:2;left:22%;top:60%"><i></i>Delivery</span>
+        <span class="dot" style="--i:3;left:66%;top:36%"><i></i>Social dining</span>
+        <span class="dot ro" style="--i:4;left:76%;top:22%"><i></i>Run Out</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · Validation -->
+  <section class="slide" data-section="Validation" aria-label="Proof that people let an app decide">
+    <div class="inner">
+      <p class="eyebrow rise">Proof the behaviour exists</p>
+      <h2 class="h2 rise" style="--d:1;max-width:900px">People already pay an app to <span class="gold">decide their night out.</span></h2>
+      <p class="lede rise" style="--d:2">Timeleft matches strangers for dinner and has operated in Dubai. Its growth shows that “let the app choose” is a habit people will pay for.</p>
+      <div class="grid3" style="margin-top:22px">
+        <div class="card glass stat rise" style="--d:3"><strong>150,000</strong><span>diners joining Timeleft dinners each month (August 2025) [9]</span></div>
+        <div class="card glass stat rise" style="--d:4"><strong>€18M</strong><span>annual recurring revenue reached 20 months after launch [9]</span></div>
+        <div class="card glass stat rise" style="--d:5"><strong>USD 7M</strong><span>Series A raised [10]</span></div>
+      </div>
+      <p class="body rise" style="--d:6;margin-top:16px">Run Out applies the same trust to the restaurant and the menu, with a clearer value for the venue: prepaid guests and no discounting.</p>
+    </div>
+  </section>
+
+  <!-- 12 · What's built -->
+  <section class="slide" data-section="Traction" aria-label="What is already built">
+    <div class="inner">
+      <p class="eyebrow rise">Where we are</p>
+      <h2 class="h2 rise" style="--d:1">The whole platform is <span class="gold">already built.</span></h2>
+      <div class="built">
+        <div class="card glass rise" style="--d:2"><span class="tag" style="align-self:flex-start">Guest app</span><h3 class="h3">iOS, Android and web</h3>
+          <ul><li>3-step booking: table &amp; place, budget &amp; mood, payment</li><li>Sealed envelope, countdown and animated reveal of restaurant and menu</li><li>Reservations history, feedback, profile, dietary needs</li><li>Google sign-in, email accounts, guest mode</li></ul></div>
+        <div class="card glass rise" style="--d:3"><span class="tag" style="align-self:flex-start">Backend</span><h3 class="h3">Production-grade API</h3>
+          <ul><li>Java / Spring Boot modular monolith: 11 modules, 160+ classes</li><li>Keycloak identity, OAuth2 with PKCE, role-based access</li><li>Idempotent reservations and payments, reveal enforced on the server</li><li>Google Places restaurant import, 15 Dubai areas, geolocation</li></ul></div>
+        <div class="card glass rise" style="--d:4"><span class="tag" style="align-self:flex-start">Operations</span><h3 class="h3">Admin panel &amp; sales tools</h3>
+          <ul><li>Dashboard, reservations queue, restaurants, users</li><li>Roles: super admin, manager, operations worker</li><li>Reservation lifecycle from payment to reveal to feedback</li><li>Live web demo and sales decks for restaurants and guests</li></ul></div>
+      </div>
+      <div class="ok rise" style="--d:5"><span class="tag dim">Before launch: real payment provider</span><span class="tag dim">Sign in with Apple</span><span class="tag dim">Server push notifications</span><span class="tag dim">Terms, privacy &amp; account deletion</span></div>
+    </div>
+  </section>
+
+  <!-- 13 · Go-to-market & roadmap -->
+  <section class="slide" data-section="Plan" aria-label="Go-to-market and roadmap">
+    <div class="inner">
+      <p class="eyebrow rise">Go-to-market &amp; roadmap</p>
+      <h2 class="h2 rise" style="--d:1">Start small and dense, <span class="gold">then scale the city.</span></h2>
+      <div class="road">
+        <div class="phase rise" style="--d:2"><span class="pin">I</span><div class="card glass"><h3 class="h3">Launch-ready</h3><ul><li>Real payments and Apple sign-in</li><li>Push notifications, legal</li><li>App Store and Google Play release</li></ul></div></div>
+        <div class="phase rise" style="--d:3"><span class="pin">II</span><div class="card glass"><h3 class="h3">Dubai pilot</h3><ul><li>A first group of partner restaurants in a few dense neighbourhoods</li><li>Hand-matched bookings by the ops team</li><li>Measure repeat rate and restaurant NPS</li></ul></div></div>
+        <div class="phase rise" style="--d:4"><span class="pin">III</span><div class="card glass"><h3 class="h3">City-wide</h3><ul><li>More areas and cuisines</li><li>Matching tools to scale operations</li><li>Creators, referrals, gift envelopes</li></ul></div></div>
+        <div class="phase rise" style="--d:5"><span class="pin">IV</span><div class="card glass"><h3 class="h3">Beyond</h3><ul><li>Hotels and concierge partnerships for 19.6M visitors</li><li>Corporate team nights</li><li>Abu Dhabi and the wider GCC</li></ul></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 14 · Team -->
+  <section class="slide" data-section="Team" aria-label="Team">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">Team</p>
+        <h2 class="h2 rise" style="--d:1">Founder-built, <span class="gold">end to end.</span></h2>
+        <p class="body rise" style="--d:2">The guest app, backend, admin panel and sales materials were built by the founder, so the company starts with a working product and a low burn.</p>
+      </div>
+      <div class="grid2">
+        <div class="card glass rise" style="--d:2"><span class="tag" style="align-self:flex-start">Founder</span><h3 class="h3">Juan Vicente</h3><p class="body">Senior software engineer based in Dubai. Product, engineering and operations design.</p></div>
+        <div class="card glass rise" style="--d:3"><span class="tag dim" style="align-self:flex-start">First hires</span><h3 class="h3">Partnerships &amp; operations</h3><p class="body">A Dubai restaurant-partnerships lead and an operations coordinator for matching and guest care.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 15 · Ask -->
+  <section class="slide" data-section="The ask" aria-label="The ask">
+    <div class="inner">
+      <p class="eyebrow rise">The ask</p>
+      <h2 class="h2 rise" style="--d:1">Raising a <span class="gold">pre-seed round</span> to launch in Dubai.</h2>
+      <div class="ask">
+        <div class="card glass amount rise" style="--d:2">
+          <span class="eyebrow">Round size</span>
+          <strong><span class="placeholder">[Amount]</span></strong>
+          <p class="body">To be confirmed. Runway target: from launch through the Dubai pilot and city-wide expansion.</p>
+        </div>
+        <div class="uses">
+          <div class="use glass rise" style="--d:3"><span class="n">1</span><div><h3 class="h3">Launch</h3><p class="body">Payment provider, store release, legal and compliance.</p></div></div>
+          <div class="use glass rise" style="--d:4"><span class="n">2</span><div><h3 class="h3">Supply</h3><p class="body">Restaurant partnerships lead and onboarding of the first partner restaurants.</p></div></div>
+          <div class="use glass rise" style="--d:5"><span class="n">3</span><div><h3 class="h3">Demand</h3><p class="body">Launch marketing with creators, referrals and hotel concierges.</p></div></div>
+          <div class="use glass rise" style="--d:6"><span class="n">4</span><div><h3 class="h3">Operations</h3><p class="body">Matching and guest-care team, tools to scale bookings.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 16 · Close -->
+  <section class="slide" data-section="" aria-label="Thank you">
+    <div class="inner split">
+      <div>
+        <p class="eyebrow rise">Run Out</p>
+        <h2 class="display sm rise" style="--d:1;margin:18px 0 20px">You choose the mood.<br>We choose the restaurant.<br><span class="gold">You just show up.</span></h2>
+        <div class="rise" style="--d:2;display:flex;flex-wrap:wrap;gap:12px;margin-top:10px">
+          <a class="btn" href="../laptop/">See the live demo →</a>
+          <a class="btn ghost" href="#17">Sources</a>
+        </div>
+        <p class="body rise" style="--d:3;margin-top:20px">Juan Vicente · Founder · <span class="placeholder">[email]</span></p>
+      </div>
+      <div class="phones rise" style="--d:2">
+        <figure class="phone"><img src="img/welcome.jpg" alt="Run Out welcome screen"></figure>
+        <figure class="phone lift"><img src="img/revealed.jpg" alt="Revealed restaurant"></figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- 17 · Sources -->
+  <section class="slide sources" data-section="Sources" aria-label="Sources">
+    <div class="inner">
+      <p class="eyebrow">Sources</p>
+      <h2 class="h2">Where the numbers come from</h2>
+      <ol>
+        <li><a href="https://www.craftguildofchefs.org/news/guess-how-long-brits-spend-deciding-where-eat-out" target="_blank" rel="noopener">Craft Guild of Chefs — OnePoll survey for Meerkat Meals</a> (UK, Oct 2018).</li>
+        <li><a href="https://merchants.doordash.com/en-us/blog/restaurant-customer-acquisition-cost" target="_blank" rel="noopener">DoorDash for Merchants — restaurant customer acquisition cost</a> (Instagram average CPA in food &amp; beverage: USD 19.67).</li>
+        <li><a href="https://www.perceedigital.com/insights/restaurant-delivery-margins/" target="_blank" rel="noopener">Percee Digital — restaurant delivery margins in the UAE</a>.</li>
+        <li><a href="https://www.dubaidet.gov.ae/en/research-and-insights/-/media/files/faqs/dubai-gastronomy-industry-report-2023.pdf" target="_blank" rel="noopener">Dubai DET — Dubai Gastronomy Industry Report</a> (Dec 2023).</li>
+        <li><a href="https://gulfbusiness.com/en/2026/tourism/dubai-visitor-numbers-hit-19-6-million-in-2025/" target="_blank" rel="noopener">Gulf Business — Dubai visitor numbers hit 19.6 million in 2025</a> (DET data).</li>
+        <li><a href="https://www.zawya.com/en/economy/dubai-population-tops-4.58mln-by-end-of-2025-415144" target="_blank" rel="noopener">Zawya — Dubai population tops 4.58M by end of 2025</a> (Dubai Data and Statistics Establishment).</li>
+        <li><a href="https://gulfnews.com/uae/1500-new-food-establishments-opened-in-dubai-in-first-five-months-of-2024-1.103220664" target="_blank" rel="noopener">Gulf News — 1,500 new food establishments in Dubai in five months</a> (Dubai Municipality, Jun 2024).</li>
+        <li><a href="https://www.mordorintelligence.com/industry-reports/uae-foodservice-market" target="_blank" rel="noopener">Mordor Intelligence — UAE foodservice market</a> (2025 value, 2031 forecast, full-service share).</li>
+        <li><a href="https://timfrin.substack.com/p/inside-timelefts-journey-to-connecting" target="_blank" rel="noopener">Inside Timeleft’s journey to 150,000 diners monthly</a> (Oct 2025).</li>
+        <li><a href="https://www.trysignalbase.com/news/funding/timeleft-raises-70m-series-a-funding" target="_blank" rel="noopener">Signalbase — Timeleft raises USD 7.0M Series A</a>.</li>
+      </ol>
+      <p class="src" style="margin-top:14px">Run Out is pre-launch: no revenue or user figures are claimed. Business-model numbers are illustrative assumptions.</p>
+    </div>
+  </section>
+</main>
+
+<footer class="bottom">
+  <nav class="progress" id="progress" aria-label="Slides"></nav>
+  <span class="count" id="count" aria-live="polite"></span>
+  <div class="nav">
+    <button class="pill" id="prev" aria-label="Previous slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+    <button class="pill" id="next" aria-label="Next slide"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+  </div>
+</footer>
+
+<script>
+(function () {
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.slide'));
+  var progress = document.getElementById('progress'), count = document.getElementById('count'), tag = document.getElementById('sectionTag');
+  var prev = document.getElementById('prev'), next = document.getElementById('next');
+  var current = -1;
+  slides.forEach(function (slide, i) {
+    var b = document.createElement('button');
+    b.setAttribute('aria-label', 'Go to slide ' + (i + 1) + ': ' + slide.getAttribute('aria-label'));
+    b.innerHTML = '<span></span>';
+    b.addEventListener('click', function () { go(i); });
+    progress.appendChild(b);
+  });
+  var dots = progress.querySelectorAll('button');
+  function go(i, fromHash) {
+    i = Math.max(0, Math.min(slides.length - 1, i));
+    if (i === current) return;
+    slides.forEach(function (s, j) {
+      s.classList.toggle('active', j === i);
+      s.classList.toggle('before', j < i);
+      s.setAttribute('aria-hidden', j === i ? 'false' : 'true');
+      if (j === i) s.scrollTop = 0;
+    });
+    dots.forEach(function (d, j) { d.classList.toggle('done', j < i); if (j === i) d.setAttribute('aria-current', 'step'); else d.removeAttribute('aria-current'); });
+    current = i;
+    count.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
+    tag.textContent = slides[i].getAttribute('data-section') || '';
+    prev.disabled = i === 0; next.disabled = i === slides.length - 1;
+    if (!fromHash) history.replaceState(null, '', '#' + (i + 1));
+  }
+  prev.addEventListener('click', function () { go(current - 1); });
+  next.addEventListener('click', function () { go(current + 1); });
+  document.addEventListener('keydown', function (e) {
+    if (['ArrowRight', 'PageDown', ' '].indexOf(e.key) >= 0) { e.preventDefault(); go(current + 1); }
+    else if (['ArrowLeft', 'PageUp'].indexOf(e.key) >= 0) { e.preventDefault(); go(current - 1); }
+    else if (e.key === 'Home') go(0); else if (e.key === 'End') go(slides.length - 1);
+  });
+  var sx = 0, sy = 0, tracking = false;
+  document.addEventListener('touchstart', function (e) { if (e.touches.length !== 1) return; sx = e.touches[0].clientX; sy = e.touches[0].clientY; tracking = true; }, { passive: true });
+  document.addEventListener('touchend', function (e) {
+    if (!tracking) return; tracking = false;
+    var dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.4) go(current + (dx < 0 ? 1 : -1));
+  }, { passive: true });
+  function fromHash() { var n = parseInt((location.hash || '').replace('#', ''), 10); return isNaN(n) ? 0 : n - 1; }
+  window.addEventListener('hashchange', function () { go(fromHash(), true); });
+  go(fromHash(), true);
+})();
+</script>
+</body>
+</html>

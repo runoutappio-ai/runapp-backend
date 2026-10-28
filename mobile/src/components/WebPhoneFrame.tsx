@@ -1,5 +1,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
-import { Platform, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { Image, Platform, Pressable, StyleSheet, Text, useWindowDimensions, View, type ViewStyle } from 'react-native';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { HERO_PHOTO } from '@/features/home/HomeHeroPhoto';
 import { SafeAreaFrameContext, SafeAreaInsetsContext } from 'react-native-safe-area-context';
 import { useTheme } from '@/theme/ThemeProvider';
 
@@ -43,13 +45,63 @@ function StatusBar({ color }: { color: string }) {
   );
 }
 
+// Same backdrop as the presentation: the app's hero photo, heavily blurred and slowly drifting,
+// under wine and gold light, a dark vignette and a little film grain. Web-only CSS values.
+const WINE_LIGHT = { backgroundImage: 'radial-gradient(1200px 700px at 12% -10%, rgba(122,40,66,.42), transparent 60%), radial-gradient(900px 600px at 100% 110%, rgba(235,196,108,.12), transparent 60%), linear-gradient(to bottom, rgba(13,11,12,.18), rgba(13,11,12,.55) 65%, rgba(13,11,12,.85))' } as unknown as ViewStyle;
+const GRAIN = { opacity: 0.06, backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")" } as unknown as ViewStyle;
+
+function Backdrop() {
+  const drift = useSharedValue(0);
+  useEffect(() => {
+    drift.value = withRepeat(withTiming(1, { duration: 38_000, easing: Easing.inOut(Easing.ease) }), -1, true);
+  }, [drift]);
+  const motion = useAnimatedStyle(() => ({ transform: [{ scale: 1.05 + drift.value * 0.07 }, { translateX: -drift.value * 24 }, { translateY: drift.value * 14 }] }));
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {HERO_PHOTO ? (
+        <Animated.View style={[styles.photoWrap, motion]}>
+          <Image source={HERO_PHOTO} blurRadius={46} resizeMode="cover" style={styles.photo} />
+        </Animated.View>
+      ) : null}
+      <View style={[StyleSheet.absoluteFill, WINE_LIGHT]} />
+      <View style={[StyleSheet.absoluteFill, GRAIN]} />
+    </View>
+  );
+}
+
+/**
+ * Which version the visitor picked on the site's start page (/?view=phone or /?view=laptop on /app/).
+ * Kept for the session so in-app navigation does not lose it. Defaults to the screen size.
+ */
+function chosenView(): 'phone' | 'laptop' | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const fromUrl = new URLSearchParams(window.location.search).get('view');
+    if (fromUrl === 'phone' || fromUrl === 'laptop') { window.sessionStorage.setItem('runout.view', fromUrl); return fromUrl; }
+    const saved = window.sessionStorage.getItem('runout.view');
+    return saved === 'phone' || saved === 'laptop' ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
 export function WebPhoneFrame({ children }: { children: ReactNode }) {
+  const [view] = useState(chosenView);
   const { width, height } = useWindowDimensions();
   const { colors, isLight } = useTheme();
   if (Platform.OS !== 'web') return <>{children}</>;
 
-  const mockup = width >= 600 && height >= 560;
-  if (!mockup) return <View style={[styles.fill, { backgroundColor: colors.background }]}>{children}</View>;
+  const mockup = view !== 'phone' && width >= 600 && height >= 560;
+  if (!mockup) {
+    // Phone version: full screen on a phone; on a wide screen, a phone-width column over the same backdrop.
+    if (width <= 520) return <View style={[styles.fill, { backgroundColor: colors.background }]}>{children}</View>;
+    return (
+      <View style={styles.backdrop}>
+        <Backdrop />
+        <View style={[styles.column, { backgroundColor: colors.background }]}>{children}</View>
+      </View>
+    );
+  }
 
   const scale = Math.min(1, (height - 48) / PHONE.height, (width - 48) / PHONE.width);
   const showCaption = width >= 1040;
@@ -57,14 +109,16 @@ export function WebPhoneFrame({ children }: { children: ReactNode }) {
 
   return (
     <View style={styles.backdrop}>
-      <View pointerEvents="none" style={styles.glowA} />
-      <View pointerEvents="none" style={styles.glowB} />
+      <Backdrop />
       <View style={styles.row}>
         {showCaption ? (
           <View style={styles.caption}>
             <Text style={styles.kicker}>RUN OUT · LIVE DEMO</Text>
-            <Text style={styles.headline}>A mystery dinner,{'\n'}sealed until the night.</Text>
+            <Text style={styles.headline}>A mystery dinner,{'\n'}<Text style={styles.gold}>sealed</Text> until the night.</Text>
             <Text style={styles.lede}>Tap through the real app: book a table, pay (nothing is charged), then skip the wait to open the envelope and read the menu.</Text>
+            <Pressable accessibilityRole="link" onPress={() => { if (typeof window !== 'undefined') window.location.href = '/laptop/'; }} style={({ hovered }: { hovered?: boolean }) => [styles.backLink, hovered && styles.backLinkHover] as never}>
+              <Text style={styles.backLinkText}>← Back to the presentation</Text>
+            </Pressable>
           </View>
         ) : null}
         <View style={{ width: PHONE.width * scale, height: PHONE.height * scale }}>
@@ -92,14 +146,19 @@ export function WebPhoneFrame({ children }: { children: ReactNode }) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
-  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#070506', overflow: 'hidden' },
-  glowA: { position: 'absolute', width: 900, height: 900, borderRadius: 450, backgroundColor: '#3A1522', opacity: 0.35, top: -420, left: -260 },
-  glowB: { position: 'absolute', width: 700, height: 700, borderRadius: 350, backgroundColor: '#EBC46C', opacity: 0.05, bottom: -380, right: -200 },
+  column: { width: 430, height: '100%', overflow: 'hidden', borderLeftWidth: 1, borderRightWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
+  backdrop: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#0D0B0C', overflow: 'hidden' },
+  photoWrap: { position: 'absolute', top: '-12%', left: '-12%', width: '124%', height: '124%', opacity: 0.8, filter: 'saturate(1.5)' } as ViewStyle,
+  photo: { width: '100%', height: '100%' },
+  gold: { color: '#EBC46C' },
+  backLink: { alignSelf: 'flex-start', marginTop: 10, height: 40, paddingHorizontal: 16, borderRadius: 999, justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.16)', backdropFilter: 'blur(16px)' } as ViewStyle,
+  backLinkHover: { borderColor: 'rgba(235,196,108,0.65)' },
+  backLinkText: { color: '#F9F2E8', fontFamily: 'Avenir Next', fontSize: 13, fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 72 },
-  caption: { width: 360, gap: 14 },
-  kicker: { color: '#EBC46C', fontFamily: 'Avenir Next', fontSize: 11, fontWeight: '800', letterSpacing: 2.4 },
-  headline: { color: '#F9F2E8', fontFamily: 'Avenir Next', fontSize: 34, lineHeight: 40, fontWeight: '700', letterSpacing: -0.8 },
-  lede: { color: '#9E9698', fontFamily: 'Avenir Next', fontSize: 15, lineHeight: 23 },
+  caption: { width: 430, gap: 14 },
+  kicker: { color: '#EBC46C', fontFamily: 'Didot, "Bodoni 72", Georgia, serif', fontSize: 11.5, fontWeight: '700', letterSpacing: 3 },
+  headline: { color: '#F9F2E8', fontFamily: 'Avenir Next', fontSize: 40, lineHeight: 44, fontWeight: '800', letterSpacing: -1.2 },
+  lede: { color: 'rgba(255,255,255,0.62)', fontFamily: 'Avenir Next', fontSize: 15, lineHeight: 23 },
   phone: { position: 'absolute', width: PHONE.width, height: PHONE.height, borderRadius: 62, padding: BEZEL, backgroundColor: '#0B0B0C', borderWidth: 2, borderColor: '#3A3A3E', shadowColor: '#000', shadowOpacity: 0.6, shadowRadius: 40, shadowOffset: { width: 0, height: 30 } },
   screen: { flex: 1, borderRadius: 50, overflow: 'hidden' },
   island: { position: 'absolute', top: 11, alignSelf: 'center', width: 124, height: 36, borderRadius: 18, backgroundColor: '#000' },

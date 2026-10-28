@@ -1,0 +1,854 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Run Out Strategy Hub</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{--background:#fff;--foreground:#09090b;--card:#fff;--muted:#f4f4f5;--muted-foreground:#71717a;--accent:#f4f4f5;--border:#e4e4e7;--primary:#18181b;--primary-foreground:#fafafa;--ring:#a1a1aa;--sidebar:#fafafa;--chart-1:#e76e50;--chart-2:#2a9d90;--chart-3:#274754;--chart-4:#e8c468;--chart-5:#f4a462;--success:#16a34a;--warning:#d97706;--danger:#dc2626;--info:#2563eb;--violet:#7c3aed;--radius:10px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--background:#09090b;--foreground:#fafafa;--card:#0f0f11;--muted:#27272a;--muted-foreground:#a1a1aa;--accent:#27272a;--border:#27272a;--primary:#fafafa;--primary-foreground:#18181b;--ring:#52525b;--sidebar:#0c0c0e;--chart-3:#8fb3c2;--info:#60a5fa;--violet:#a78bfa}}
+:root[data-theme="dark"]{--background:#09090b;--foreground:#fafafa;--card:#0f0f11;--muted:#27272a;--muted-foreground:#a1a1aa;--accent:#27272a;--border:#27272a;--primary:#fafafa;--primary-foreground:#18181b;--ring:#52525b;--sidebar:#0c0c0e;--chart-3:#8fb3c2;--info:#60a5fa;--violet:#a78bfa}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Geist,ui-sans-serif,system-ui,sans-serif;background:var(--background);color:var(--foreground);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+svg.lucide{width:16px;height:16px;stroke-width:2;flex-shrink:0}
+.mono{font-family:"Geist Mono",ui-monospace,monospace}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{position:sticky;top:0;height:100vh;overflow-y:auto;background:var(--sidebar);border-right:1px solid var(--border);padding:12px;display:flex;flex-direction:column;gap:2px}
+.brand{display:flex;align-items:center;gap:10px;padding:8px;margin-bottom:6px}
+.brand-mark{width:32px;height:32px;border-radius:8px;background:var(--primary);color:var(--primary-foreground);display:grid;place-items:center;font-weight:700;font-size:13px}
+.brand b{display:block;font-size:14px;font-weight:600;line-height:1.2}.brand span{font-size:12px;color:var(--muted-foreground)}
+.nav-label{font-size:12px;font-weight:500;color:var(--muted-foreground);padding:12px 8px 4px}
+.nav a{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:14px;opacity:.85}
+.nav a:hover{background:var(--accent);opacity:1}.nav a.active{background:var(--accent);font-weight:500;opacity:1}
+.side-foot{margin-top:16px;border:1px solid var(--border);border-radius:var(--radius);padding:12px;background:var(--card);font-size:12px;color:var(--muted-foreground)}
+.side-foot b{color:var(--foreground);font-weight:600;display:block;margin-bottom:2px}
+.topbar{position:sticky;top:0;z-index:20;height:56px;display:flex;align-items:center;gap:12px;padding:0 24px;border-bottom:1px solid var(--border);background:color-mix(in srgb,var(--background) 85%,transparent);backdrop-filter:blur(8px)}
+.crumb{display:flex;align-items:center;gap:6px;font-size:14px;color:var(--muted-foreground)}.crumb b{color:var(--foreground);font-weight:500}
+.grow{flex:1}main{min-width:0}
+.content{max-width:1120px;margin:0 auto;padding:32px 24px 96px}
+.btn{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--border);background:var(--background);color:var(--foreground);font:inherit;font-size:13px;font-weight:500;cursor:pointer}
+.btn:hover{background:var(--accent)}.btn-icon{width:32px;padding:0;justify-content:center}
+.badge{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--background);white-space:nowrap;vertical-align:middle}
+.badge svg.lucide{width:12px;height:12px}
+.badge.secondary{background:var(--muted);border-color:transparent}
+.badge.green,.s-dec{color:var(--success);border-color:color-mix(in srgb,var(--success) 35%,transparent);background:color-mix(in srgb,var(--success) 8%,transparent)}
+.badge.amber,.s-open{color:var(--warning);border-color:color-mix(in srgb,var(--warning) 35%,transparent);background:color-mix(in srgb,var(--warning) 8%,transparent)}
+.badge.red{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 35%,transparent);background:color-mix(in srgb,var(--danger) 8%,transparent)}
+.s-idea{color:var(--info);border-color:color-mix(in srgb,var(--info) 35%,transparent);background:color-mix(in srgb,var(--info) 8%,transparent)}
+.s-ex{color:var(--violet);border-color:color-mix(in srgb,var(--violet) 35%,transparent);background:color-mix(in srgb,var(--violet) 8%,transparent)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:calc(var(--radius) + 2px);box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card-h{padding:20px 20px 0;display:flex;flex-direction:column;gap:4px}
+.card-h .row{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-t{font-size:15px;font-weight:600;letter-spacing:-.01em}.card-d{font-size:13.5px;color:var(--muted-foreground)}
+.card-c{padding:16px 20px 20px}.card-f{padding:12px 20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted-foreground)}
+.muted{color:var(--muted-foreground)}
+.grid{display:grid;gap:16px}.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.mt{margin-top:16px}
+ul.list{list-style:none;display:flex;flex-direction:column;gap:10px}
+ul.list li{display:flex;gap:10px;align-items:flex-start;font-size:13.5px}
+ul.list li svg{margin-top:3px;color:var(--muted-foreground)}
+ul.list.green li svg{color:var(--success)}
+ol.num{padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.alert{display:flex;gap:12px;border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px;background:var(--card);font-size:13.5px}
+.alert svg{margin-top:3px}.alert b{display:block;font-weight:600;margin-bottom:2px}
+.alert.warn{border-color:color-mix(in srgb,var(--warning) 40%,var(--border));background:color-mix(in srgb,var(--warning) 6%,var(--card))}.alert.warn svg{color:var(--warning)}
+.notes{border:1px solid var(--border);border-left:3px solid var(--primary);border-radius:var(--radius);background:var(--muted);padding:16px 18px;margin-bottom:24px}
+.notes .h{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground);margin-bottom:10px}
+.notes ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.notes li{font-size:14px;display:flex;gap:10px}
+.notes li::before{content:"“";color:var(--muted-foreground);font-weight:600}
+.view{display:none}.view.on{display:block;animation:fade .2s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.p-head{display:flex;flex-direction:column;gap:8px;margin-bottom:20px;max-width:820px}
+.p-head h1{font-size:30px;font-weight:600;letter-spacing:-.03em;line-height:1.15}
+.p-head p{color:var(--muted-foreground);font-size:15.5px}
+.eyebrow{display:flex;gap:6px;flex-wrap:wrap}
+.sub{font-size:13px;font-weight:600;margin:32px 0 12px;display:flex;align-items:center;gap:8px}
+.sub::after{content:"";flex:1;height:1px;background:var(--border)}
+.kpi .l{font-size:13px;color:var(--muted-foreground);display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0}
+.kpi .v{font-size:26px;font-weight:600;letter-spacing:-.02em}.kpi small{font-size:12px;color:var(--muted-foreground)}
+.areas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.area{display:flex;gap:12px;padding:16px;border:1px solid var(--border);border-radius:calc(var(--radius) + 2px);background:var(--card);transition:border-color .15s,transform .15s}
+.area:hover{border-color:var(--ring);transform:translateY(-1px)}
+.area .ic{width:36px;height:36px;border-radius:8px;display:grid;place-items:center;background:var(--muted);flex-shrink:0}
+.area b{font-weight:600;font-size:14px;display:block}.area span{font-size:12.5px;color:var(--muted-foreground)}
+.group-t{font-size:12px;font-weight:500;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.06em;margin:28px 0 10px}
+.legend{display:flex;flex-wrap:wrap;gap:16px;font-size:13px;color:var(--muted-foreground)}
+.legend div{display:flex;gap:8px;align-items:center}
+.step{min-width:0;overflow-wrap:anywhere;border:1px solid var(--border);border-radius:var(--radius);padding:16px;background:var(--card)}
+.step .n{font-family:"Geist Mono",monospace;font-size:12px;color:var(--muted-foreground)}
+.step b{display:block;font-weight:600;margin:6px 0 4px}.step p{font-size:13.5px;color:var(--muted-foreground)}
+.flow{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));border:1px solid var(--border);border-radius:calc(var(--radius) + 2px);overflow:hidden;background:var(--card)}
+.flow div{padding:16px;border-right:1px solid var(--border)}.flow div:last-child{border-right:0}
+.flow .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted-foreground)}
+.flow b{display:block;font-weight:600;margin:4px 0}.flow p{font-size:13px;color:var(--muted-foreground)}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th{text-align:left;font-weight:500;color:var(--muted-foreground);padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:11px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:0}tbody tr:hover{background:color-mix(in srgb,var(--muted) 50%,transparent)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.funnel{display:flex;flex-direction:column;gap:16px}
+.fun-row .top{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:6px}.fun-row .top b{font-weight:600}
+.fun-row p{font-size:12.5px;color:var(--muted-foreground);margin-top:6px}
+.bar{height:8px;border-radius:999px;background:var(--muted);overflow:hidden}.bar i{display:block;height:100%;border-radius:999px;background:var(--primary)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.field .top{display:flex;justify-content:space-between;font-size:13px;gap:8px}.field .top label{font-weight:500}
+.field .top output{font-family:"Geist Mono",monospace;font-size:12.5px;background:var(--muted);padding:1px 8px;border-radius:6px;white-space:nowrap}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:999px;background:var(--muted);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--background);border:2px solid var(--primary);cursor:pointer}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:var(--background);border:2px solid var(--primary);cursor:pointer}
+.mix{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+.mix.mix3{grid-template-columns:repeat(3,1fr)}
+.mix label{font-size:12px;color:var(--muted-foreground);display:block;margin-bottom:4px}
+.mix input,.ns-input{width:100%;height:32px;border:1px solid var(--border);border-radius:8px;background:var(--background);color:var(--foreground);padding:0 8px;font:inherit;font-size:13px}
+.seg{display:inline-flex;background:var(--muted);border-radius:8px;padding:3px;gap:2px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;font:inherit;font-size:13px;padding:5px 12px;border-radius:6px;color:var(--muted-foreground);cursor:pointer}
+.seg button.on{background:var(--background);color:var(--foreground);box-shadow:0 1px 2px rgba(0,0,0,.08);font-weight:500}
+.results{align-self:start;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--border);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.results div{background:var(--card);padding:14px}.results .k{font-size:12px;color:var(--muted-foreground)}
+.results .v{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.results .hl{background:color-mix(in srgb,var(--chart-2) 8%,var(--card))}.results .hl .v{color:var(--chart-2)}
+.results.compact-results{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:16px}
+.results.compact-results>div{min-width:0;padding:9px 12px}
+.results.compact-results .k,.results.compact-results .v{padding:0}.results.compact-results .k{font-size:11px;line-height:1.25}.results.compact-results .v{font-size:15px;line-height:1.3;margin-top:5px;overflow-wrap:anywhere}
+.calc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:24px}
+.tabs-list{display:inline-flex;background:var(--muted);border-radius:8px;padding:3px;gap:2px;margin-bottom:16px;flex-wrap:wrap}
+.tabs-list button{border:0;background:transparent;font:inherit;font-size:13px;font-weight:500;padding:6px 12px;border-radius:6px;color:var(--muted-foreground);cursor:pointer}
+.tabs-list button[aria-selected=true]{background:var(--background);color:var(--foreground);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.dash-top{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);background:var(--muted);border-radius:calc(var(--radius) + 2px) calc(var(--radius) + 2px) 0 0;gap:8px;flex-wrap:wrap}
+.dash-stats{display:grid;grid-template-columns:repeat(3,1fr);border-bottom:1px solid var(--border)}
+.dash-stats div{padding:12px 16px;border-right:1px solid var(--border)}.dash-stats div:last-child{border-right:0}
+.dash-stats b{font-size:20px;font-weight:600;display:block}.dash-stats span{font-size:12px;color:var(--muted-foreground)}
+.loyal{display:flex;gap:8px;margin:12px 0}
+.loyal i{flex:1;height:40px;border-radius:8px;border:1px dashed var(--border);display:grid;place-items:center;font-style:normal;font-size:12px;color:var(--muted-foreground)}
+.loyal i.done{background:var(--primary);color:var(--primary-foreground);border:1px solid var(--primary)}
+.loyal i.gift{border:1px solid var(--chart-2);color:var(--chart-2)}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px}
+.pill-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.person .meta{display:flex;flex-direction:column;gap:4px;font-size:13px}
+.person .meta b{font-weight:600}
+.empty{border:1px dashed var(--border);border-radius:var(--radius);padding:20px;text-align:center;color:var(--muted-foreground);font-size:13.5px}
+.ns-table td{vertical-align:middle}
+.ns-table td.n{width:48px;font-family:"Geist Mono",monospace;color:var(--muted-foreground)}
+.ns-table td.pr{width:140px}
+.ns-table td.st{width:140px}
+.ns-table .ns-input{border-color:transparent;background:transparent;padding:0 6px}
+.ns-table .ns-input:hover,.ns-table .ns-input:focus{border-color:var(--border);background:var(--background);outline:none}
+.ns-table select.ns-input{cursor:pointer}
+.done-box summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:16px 20px;font-weight:600;font-size:15px}.done-box summary::-webkit-details-marker{display:none}.done-box summary>span:first-child{display:flex;align-items:center;gap:8px}.done-box .chev{transition:transform .15s}.done-box[open] .chev{transform:rotate(90deg)}.done-box tr td input{text-decoration:line-through;color:var(--muted-foreground)}
+.pager{display:flex;justify-content:space-between;gap:12px;margin-top:48px;padding-top:20px;border-top:1px solid var(--border)}
+.pager a{display:flex;flex-direction:column;gap:2px;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);min-width:180px}
+.pager a:hover{background:var(--accent)}.pager a span{font-size:12px;color:var(--muted-foreground)}.pager a b{font-weight:500}
+.pager a.next{text-align:right;margin-left:auto}
+.mobile-nav{display:none}
+@media (max-width:1024px){.areas,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(2,minmax(0,1fr))}.flow{grid-template-columns:repeat(2,minmax(0,1fr))}.flow div{border-right:0;border-bottom:1px solid var(--border)}}
+@media (max-width:860px){.app{grid-template-columns:1fr}.sidebar{display:none}
+ .mobile-nav{display:flex;gap:6px;overflow-x:auto;padding:8px 16px;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:19;background:var(--background)}
+ .mobile-nav a{flex-shrink:0;font-size:13px;padding:5px 10px;border-radius:999px;border:1px solid var(--border)}
+ .mobile-nav a.active{background:var(--primary);color:var(--primary-foreground);border-color:var(--primary)}
+ .calc,.g2{grid-template-columns:1fr}}
+@media (max-width:600px){.content{padding:24px 16px 72px}.topbar{padding:0 16px}.crumb .hs{display:none}.areas,.g3,.g4,.flow,.results{grid-template-columns:1fr}.results.compact-results{grid-template-columns:repeat(2,minmax(0,1fr))}.mix{grid-template-columns:1fr 1fr}.mix.mix3{grid-template-columns:1fr}.p-head h1{font-size:26px}.pager{flex-direction:column}.pager a{min-width:0}.ns-table td.pr,.ns-table td.st{width:110px}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside class="sidebar">
+  <div class="brand"><div class="brand-mark">RO</div><div style="flex:1"><b>Run Out</b><span>Strategy hub · UAE</span></div><button class="btn btn-icon" id="theme" aria-label="Toggle theme"><i data-lucide="moon"></i></button></div>
+  <nav class="nav">
+    <a href="#overview" data-v="overview"><i data-lucide="layout-dashboard"></i>Overview</a>
+    <a href="#next-steps" data-v="next-steps"><i data-lucide="list-checks"></i>Next steps</a>
+    <div class="nav-label">Company</div>
+    <a href="#vision" data-v="vision"><i data-lucide="eye"></i>Vision</a>
+    <a href="#business-model" data-v="business-model"><i data-lucide="briefcase"></i>Business model</a>
+    <a href="#financial-model" data-v="financial-model"><i data-lucide="trending-up"></i>Financial model</a>
+    <a href="#investment" data-v="investment"><i data-lucide="landmark"></i>Investment</a>
+    <a href="#user-app" data-v="user-app"><i data-lucide="smartphone"></i>User app</a>
+    <a href="#restaurant-app" data-v="restaurant-app"><i data-lucide="tablet-smartphone"></i>Restaurant app</a>
+    <a href="#ops-dashboard" data-v="ops-dashboard"><i data-lucide="monitor"></i>Ops dashboard</a>
+    <a href="#operations" data-v="operations"><i data-lucide="phone-call"></i>Operations</a>
+    <a href="#customer-service" data-v="customer-service"><i data-lucide="headset"></i>Customer service</a>
+    <a href="#business-development" data-v="business-development"><i data-lucide="building-2"></i>Business development</a>
+    <a href="#social-media" data-v="social-media"><i data-lucide="video"></i>Social media</a>
+    <a href="#marketing" data-v="marketing"><i data-lucide="megaphone"></i>Marketing</a>
+    <a href="#partnerships" data-v="partnerships"><i data-lucide="handshake"></i>Partnerships</a>
+    <a href="#restaurants" data-v="restaurants"><i data-lucide="utensils"></i>Restaurants</a>
+    <a href="#virality" data-v="virality"><i data-lucide="sparkles"></i>Virality</a>
+    <a href="#legal" data-v="legal"><i data-lucide="scale"></i>Legal</a>
+    <a href="#tech" data-v="tech"><i data-lucide="code"></i>Tech</a>
+    <a href="#branding" data-v="branding"><i data-lucide="palette"></i>Branding</a>
+  </nav>
+</aside>
+<main>
+<nav class="mobile-nav" id="mnav">
+  <button class="btn btn-icon" id="theme2" aria-label="Toggle theme" style="flex-shrink:0"><i data-lucide="moon"></i></button>  <a href="#overview" data-v="overview">Overview</a><a href="#next-steps" data-v="next-steps">Next steps</a><a href="#vision" data-v="vision">Vision</a><a href="#business-model" data-v="business-model">Business model</a><a href="#financial-model" data-v="financial-model">Financial</a><a href="#investment" data-v="investment">Investment</a><a href="#user-app" data-v="user-app">User app</a><a href="#restaurant-app" data-v="restaurant-app">Restaurant app</a><a href="#ops-dashboard" data-v="ops-dashboard">Ops dashboard</a><a href="#operations" data-v="operations">Operations</a><a href="#customer-service" data-v="customer-service">Customer service</a><a href="#business-development" data-v="business-development">Business dev</a><a href="#social-media" data-v="social-media">Social media</a><a href="#marketing" data-v="marketing">Marketing</a><a href="#partnerships" data-v="partnerships">Partnerships</a><a href="#restaurants" data-v="restaurants">Restaurants</a><a href="#virality" data-v="virality">Virality</a><a href="#legal" data-v="legal">Legal</a><a href="#tech" data-v="tech">Tech</a><a href="#branding" data-v="branding">Branding</a>
+</nav>
+<div class="content">
+
+<!-- ============ OVERVIEW ============ -->
+<section class="view" id="v-overview" data-title="Overview">
+  <div class="p-head">
+    <div class="eyebrow"><span class="badge secondary"><i data-lucide="map-pin"></i>Dubai · UAE</span></div>
+    <h1>Run Out strategy hub</h1>
+    <p>A restaurant reservation platform where the user pays a reservation fee. Every idea discussed so far, organised by area. Click any area to open its page.</p>
+  </div>
+
+  <div class="card"><div class="card-h"><div class="card-t">How to read this hub</div></div><div class="card-c legend">
+    <div><span class="badge s-dec">Decided</span>You stated it as how the business works</div>
+    <div><span class="badge s-idea">Idea</span>You suggested it; not decided yet</div>
+    <div><span class="badge s-open">Open question</span>You explicitly left it for later</div>
+    <div><span class="badge s-ex">Codex example</span>Detail or number Codex added to illustrate your idea — not your input</div>
+  </div></div>
+
+  <div class="grid g4 mt">
+    <div class="card kpi"><div class="l">Booking fee <span class="badge s-dec">Decided</span></div><div class="card-c"><div class="v">10%</div><small>of the meal price, configurable</small></div></div>
+    <div class="card kpi"><div class="l">Meal price range <span class="badge s-dec">Decided</span></div><div class="card-c"><div class="v">AED 100–400</div><small>% mix within range configurable</small></div></div>
+    <div class="card kpi"><div class="l">Usage <span class="badge s-dec">Decided</span></div><div class="card-c"><div class="v">1–2×</div><small>per user per month</small></div></div>
+    <div class="card kpi"><div class="l">Restaurant target <span class="badge s-dec">Decided</span></div><div class="card-c"><div class="v">50</div><small>restaurants first</small></div></div>
+  </div>
+
+  <div class="group-t">Company</div>
+  <div class="areas">
+    <a class="area" href="#vision"><div class="ic"><i data-lucide="eye"></i></div><div><b>Vision</b><span>Why Run Out exists</span></div></a>
+    <a class="area" href="#business-model"><div class="ic"><i data-lucide="briefcase"></i></div><div><b>Business model</b><span>Reservation fee, no-show rule, fee policy</span></div></a>
+    <a class="area" href="#financial-model"><div class="ic"><i data-lucide="trending-up"></i></div><div><b>Financial model</b><span>10% fee, meal mix, Stripe, weekly growth</span></div></a>
+    <a class="area" href="#investment"><div class="ic"><i data-lucide="landmark"></i></div><div><b>Investment</b><span>One UAE launch personality; referral revenue share for other influencers</span></div></a>
+    <a class="area" href="#user-app" data-v2><div class="ic"><i data-lucide="smartphone"></i></div><div><b>User app</b><span>What the guest uses to book</span></div></a>
+    <a class="area" href="#restaurant-app"><div class="ic"><i data-lucide="tablet-smartphone"></i></div><div><b>Restaurant app</b><span>What the restaurant sees</span></div></a>
+    <a class="area" href="#ops-dashboard"><div class="ic"><i data-lucide="monitor"></i></div><div><b>Ops dashboard</b><span>Internal view for the team</span></div></a>
+    <a class="area" href="#operations"><div class="ic"><i data-lucide="phone-call"></i></div><div><b>Operations</b><span>Bookings and calling the restaurants</span></div></a>
+    <a class="area" href="#customer-service"><div class="ic"><i data-lucide="headset"></i></div><div><b>Customer service</b><span>Got the reservation? Change it? Lost?</span></div></a>
+    <a class="area" href="#business-development"><div class="ic"><i data-lucide="building-2"></i></div><div><b>Business development</b><span>Getting restaurants signed up</span></div></a>
+
+    <a class="area" href="#social-media"><div class="ic"><i data-lucide="video"></i></div><div><b>Social media</b><span>JustFood-style host, UK date series, Run Out T-shirt</span></div></a>
+    <a class="area" href="#marketing"><div class="ic"><i data-lucide="megaphone"></i></div><div><b>Marketing</b><span>Waitlist, 10 free dates/week, notifications</span></div></a>
+    <a class="area" href="#partnerships"><div class="ic"><i data-lucide="handshake"></i></div><div><b>Partnerships</b><span>Influencer and ambassador deal types</span></div></a>
+    <a class="area" href="#restaurants"><div class="ic"><i data-lucide="utensils"></i></div><div><b>Restaurants</b><span>Quality gate, location and parking details</span></div></a>
+    <a class="area" href="#virality"><div class="ic"><i data-lucide="sparkles"></i></div><div><b>Virality</b><span>Ideas aimed at making it spread</span></div></a>
+    <a class="area" href="#legal"><div class="ic"><i data-lucide="scale"></i></div><div><b>Legal</b><span>Create the company</span></div></a>
+    <a class="area" href="#tech"><div class="ic"><i data-lucide="code"></i></div><div><b>Tech</b><span>App Store, Play Store, Stripe</span></div></a>
+    <a class="area" href="#branding"><div class="ic"><i data-lucide="palette"></i></div><div><b>Branding</b><span>Run Out name, host identity, T-shirt</span></div></a>
+    <a class="area" href="#next-steps"><div class="ic"><i data-lucide="list-checks"></i></div><div><b>Next steps</b><span>Prioritised list, 1–20</span></div></a>
+  </div>
+</section>
+
+<!-- ============ VISION ============ -->
+<section class="view" id="v-vision" data-title="Vision">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Vision</h1>
+  <p>Create new business for restaurants that they would not receive otherwise, help customers spend less, and let Run Out earn by creating value for both sides.</p></div>
+  <div class="grid g3">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Easier for customers</div><i data-lucide="heart"></i></div></div><div class="card-c card-d">Customers can find and book a restaurant without spending time searching for one.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Discover hidden places</div><i data-lucide="map-pin"></i></div></div><div class="card-c card-d">Help people discover nice places they would never go to, because they don't know they exist.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">A great first visit</div><i data-lucide="utensils"></i></div></div><div class="card-c card-d">Help restaurants give customers the experience they would love to have on their first visit.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Value for restaurants</div><i data-lucide="store"></i></div></div><div class="card-c card-d">Bring restaurants new customers they would not otherwise receive while reducing the amount they need to spend on marketing.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Value for Run Out</div><i data-lucide="trending-up"></i></div></div><div class="card-c card-d">Earn revenue by generating incremental restaurant business and helping customers receive better value.</div></div>
+  </div>
+</section>
+
+<!-- ============ BUSINESS MODEL ============ -->
+<section class="view" id="v-business-model" data-title="Business model">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Business model</h1>
+  <p>For now, Run Out operates exclusively through the app. A user simply enters how many people are going, where they want to go, when they want to dine and how much they want to spend. Within two hours, Run Out sends them an invitation revealing the restaurant assigned to them, together with its set menu. The customer pays the restaurant directly for the meal, while Run Out receives only the reservation fee.</p></div>
+
+  <div class="sub">Guest journey <span class="badge s-dec">Decided</span></div>
+  <div class="grid g4">
+    <div class="step"><span class="n">01</span><b>Set the essentials</b><p>Enter the number of people, location, date and time, and budget.</p></div>
+    <div class="step"><span class="n">02</span><b>Submit and pay</b><p>Confirm the request and pay Run Out's reservation fee.</p></div>
+    <div class="step"><span class="n">03</span><b>Receive the invitation</b><p>Within two hours, receive the assigned restaurant and its set menu.</p></div>
+    <div class="step"><span class="n">04</span><b>Dine</b><p>Go to the assigned restaurant and pay the restaurant directly for the meal.</p></div>
+  </div>
+
+  <div class="sub">Restaurant journey <span class="badge s-dec">Decided</span></div>
+  <div class="grid g4">
+    <div class="step"><span class="n">01</span><b>Join Run Out</b><p>The restaurant signs an agreement to become a Run Out partner.</p></div>
+    <div class="step"><span class="n">02</span><b>Create the offer</b><p>Set the menu, its price, the customer saving and the food category.</p></div>
+    <div class="step"><span class="n">03</span><b>Receive reservations</b><p>Run Out routes suitable customer reservations to the restaurant.</p></div>
+    <div class="step"><span class="n">04</span><b>Serve and get paid</b><p>Serve the guests and receive payment for the meal directly on the day.</p></div>
+  </div>
+
+  <div class="card mt"><div class="card-h"><div class="row"><div class="card-t">Shisha and high-margin add-ons</div><span class="badge s-dec">Include</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="cloud"></i>Guests can request shisha in the app in the same way they request an alcohol-serving venue.</li><li><i data-lucide="wine"></i>Include shisha as an optional restaurant offer where the venue is legally licensed to provide it.</li><li><i data-lucide="badge-dollar-sign"></i>Shisha is relatively inexpensive for the restaurant compared with its selling price.</li><li><i data-lucide="receipt-text"></i>It can increase the guest's total bill and the restaurant's revenue.</li><li><i data-lucide="shield-check"></i>Only show shisha or alcohol offers when permitted and appropriate for the venue and guest.</li></ul></div></div>
+
+  <div class="card mt"><div class="card-h"><div class="card-t">Decisions and open questions</div></div>
+    <div class="card-c table-wrap"><table>
+      <thead><tr><th>Topic</th><th>Position</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><b>Reservation fee</b></td><td>The user pays a reservation fee when booking. The fee is 10% of the meal price.</td><td><span class="badge s-dec">Decided</span></td></tr>
+        <tr><td><b>No-show</b></td><td>If the guest does not attend, Run Out keeps the reservation fee. Nothing is paid to the restaurant.</td><td><span class="badge s-dec">Decided</span></td></tr>
+      </tbody></table></div></div>
+
+</section>
+
+<!-- ============ FINANCIAL MODEL ============ -->
+<section class="view" id="v-financial-model" data-title="Financial model">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span><span class="badge"><i data-lucide="sliders-horizontal"></i>Interactive</span></div><h1>Financial model</h1>
+  <p>All assumptions are configured in one place. Meal prices are per person, reservations have a minimum of two people, and the projection runs month by month across three years.</p></div>
+
+  <div class="results compact-results">
+    <div><div class="k">Average meal / person</div><div class="v" id="x-person"></div></div>
+    <div><div class="k">Average party size</div><div class="v" id="x-party"></div></div>
+    <div><div class="k">Average meal total</div><div class="v" id="x-total"></div></div>
+    <div><div class="k">Fee per reservation</div><div class="v" id="x-fee"></div></div>
+    <div><div class="k">Stripe fee / reservation</div><div class="v" id="x-sfee"></div></div>
+    <div><div class="k">Blended Stripe rate</div><div class="v" id="x-blend"></div></div>
+    <div><div class="k">Starting active users</div><div class="v" id="x-users"></div></div>
+    <div><div class="k">Reservations / user / month</div><div class="v" id="x-frequency"></div></div>
+    <div><div class="k">No-show rate</div><div class="v" id="x-noshow"></div></div>
+  </div>
+
+  <div class="card"><div class="card-h"><div class="row"><div><div class="card-t">Configuration</div><div class="card-d">Edit the assumptions once; every summary and monthly projection updates automatically.</div></div><div class="seg" id="cur"><button class="on" data-c="AED">AED</button><button data-c="USD">USD</button></div></div></div>
+    <div class="card-c"><div class="grid g3">
+      <div>
+        <div class="group-t" style="margin-top:0">Customers and usage</div>
+        <div class="field"><div class="top"><label for="r-users">Starting active users</label><output id="o-users"></output></div><input type="range" id="r-users" min="100" max="20000" step="100" value="1000"></div>
+        <div class="field"><div class="top"><label for="r-new">New users / month</label><output id="o-new"></output></div><input type="range" id="r-new" min="0" max="10000" step="50" value="500"></div>
+        <div class="field"><div class="top"><label for="r-churn">User churn / month</label><output id="o-churn"></output></div><input type="range" id="r-churn" min="0" max="20" step="0.1" value="2"></div>
+        <div class="field" style="margin-bottom:0"><div class="top"><label for="r-freq">Reservations / user / month</label><output id="o-freq"></output></div><input type="range" id="r-freq" min="1" max="2" step="0.1" value="1.5"></div>
+      </div>
+      <div>
+        <div class="group-t" style="margin-top:0">Reservation value</div>
+        <div class="field"><div class="top"><label>Meal price per person mix</label><output id="o-avg"></output></div>
+          <div class="mix"><div><label for="m100">AED 100</label><input id="m100" type="number" min="0" max="100" value="40"></div><div><label for="m200">AED 200</label><input id="m200" type="number" min="0" max="100" value="30"></div><div><label for="m300">AED 300</label><input id="m300" type="number" min="0" max="100" value="20"></div><div><label for="m400">AED 400</label><input id="m400" type="number" min="0" max="100" value="10"></div></div>
+          <span class="muted" style="font-size:12px">Percentages are normalized if they do not total 100%.</span></div>
+        <div class="field" style="margin-bottom:0"><div class="top"><label>Party-size mix</label><output id="o-party"></output></div>
+          <div class="mix mix3"><div><label for="p2">2 people</label><input id="p2" type="number" min="0" max="100" value="60"></div><div><label for="p3">3 people</label><input id="p3" type="number" min="0" max="100" value="30"></div><div><label for="p4">4 people</label><input id="p4" type="number" min="0" max="100" value="10"></div></div>
+          <span class="muted" style="font-size:12px">Minimum booking: 2 people. AED 100 per person means AED 200 minimum meal total.</span></div>
+      </div>
+      <div>
+        <div class="group-t" style="margin-top:0">Fees and payment</div>
+        <div class="field"><div class="top"><label for="r-fee">Reservation fee (% of meal total)</label><output id="o-fee"></output></div><input type="range" id="r-fee" min="1" max="25" step="0.5" value="10"></div>
+        <div class="field"><div class="top"><label for="r-ns">No-show rate</label><output id="o-ns"></output></div><input type="range" id="r-ns" min="0" max="40" step="1" value="8"></div>
+        <div class="field"><div class="top"><label for="r-dom">Domestic-card share</label><output id="o-dom"></output></div><input type="range" id="r-dom" min="0" max="100" step="5" value="80"></div>
+      </div>
+    </div></div>
+    <div class="card-f">Stripe pricing is fixed in the model: domestic UAE cards 2.9% + AED 1 and international cards 3.9% + AED 1 per payment. Display conversion: USD 1 = AED 3.6725. Default percentages are illustrative and configurable.</div>
+  </div>
+
+  <div class="card mt"><div class="card-h"><div class="row"><div><div class="card-t">Monthly projection</div><div class="card-d" id="projection-title">Year 1 · Months 1–12</div></div><div class="seg" id="projection-year"><button class="on" data-year="1">Year 1</button><button data-year="2">Year 2</button><button data-year="3">Year 3</button></div></div></div>
+    <div class="card-c table-wrap"><table><thead><tr><th>Month</th><th class="num">Active users</th><th class="num">Reservations</th><th class="num">Meal price / person</th><th class="num">Meal total</th><th class="num">Reservation fee</th><th class="num">Company revenue</th><th class="num">Stripe</th><th class="num">Net proceeds</th></tr></thead><tbody id="projection"></tbody></table></div>
+    <div class="card-f" id="projection-total"></div>
+  </div>
+</section>
+
+<!-- ============ INVESTMENT ============ -->
+<section class="view" id="v-investment" data-title="Investment">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Investment</h1>
+  <p>Run Out will work with one major UAE personality at kickoff. Other influencers receive a tracked revenue share through their referral code, with no equity.</p></div>
+
+  <div class="card"><div class="card-h"><div class="card-t">Partnership structure</div></div>
+    <div class="card-c table-wrap"><table>
+      <thead><tr><th>Option</th><th>What the partner gets</th><th>What they do</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td><b>Big UAE personality at kickoff</b></td><td>A stake in the company</td><td>Launches and backs the brand in the UAE</td><td><span class="badge s-idea">Idea</span></td></tr>
+        <tr><td><b>Other influencers</b></td><td>Revenue share + referral code, no equity</td><td>Promote Run Out and earn from eligible reservations attributed to their code</td><td><span class="badge s-dec">Decided</span></td></tr>
+      </tbody></table></div></div>
+
+  <div class="card mt"><div class="card-h"><div class="card-t">Influencer revenue-share calculator</div><div class="card-d">Revenue share is paid only on eligible reservations attributed to each influencer's referral code.</div></div>
+    <div class="card-c calc">
+      <div>
+        <div class="field"><div class="top"><label for="p-res">Attributed reservations / month</label><output id="o-pres"></output></div><input type="range" id="p-res" min="50" max="5000" step="50" value="500"></div>
+        <div class="field"><div class="top"><label for="p-meal">Average meal price</label><output id="o-pmeal"></output></div><input type="range" id="p-meal" min="100" max="400" step="10" value="200"></div>
+        <div class="field"><div class="top"><label for="p-fee">Booking fee (% of meal)</label><output id="o-pfee"></output></div><input type="range" id="p-fee" min="1" max="25" step="0.5" value="10"></div>
+        <div class="field"><div class="top"><label for="p-share">Partner revenue share</label><output id="o-pshare"></output></div><input type="range" id="p-share" min="0" max="50" step="1" value="20"></div>
+        <div class="field"><div class="top"><label for="p-ns">No-show rate</label><output id="o-pns"></output></div><input type="range" id="p-ns" min="0" max="30" step="1" value="8"></div>
+        <div class="field"><div class="top"><label for="p-cx">Cancelled / refunded rate</label><output id="o-pcx"></output></div><input type="range" id="p-cx" min="0" max="30" step="1" value="5"></div>
+        <div class="field" style="margin-bottom:0"><div class="top"><label>No-shows eligible for commission?</label></div><div class="seg" id="p-nsel"><button class="on" data-v="0">No — exclude no-shows</button><button data-v="1">Yes — include retained fees</button></div></div>
+      </div>
+      <div class="results" style="align-self:start">
+        <div><div class="k">Eligible reservations / month</div><div class="v" id="x-pel"></div></div>
+        <div><div class="k">Eligible fee revenue / month</div><div class="v" id="x-prev"></div></div>
+        <div><div class="k">Partner payout / month</div><div class="v" id="x-pmo"></div></div>
+        <div class="hl"><div class="k">Partner payout / year</div><div class="v" id="x-pyr"></div></div>
+        <div><div class="k">Platform retains / month</div><div class="v" id="x-pkeep"></div></div>
+      </div>
+    </div>
+    <div class="card-f">This calculator is for other influencers: they receive a percentage of defined eligible revenue through a tracked referral code and receive no equity.</div></div>
+</section>
+
+<!-- ============ USER APP ============ -->
+<section class="view" id="v-user-app" data-title="User app">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>User app</h1>
+  <p>The app the guest uses to find a restaurant, book, pay the reservation fee and give feedback.</p></div>
+
+  <div class="sub">Related items already in the plan</div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Booking and paying</div><span class="badge s-dec">Decided</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="credit-card"></i>The user pays a reservation fee of 10% of the meal price when booking.</li>
+      <li><i data-lucide="credit-card"></i>Everything is a card payment.</li>
+      <li><i data-lucide="x-circle"></i>If the user doesn't go, the company keeps the reservation fee.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Notifications</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="mail"></i>Email and WhatsApp notifications for the reservation.</li>
+      <li><i data-lucide="ticket"></i>Offer notification: no reservation fee needed.</li>
+      <li><i data-lucide="wine"></i>Offer notification: 1 drink extra. More to be added later.</li></ul>
+      <p class="card-d mt">See <a href="#marketing" style="text-decoration:underline">Marketing</a> for the full message list.</p></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Feedback after dining</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c card-d">Share a private rating and optional written feedback with the platform after the reservation. Reviews are not public.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Waitlist sign-up</div><span class="badge s-idea">Idea</span></div></div><div class="card-c card-d">Before launch, people sign up on a waitlist page on the website. See <a href="#marketing" style="text-decoration:underline">Marketing</a>.</div></div>
+  </div>
+</section>
+
+<!-- ============ RESTAURANT APP ============ -->
+<section class="view" id="v-restaurant-app" data-title="Restaurant app">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Restaurant app</h1>
+  <p>What the restaurant uses to control customer availability and manage its bookings from the platform.</p></div>
+
+  <div class="card"><div class="card-h"><div class="row"><div><div class="card-t">Receiving Run Out customers</div><div class="card-d">The restaurant can switch new Run Out customers on or off at any time.</div></div><span class="badge green" id="restaurant-availability-status">Receiving customers</span></div></div>
+    <div class="card-c"><div class="seg" id="restaurant-availability" aria-label="Restaurant customer availability"><button class="on" data-state="on" aria-pressed="true">On — receive customers</button><button data-state="off" aria-pressed="false">Off — pause customers</button></div></div>
+  </div>
+
+  <div class="sub">Restaurant dashboard roadmap</div>
+  <div class="grid g2">
+    <div class="card">
+      <div class="dash-top"><b style="font-weight:600">Example restaurant · Sunday, 25 October</b><span class="badge green">Logged in</span></div>
+      <div class="dash-stats"><div><b>8</b><span>Upcoming</span></div><div><b>24</b><span>Guests</span></div><div><b>3</b><span>Today</span></div></div>
+      <div class="table-wrap"><table><thead><tr><th>Time</th><th>Customer</th><th class="num">People</th><th>Status</th></tr></thead><tbody>
+        <tr><td class="mono">19:00</td><td>Customer A</td><td class="num">2</td><td><span class="badge green">Confirmed</span></td></tr>
+        <tr><td class="mono">19:30</td><td>Customer B</td><td class="num">4</td><td><span class="badge green">Confirmed</span></td></tr>
+        <tr><td class="mono">20:00</td><td>Customer C</td><td class="num">3</td><td><span class="badge amber">Pending</span></td></tr>
+      </tbody></table></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div class="step"><span class="n">1 · MVP</span><b>Phone confirmation</b><ul class="list"><li><i data-lucide="phone"></i>Reservations are coordinated and confirmed by phone.</li><li><i data-lucide="eye"></i>The dashboard is read-only.</li><li><i data-lucide="calendar"></i>It shows the date, time, party size and reservation status.</li></ul></div>
+      <div class="step"><span class="n">2 · Future</span><b>Dashboard confirmation</b><ul class="list"><li><i data-lucide="check-circle"></i>Restaurants can accept or reject reservations in the dashboard.</li><li><i data-lucide="bell"></i>Customers receive automatic status notifications.</li><li><i data-lucide="lock"></i>Each restaurant can access only its own bookings.</li></ul></div>
+      <div class="step"><span class="n">★ · Internal</span><b>Experience data stays internal</b><ul class="list"><li><i data-lucide="shield"></i>Only Run Out sees ratings and written feedback.</li><li><i data-lucide="chart-no-axes-column"></i>Run Out tracks satisfaction trends and recurring complaints.</li><li><i data-lucide="eye-off"></i>Reviews are not public.</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ OPS DASHBOARD ============ -->
+<section class="view" id="v-ops-dashboard" data-title="Ops dashboard">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Ops dashboard</h1>
+  <p>The internal view the team uses to run bookings, restaurants and customers.</p></div>
+
+  <div class="sub">Related items already in the plan</div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Restaurant pipeline tracking</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="search"></i>Track the source and outreach channel.</li><li><i data-lucide="message-square"></i>Record first contact, last response, consent or objection.</li><li><i data-lucide="user-check"></i>Assign an owner and next action.</li><li><i data-lucide="clipboard-check"></i>Track application status, evaluation outcome and opt-out.</li><li><i data-lucide="arrow-right"></i>See <a href="#business-development" style="text-decoration:underline">Business development</a>.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Private feedback</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="star"></i>Guest and evaluator ratings.</li><li><i data-lucide="message-square-text"></i>Written feedback.</li><li><i data-lucide="trending-up"></i>Satisfaction trends.</li><li><i data-lucide="triangle-alert"></i>Recurring complaints.</li><li><i data-lucide="lock"></i>Visible only to Run Out.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Metrics to watch</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="users"></i>Active users and bookings per user.</li><li><i data-lucide="circle-check"></i>Completion rate, refunds and no-shows.</li><li><i data-lucide="mail-check"></i>Opt-in rate and feedback completion.</li><li><i data-lucide="repeat-2"></i>Repeat usage and restaurant retention.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Message volume</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="messages-square"></i>Track WhatsApp and email separately.</li><li><i data-lucide="badge-check"></i>Booking confirmations.</li><li><i data-lucide="bell"></i>Reservation reminders.</li><li><i data-lucide="user-x"></i>No-show notices.</li><li><i data-lucide="message-circle-question"></i>Feedback requests.</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ============ OPERATIONS ============ -->
+<section class="view" id="v-operations" data-title="Operations">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Operations</h1>
+  <p>Handling bookings day to day, including calling the restaurants to place and confirm them.</p></div>
+
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Booking</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="inbox"></i>Receive the guest's reservation request.</li>
+      <li><i data-lucide="users"></i>Check the date, time and party size.</li>
+      <li><i data-lucide="utensils"></i>Assign the reservation to a suitable restaurant.</li>
+      <li><i data-lucide="calendar-check"></i>Place and confirm the reservation with the restaurant.</li>
+      <li><i data-lucide="credit-card"></i>Charge the guest the 10% reservation fee by card.</li>
+      <li><i data-lucide="badge-check"></i>Update the booking status as confirmed.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Calling the restaurants</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="phone"></i>Call the assigned restaurant.</li>
+      <li><i data-lucide="calendar-days"></i>Give the reservation date and time.</li>
+      <li><i data-lucide="users"></i>Confirm the number of guests.</li>
+      <li><i data-lucide="message-square-check"></i>Ask the restaurant to confirm the booking.</li>
+      <li><i data-lucide="monitor"></i>Record the result in the read-only MVP dashboard.</li>
+      <li><i data-lucide="bell"></i>Send the confirmed reservation to the guest.</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ============ CUSTOMER SERVICE ============ -->
+<section class="view" id="v-customer-service" data-title="Customer service">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Customer service</h1>
+  <p>Helping guests before and during their reservation.</p></div>
+
+  <div class="grid g3">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">“Did I get the reservation?”</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="badge-check"></i>Confirm that the reservation is in place.</li><li><i data-lucide="calendar-days"></i>Confirm the date and time.</li><li><i data-lucide="utensils"></i>Confirm the restaurant.</li><li><i data-lucide="users"></i>Confirm the party size.</li><li><i data-lucide="receipt"></i>Provide the reservation-fee receipt.</li><li><i data-lucide="messages-square"></i>Send the details by email or WhatsApp.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Cancelling the reservation</div><span class="badge s-dec">Decided</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="clock"></i>The guest can cancel up to 2 hours before the reservation.</li><li><i data-lucide="calendar-x"></i>The date cannot be changed.</li><li><i data-lucide="clock-alert"></i>The time cannot be changed.</li><li><i data-lucide="map-pin-off"></i>The restaurant cannot be changed.</li><li><i data-lucide="ban"></i>After the 2-hour cutoff, cancellation is not available.</li><li><i data-lucide="circle-help"></i>Reservation-fee handling after cancellation remains an open decision.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Lost — can't find the restaurant</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="map-pin"></i>Send the restaurant's saved map pin.</li><li><i data-lucide="route"></i>Send the directions provided by the restaurant.</li><li><i data-lucide="car-front"></i>Send the restaurant's parking instructions.</li><li><i data-lucide="images"></i>Share entrance or parking photos when available.</li><li><i data-lucide="phone"></i>Share the restaurant's contact number.</li><li><i data-lucide="headset"></i>Stay available until the guest finds the venue.</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ============ BUSINESS DEVELOPMENT ============ -->
+<section class="view" id="v-business-development" data-title="Business development">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Business development</h1>
+  <p>Getting restaurants to sign up, starting with 50.</p></div>
+
+  <div class="card"><div class="card-h"><div class="card-t">Your plan</div></div>
+    <div class="card-c table-wrap"><table><thead><tr><th>Step</th><th>Detail</th><th>Status</th></tr></thead><tbody>
+      <tr><td><b>Contact people</b></td><td>Reach out to people personally.</td><td><span class="badge s-idea">Idea</span></td></tr>
+      <tr><td><b>Visit known restaurants</b></td><td>Go to a few restaurants that we already know.</td><td><span class="badge s-idea">Idea</span></td></tr>
+      <tr><td><b>Ask what they want</b></td><td>Ask if they are interested, what they would want, and what would make it appealing.</td><td><span class="badge s-idea">Idea</span></td></tr>
+      <tr><td><b>Initial budget</b></td><td>Keep acquisition inexpensive: visit restaurants directly and manage the pipeline with an open-source CRM. Confirm the amount after the first pilot visits.</td><td><span class="badge s-dec">Lean approach</span></td></tr>
+      <tr><td><b>Restaurant deck</b></td><td>Create a short presentation that explains Run Out, the value for restaurants, how bookings work, and what the restaurant needs to do.</td><td><span class="badge s-dec">Required</span></td></tr>
+      <tr><td><b>Onboarding platform</b></td><td>Give restaurants one place to complete their profile, menu, pricing, availability, map pin, directions, parking details, photos, contacts, and agreement.</td><td><span class="badge s-dec">Required</span></td></tr>
+      <tr><td><b>Chase sign-up</b></td><td>Follow up with interested restaurants until onboarding is complete or they decline.</td><td><span class="badge s-dec">Required</span></td></tr>
+      <tr><td><b>Target</b></td><td>50 restaurants first.</td><td><span class="badge s-dec">Decided</span></td></tr>
+      <tr><td><b>Agent outreach</b></td><td>An agent finds all restaurants in Dubai; a Grok bot messages them and handles replies.</td><td><span class="badge s-idea">Idea</span></td></tr>
+      <tr><td><b>Review</b></td><td>Sign-up form is reviewed together with the restaurant's Google reviews.</td><td><span class="badge s-idea">Idea</span></td></tr>
+      <tr><td><b>Free dinner</b></td><td>To join, the restaurant gives 1 dinner for free; based on the feedback we tell them what to improve and sign them up or not.</td><td><span class="badge s-idea">Idea</span></td></tr>
+      <tr><td><b>Test booking</b></td><td>Place a complete test booking to confirm the restaurant receives it and the guest experience works correctly.</td><td><span class="badge s-dec">Required</span></td></tr>
+      <tr><td><b>Post-test check-in</b></td><td>Contact the restaurant after the test booking, ask how it went, record issues, and confirm they are ready to receive customers.</td><td><span class="badge s-dec">Required</span></td></tr>
+    </tbody></table></div></div>
+
+  <div class="sub">How Codex expanded it <span class="badge s-ex">Codex example</span></div>
+  <div class="grid g3">
+    <div class="step"><span class="n">01</span><b>Prepare the restaurant deck</b><ul class="list"><li><i data-lucide="presentation"></i>Explain what Run Out is.</li><li><i data-lucide="trending-up"></i>Show how it brings new customers.</li><li><i data-lucide="calendar-check"></i>Explain the booking journey.</li><li><i data-lucide="list-checks"></i>Show what the restaurant must provide.</li></ul></div>
+    <div class="step"><span class="n">02</span><b>Start warm and learn</b><ul class="list"><li><i data-lucide="contact"></i>Contact owners, managers, chefs, and hospitality contacts personally.</li><li><i data-lucide="store"></i>Visit restaurants already known to the founders.</li><li><i data-lucide="message-circle-question"></i>Ask what would make the offer appealing.</li><li><i data-lucide="notebook-pen"></i>Record incentives, concerns, and objections.</li></ul></div>
+    <div class="step"><span class="n">03</span><b>Present the value</b><ul class="list"><li><i data-lucide="users"></i>New qualified diners.</li><li><i data-lucide="armchair"></i>Demand for quieter tables.</li><li><i data-lucide="message-square-text"></i>Private guest feedback.</li><li><i data-lucide="video"></i>Credible restaurant content.</li><li><i data-lucide="sparkles"></i>Low operational effort.</li></ul></div>
+    <div class="step"><span class="n">04</span><b>Onboard and follow up</b><ul class="list"><li><i data-lucide="send"></i>Send one onboarding link.</li><li><i data-lucide="file-check-2"></i>Track profile completion.</li><li><i data-lucide="phone-forwarded"></i>Follow up on missing information.</li><li><i data-lucide="circle-check-big"></i>Stop when onboarding is complete or the restaurant declines.</li></ul></div>
+    <div class="step"><span class="n">05</span><b>Run a test booking</b><ul class="list"><li><i data-lucide="calendar-plus"></i>Create a complete test reservation.</li><li><i data-lucide="bell-ring"></i>Confirm the restaurant receives it.</li><li><i data-lucide="map-pinned"></i>Check directions, parking information, and arrival details.</li><li><i data-lucide="utensils"></i>Confirm the in-restaurant experience works.</li></ul></div>
+    <div class="step"><span class="n">06</span><b>Check how it went</b><ul class="list"><li><i data-lucide="phone-call"></i>Contact the restaurant after the test.</li><li><i data-lucide="message-square-more"></i>Ask what worked and what did not.</li><li><i data-lucide="wrench"></i>Fix onboarding or operational issues.</li><li><i data-lucide="toggle-right"></i>Confirm the restaurant is ready to receive customers.</li></ul></div>
+  </div>
+
+  <div class="grid g2 mt">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">First-50 funnel</div><span class="badge s-ex">Codex example</span></div><div class="card-d">Planning assumptions only — not your numbers.</div></div>
+      <div class="card-c funnel">
+        <div class="fun-row"><div class="top"><span>Qualified</span><b>200</b></div><div class="bar"><i style="width:100%"></i></div><p>Dubai restaurants that fit the target profile and have a verified public business presence.</p></div>
+        <div class="fun-row"><div class="top"><span>Contacted</span><b>120</b></div><div class="bar"><i style="width:60%"></i></div><p>Priority restaurants approached through an appropriate official or relationship-led channel.</p></div>
+        <div class="fun-row"><div class="top"><span>Conversations</span><b>75</b></div><div class="bar"><i style="width:37.5%"></i></div><p>Discovery calls, owner meetings, manager interviews, or in-person visits completed.</p></div>
+        <div class="fun-row"><div class="top"><span>Target · signed</span><b>50</b></div><div class="bar"><i style="width:25%;background:var(--chart-2)"></i></div><p>Your target. Approved restaurants with completed profiles and agreed terms.</p></div>
+      </div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Lean initial budget</div><span class="badge s-dec">Low cost</span></div><div class="card-d">Restaurant acquisition should be inexpensive because the founders will visit restaurants directly.</div></div>
+      <div class="card-c"><ul class="list"><li><i data-lucide="store"></i>Visit restaurants in person instead of paying for a large sales campaign.</li><li><i data-lucide="map"></i>Group visits by area to reduce travel time and cost.</li><li><i data-lucide="database"></i>Use a free, open-source CRM to track contacts, follow-ups, onboarding, and status.</li><li><i data-lucide="presentation"></i>Use a digital restaurant deck instead of expensive printed materials.</li><li><i data-lucide="laptop"></i>Build the onboarding flow with existing low-cost tools first.</li><li><i data-lucide="receipt"></i>Limit spending to transport, simple materials, and test-booking costs.</li><li><i data-lucide="calculator"></i>Set the final budget after measuring the first restaurant visits.</li></ul></div></div>
+  </div>
+
+  <div class="grid g2 mt">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Agent outreach — guardrails Codex added</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="search"></i>Use public business listings and official restaurant channels; record each source and verification date</li>
+      <li><i data-lucide="user-check"></i>Require human approval before first contact or any materially different follow-up</li>
+      <li><i data-lucide="message-square"></i>Use business-appropriate channels, reasonable limits, honest identity, and clear opt-out language</li>
+      <li><i data-lucide="ban"></i>Never continue after an opt-out</li>
+      <li><i data-lucide="scale"></i>Confirm UAE privacy, direct-marketing and messaging-provider requirements before launch</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Sign-up form & review</div><span class="badge s-dec">Required</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="file-text"></i>Legal and trading name, branch, address, website, and public profile links</li>
+      <li><i data-lucide="contact"></i>Decision-maker and operational contact details</li>
+      <li><i data-lucide="utensils"></i>Cuisine, price range, capacity, opening hours, and quieter service periods</li>
+      <li><i data-lucide="map-pin"></i>Exact map pin and written directions to the entrance</li>
+      <li><i data-lucide="car-front"></i>Parking location, access instructions, and valet details if available</li>
+      <li><i data-lucide="images"></i>Optional photos of the entrance, parking area, or nearby landmarks</li>
+      <li><i data-lucide="star"></i>Review the Google Business Profile — rating, volume, recency, recurring themes — as context, not an automatic score</li>
+      <li><i data-lucide="gavel"></i>Record approve, improve and reassess, decline, or waitlist — with a reason</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ============ SOCIAL MEDIA ============ -->
+<section class="view" id="v-social-media" data-title="Social media">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Social media</h1>
+  <p>A host who goes around rating restaurants and talking to owners, like JustFood — plus a date series like the UK one.</p></div>
+
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Restaurant visit format</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="store"></i>She goes around restaurants, rates them and talks to the owners.</li>
+      <li><i data-lucide="clock"></i>Asks: how long have you been around?</li>
+      <li><i data-lucide="chef-hat"></i>Asks: what's your best dish?</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Date series</div><span class="badge s-idea">Idea</span></div></div><div class="card-c card-d">A date format like the UK one, filmed at partner restaurants.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Branding</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><div class="chip-row"><span class="badge secondary">Foodie</span><span class="badge secondary">Travel</span><span class="badge secondary">Restaurant expert</span></div></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Signature look</div><span class="badge s-idea">Idea</span></div></div><div class="card-c card-d">The host wears a nice, sexy Run Out T-shirt to make it go viral.</div></div>
+  </div>
+
+  <div class="sub">How Codex expanded it <span class="badge s-ex">Codex example</span></div>
+  <div class="grid g4">
+    <div class="step"><span class="n">01</span><b>Meet the owner</b><p>Introduce the person behind the restaurant and ask how long it has been open, why they started it, and what makes the place different.</p></div>
+    <div class="step"><span class="n">02</span><b>Order the best dish</b><p>Ask, “What is the one dish everyone should try?” Show how it is made or served and let the owner explain the story behind it.</p></div>
+    <div class="step"><span class="n">03</span><b>Rate the experience</b><p>Use a recognizable rubric for food, service, atmosphere, value, and date suitability. Make sponsored or gifted visits clear.</p></div>
+    <div class="step"><span class="n">04</span><b>Give one clear next step</b><p>Invite viewers to join the waitlist, book the featured experience, nominate the next restaurant, or apply as a restaurant partner.</p></div>
+  </div>
+  <div class="grid g2 mt">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Five questions for every restaurant</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c"><ol class="num">
+      <li>How long have you been open, and what is the story behind the restaurant?</li><li>What is your best or most important dish?</li><li>What should a first-time guest order?</li><li>What makes this a good place for a date or celebration?</li><li>What is one thing most people do not know about the restaurant?</li></ol></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Date series details</div><span class="badge s-ex">Codex example</span></div><div class="card-d">Invite two consenting participants to a hosted date at a featured restaurant. Capture the venue, ordering, signature dish, and honest reactions — then follow with private feedback from both guests.</div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="film"></i>Short clips introduce the owner, menu, atmosphere, and date experience</li>
+      <li><i data-lucide="heart"></i>A longer edit can reveal whether the pair would meet again</li>
+      <li><i data-lucide="shield-check"></i>Get restaurant, staff and participant permission before filming or publishing</li>
+      <li><i data-lucide="tag"></i>Clearly label paid, gifted, or partner content</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ============ MARKETING ============ -->
+<section class="view" id="v-marketing" data-title="Marketing">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Marketing</h1>
+  <p>A website, Instagram and waitlist before launch, 10 free dates a week, and email and WhatsApp notifications with offers.</p></div>
+
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Waitlist & 10 free dates per week</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="globe"></i>Build a website and Instagram, and create a waitlist page where people sign up.</li>
+      <li><i data-lucide="calendar-heart"></i>Give 10 dates for free per week.</li>
+      <li><i data-lucide="message-square"></i>Participants give feedback.</li>
+      <li><i data-lucide="video"></i>The video is posted to Instagram to prove what we are doing.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Offer notifications</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="ticket"></i>No reservation fee needed.</li>
+      <li><i data-lucide="wine"></i>1 drink extra.</li>
+      <li><i data-lucide="plus"></i>Others to be added later.</li></ul></div></div>
+  </div>
+
+  <div class="card mt"><div class="card-h"><div class="row"><div><div class="card-t">Reservation notifications · email and WhatsApp</div><div class="card-d">You asked for reservation notifications; the message list and timings are Codex's draft.</div></div><span class="badge s-ex">Codex example</span></div></div>
+    <div class="card-c table-wrap"><table>
+      <thead><tr><th>Message</th><th>When</th><th>Content</th></tr></thead>
+      <tbody>
+        <tr><td><b>Booking confirmation</b></td><td>Immediately</td><td>Date, time, restaurant, party size, reservation fee receipt and manage-booking link.</td></tr>
+        <tr><td><b>Reservation reminder</b></td><td>24 hours before</td><td>Time, party size, directions and confirm-or-cancel prompt.</td></tr>
+        <tr><td><b>Cancellation update</b></td><td>On cancellation</td><td>Cancellation status and fee handling under the chosen policy.</td></tr>
+        <tr><td><b>No-show notice</b></td><td>After a missed booking</td><td>Confirms the no-show and that Run Out keeps the reservation fee.</td></tr>
+        <tr><td><b>Feedback request</b></td><td>After a completed reservation</td><td>Private review.</td></tr>
+        <tr><td><b>Inactive 2–3 months</b></td><td>60- or 90-day trigger</td><td>Optional re-engagement for opted-in users.</td></tr>
+      </tbody></table></div>
+    <div class="card-f">Real delivery needs an email provider, the WhatsApp Business Platform, user consent and approved templates.</div></div>
+
+  <div class="card mt"><div class="card-h"><div class="row"><div><div class="card-t">Free-date campaign cost</div><div class="card-d">10 free dates per week</div></div><span class="badge s-ex">Codex example defaults</span></div></div>
+    <div class="card-c calc">
+      <div>
+        <div class="field"><div class="top"><label for="c-weeks">Campaign duration</label><output id="o-weeks"></output></div><input type="range" id="c-weeks" min="4" max="26" step="1" value="12"></div>
+        <div class="field"><div class="top"><label for="c-cost">Cost per free date</label><output id="o-cost"></output></div><input type="range" id="c-cost" min="100" max="800" step="50" value="300"></div>
+        <div class="field"><div class="top"><label for="c-spon">Paid for by the restaurant</label><output id="o-spon"></output></div><input type="range" id="c-spon" min="0" max="100" step="5" value="50"></div>
+        <div class="field" style="margin-bottom:0"><div class="top"><label for="c-conv">Participants who become users</label><output id="o-conv"></output></div><input type="range" id="c-conv" min="0" max="60" step="1" value="20"></div>
+      </div>
+      <div class="results" style="align-self:start">
+        <div><div class="k">Free dates</div><div class="v" id="x-dates"></div></div>
+        <div><div class="k">Dinner cost to us</div><div class="v" id="x-ccost"></div></div>
+        <div><div class="k">Converted users</div><div class="v" id="x-conv"></div></div>
+        <div class="hl"><div class="k">Cost / converted user</div><div class="v" id="x-cpu"></div></div>
+      </div>
+    </div></div>
+</section>
+
+<!-- ============ PARTNERSHIPS ============ -->
+<section class="view" id="v-partnerships" data-title="Partnerships">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Partnerships</h1>
+  <p>One major UAE personality may receive a company stake at kickoff. All other influencers—including partners in new countries—receive tracked revenue share and no equity.</p></div>
+  <p class="card-d" style="margin-bottom:16px">The deal structure is also shown on the <a href="#investment" style="text-decoration:underline">Investment</a> page.</p>
+
+  <div class="grid g3">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Big UAE personality at kickoff</div><span class="badge s-idea">One exception</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="star"></i>May receive a stake in the company.</li><li><i data-lucide="megaphone"></i>Supports the UAE launch and builds credibility.</li><li><i data-lucide="handshake"></i>Helps open doors with restaurants and partners.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Other influencers</div><span class="badge s-dec">No equity</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="ticket-percent"></i>Receive a referral code or tracked link.</li><li><i data-lucide="percent"></i>Earn an agreed share of eligible revenue they generate.</li><li><i data-lucide="ban"></i>Receive no company ownership.</li></ul></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">New-country influencers</div><span class="badge s-dec">No equity</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="globe-2"></i>Promote Run Out in their own country.</li><li><i data-lucide="mouse-pointer-click"></i>Revenue share is based on tracked, eligible reservations.</li><li><i data-lucide="ban"></i>No local or global company equity.</li></ul></div></div>
+  </div>
+
+  <div class="sub">UAE ambassador shortlist <span class="badge s-ex">Codex example</span></div>
+  <p class="card-d" style="margin:-4px 0 14px;max-width:820px">JustFood is the reference you gave. The other five names were suggested by Codex, based on public positioning only. Verify audience, engagement, permits, conflicts and terms before outreach.</p>
+  <div class="grid g3">
+    <div class="card person"><div class="card-h"><span class="badge s-dec" style="align-self:flex-start">Your reference</span><div class="card-t">JustFood · Alex Augusti</div><div class="card-d">Dubai food guide focused on hidden eats, restaurant reviews, and local discovery.</div></div><div class="card-c meta"><span><b>Role:</b> founding food ambassador</span><span><b>Test:</b> tracked restaurant videos and reservation codes</span></div></div>
+    <div class="card person"><div class="card-h"><span class="badge s-ex" style="align-self:flex-start">Emirati trust · Broad launch</span><div class="card-t">Khalid Al Ameri</div><div class="card-d">Emirati storyteller with broad regional and international recognition.</div></div><div class="card-c meta"><span><b>Role:</b> headline UAE launch ambassador</span><span><b>Test:</b> one launch story plus tracked waitlist campaign</span></div></div>
+    <div class="card person"><div class="card-h"><span class="badge s-ex" style="align-self:flex-start">Mass UAE awareness</span><div class="card-t">Kris Fade</div><div class="card-d">Long-established Dubai radio host and media personality with daily UAE reach.</div></div><div class="card-c meta"><span><b>Role:</b> awareness and launch-event partner</span><span><b>Test:</b> radio/social activation with a unique code</span></div></div>
+    <div class="card person"><div class="card-h"><span class="badge s-ex" style="align-self:flex-start">Arabic food authority</span><div class="card-t">Chef Shaheen</div><div class="card-d">Dubai-based celebrity chef and restaurant founder with a large Arabic-speaking food audience.</div></div><div class="card-c meta"><span><b>Role:</b> Arabic food and restaurant ambassador</span><span><b>Test:</b> curated dining series with tracked bookings</span></div></div>
+    <div class="card person"><div class="card-h"><span class="badge s-ex" style="align-self:flex-start">Regional food storytelling</span><div class="card-t">Anthony Rahayel · NoGarlicNoOnions</div><div class="card-d">Dubai-based food and travel storyteller with a wide regional audience — a fit for country expansion.</div></div><div class="card-c meta"><span><b>Role:</b> regional storytelling partner</span><span><b>Test:</b> UAE restaurant mini-series and measured bookings</span></div></div>
+    <div class="card person"><div class="card-h"><span class="badge s-ex" style="align-self:flex-start">Performance food creator</span><div class="card-t">Thasneem Thaj · That Hungry Belly</div><div class="card-d">Dubai-based creator covering restaurant, café, and accessible food discoveries.</div></div><div class="card-c meta"><span><b>Role:</b> recurring restaurant-discovery creator</span><span><b>Test:</b> 90-day multi-restaurant coupon pilot</span></div></div>
+  </div>
+</section>
+
+<!-- ============ RESTAURANTS ============ -->
+<section class="view" id="v-restaurants" data-title="Restaurants">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Restaurants</h1>
+  <p>To join, a restaurant gives one dinner for free. Based on the guest's feedback, we tell the restaurant what to improve and decide whether to sign them up.</p></div>
+
+  <div class="sub">Quality gate · 1 free dinner <span class="badge s-idea">Idea</span></div>
+  <div class="flow">
+    <div><span class="k">Apply</span><b>Restaurant applies</b><p>Agrees to give one dinner for free.</p></div>
+    <div><span class="k">Visit</span><b>A guest dines</b><p>The selected person eats at the restaurant.</p></div>
+    <div><span class="k">Feedback</span><b>Feedback collected</b><p>The person gives their feedback.</p></div>
+    <div><span class="k">Improve</span><b>Tell them what to improve</b><p>We share the feedback with the restaurant.</p></div>
+    <div><span class="k">Decide</span><b>Sign up or not</b><p>Join the platform, or not.</p></div>
+  </div>
+
+  <div class="grid g2 mt">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">No-show policy</div><span class="badge s-dec">Decided</span></div></div><div class="card-c card-d">If a guest does not show up, Run Out keeps the reservation fee. The restaurant receives no compensation.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Getting restaurants signed up</div><span class="badge s-dec">Target: 50</span></div></div><div class="card-c card-d">Outreach, the sign-up page and Google-review checks are on the <a href="#business-development" style="text-decoration:underline">Business development</a> page.</div></div>
+    <div class="card" style="grid-column:1/-1"><div class="card-h"><div class="row"><div class="card-t">Location and arrival details</div><span class="badge s-dec">Required at sign-up</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="map-pin"></i>Provide the exact map pin for the restaurant entrance.</li><li><i data-lucide="route"></i>Provide simple written directions.</li><li><i data-lucide="car-front"></i>Explain where guests should park and how to access the parking area.</li><li><i data-lucide="circle-parking"></i>Add valet details when available.</li><li><i data-lucide="images"></i>Optionally upload photos of the entrance, parking area, or nearby landmarks.</li></ul></div></div>
+  </div>
+
+  <div class="card mt"><div class="card-h"><div class="row"><div class="card-t">Smart discounts to fill empty tables</div><span class="badge s-dec">Confirmed feature</span></div></div>
+    <div class="card-c"><ul class="list"><li><i data-lucide="toggle-right"></i>The restaurant switches smart discounts on or off from its portal.</li><li><i data-lucide="calendar-clock"></i>The restaurant chooses the available dates, times, and number of tables.</li><li><i data-lucide="users"></i>The restaurant sets the eligible party sizes and customer criteria.</li><li><i data-lucide="badge-percent"></i>The restaurant sets the discount from 1% up to 100%; a 100% discount means a free dinner.</li><li><i data-lucide="route"></i>Run Out routes matching reservations while the offer is active.</li><li><i data-lucide="bell"></i>The restaurant can pause or change the offer from the portal.</li></ul></div></div>
+</section>
+
+<!-- ============ VIRALITY ============ -->
+<section class="view" id="v-virality" data-title="Virality">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Virality</h1>
+  <p>The ideas you gave that are meant to make Run Out spread, in one place.</p></div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Run Out T-shirt</div><a class="badge s-idea" href="#social-media">Social media</a></div></div><div class="card-c card-d">The host wears a nice, sexy Run Out T-shirt in every video, to make it go viral.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Free-date videos</div><a class="badge s-idea" href="#marketing">Marketing</a></div></div><div class="card-c card-d">10 free dates per week; the videos are posted to Instagram as proof.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Referral codes</div><a class="badge s-idea" href="#investment">Investment</a></div></div><div class="card-c card-d">Influencers promote with their own referral code and earn a portion of revenue.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Free-dinner reservation boost</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><ul class="list"><li><i data-lucide="gift"></i>A restaurant gives one free dinner to participate.</li><li><i data-lucide="fast-forward"></i>Run Out prioritizes that restaurant for its next 2 or 3 reservations.</li><li><i data-lucide="list-filter"></i>Only reservations that match the restaurant's criteria are assigned.</li><li><i data-lucide="users"></i>The boost helps the restaurant experience new customers quickly.</li><li><i data-lucide="badge-check"></i>The exact reward—2 or 3 reservations—remains to be decided.</li></ul></div></div>
+  </div>
+</section>
+
+<!-- ============ LEGAL ============ -->
+<section class="view" id="v-legal" data-title="Legal">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Legal</h1>
+  <p>Setting up the company.</p></div>
+  <div class="card"><div class="card-h"><div class="row"><div class="card-t">Create the company</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><div class="empty">Details not defined yet</div></div></div>
+  <div class="sub">Related items already in the plan</div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Partner and equity agreements</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c card-d">UAE legal, tax, securities, advertising and data-protection advice should be obtained before issuing equity or signing partner agreements. See <a href="#investment" style="text-decoration:underline">Investment</a>.</div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Outreach and messaging rules</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c card-d">Confirm UAE privacy, direct-marketing, platform and messaging-provider requirements before launch. See <a href="#business-development" style="text-decoration:underline">Business development</a>.</div></div>
+  </div>
+</section>
+
+<!-- ============ TECH ============ -->
+<section class="view" id="v-tech" data-title="Tech">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Tech</h1>
+  <p>Publishing the apps on the App Store and Play Store, and taking payments through Stripe.</p></div>
+  <div class="grid g3">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">App Store</div><span class="badge s-idea">Idea</span></div><div class="card-d">iOS release</div></div><div class="card-c"><div class="empty">Details not defined yet</div></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Play Store</div><span class="badge s-idea">Idea</span></div><div class="card-d">Android release</div></div><div class="card-c"><div class="empty">Details not defined yet</div></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Stripe</div><span class="badge s-dec">Decided</span></div><div class="card-d">Card payments</div></div><div class="card-c"><ul class="list">
+      <li><i data-lucide="credit-card"></i>Everything is a card payment, processed through Stripe.</li>
+      <li><i data-lucide="percent"></i>Domestic UAE cards: 2.9% + AED 1 per payment.</li>
+      <li><i data-lucide="globe"></i>International cards: 3.9% + AED 1 per payment.</li>
+      <li><i data-lucide="eye"></i>Stripe fees are shown in the model but not configurable.</li></ul></div></div>
+  </div>
+  <div class="sub">Apps in the plan</div>
+  <div class="grid g3">
+    <a class="area" href="#user-app"><div class="ic"><i data-lucide="smartphone"></i></div><div><b>User app</b><span>What the guest uses to book</span></div></a>
+    <a class="area" href="#restaurant-app"><div class="ic"><i data-lucide="tablet-smartphone"></i></div><div><b>Restaurant app</b><span>What the restaurant sees</span></div></a>
+    <a class="area" href="#ops-dashboard"><div class="ic"><i data-lucide="monitor"></i></div><div><b>Ops dashboard</b><span>Internal view for the team</span></div></a>
+  </div>
+</section>
+
+<!-- ============ BRANDING ============ -->
+<section class="view" id="v-branding" data-title="Branding">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Company</span></div><h1>Branding</h1>
+  <p>The brand is Run Out. The on-camera identity is foodie, travel and restaurant expert, and the host wears a Run Out T-shirt.</p></div>
+
+  <div class="grid g3">
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Name</div><span class="badge s-dec">Decided</span></div></div><div class="card-c"><div style="font-size:28px;font-weight:700;letter-spacing:-.03em">Run Out</div><p class="card-d mt">Replaces the working name TableCircle used in the earlier Codex pages.</p></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Identity</div><span class="badge s-idea">Idea</span></div></div><div class="card-c"><div class="chip-row"><span class="badge secondary">Foodie</span><span class="badge secondary">Travel</span><span class="badge secondary">Restaurant expert</span></div></div></div>
+    <div class="card"><div class="card-h"><div class="row"><div class="card-t">Signature look</div><span class="badge s-idea">Idea</span></div></div><div class="card-c card-d">The host wears a nice, sexy Run Out T-shirt in the videos, to make it go viral.</div></div>
+  </div>
+
+  <div class="sub">Not defined yet</div>
+  <div class="grid g4">
+    <div class="card"><div class="card-h"><div class="card-t">Logo</div></div><div class="card-c"><div class="empty">—</div></div></div>
+    <div class="card"><div class="card-h"><div class="card-t">Colours</div></div><div class="card-c"><div class="empty">—</div></div></div>
+    <div class="card"><div class="card-h"><div class="card-t">Typography</div></div><div class="card-c"><div class="empty">—</div></div></div>
+    <div class="card"><div class="card-h"><div class="card-t">Tone of voice</div></div><div class="card-c"><div class="empty">—</div></div></div>
+  </div>
+
+  <div class="card mt"><div class="card-h"><div class="row"><div class="card-t">How Codex described the T-shirt</div><span class="badge s-ex">Codex example</span></div></div><div class="card-c card-d">A stylish, fitted Run Out T-shirt: confident and camera-ready without distracting from the restaurant. Consistent logo placement and a recognisable colourway make clips instantly identifiable, respect each venue's dress code, and create future merchandise potential.</div></div>
+</section>
+
+<!-- ============ NEXT STEPS ============ -->
+<section class="view" id="v-next-steps" data-title="Next steps">
+  <div class="p-head"><div class="eyebrow"><span class="badge secondary">Overview</span></div><h1>Next steps</h1>
+  <p>A prioritised list of what to do next. Type into each row and set the area, priority and status. Rows marked Done move to Completed below.</p></div>
+  <div class="card"><div class="card-c table-wrap" style="padding-top:8px"><table class="ns-table">
+    <thead><tr><th>#</th><th>Next step</th><th>Area</th><th>Priority</th><th>Status</th></tr></thead>
+    <tbody id="ns"></tbody></table></div></div>
+  <details class="card mt done-box" id="ns-done-box">
+    <summary><span><i data-lucide="chevron-right" class="chev"></i>Completed</span><span class="badge secondary" id="ns-done-count">0</span></summary>
+    <div class="card-c table-wrap" style="padding-top:0"><table class="ns-table">
+      <thead><tr><th>#</th><th>Next step</th><th>Area</th><th>Priority</th><th>Status</th></tr></thead>
+      <tbody id="ns-done"></tbody></table>
+      <div class="empty" id="ns-done-empty">No completed tasks yet</div></div>
+  </details>
+  <p class="muted mt" style="font-size:12.5px">Entries are saved in this browser only.</p>
+</section>
+
+<nav class="pager" id="pager"></nav>
+</div>
+</main>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const RATE=3.6725;
+  let CUR='AED';
+  const n0=v=>Math.round(v).toLocaleString('en-US');
+  const money=(v,d)=>{const x=CUR==='USD'?v/RATE:v;return (CUR==='USD'?'$':'AED ')+(d?x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}):n0(x));};
+  const aed=v=>'AED '+n0(v);
+  const order=['overview','next-steps','vision','business-model','financial-model','investment','user-app','restaurant-app','ops-dashboard','operations','customer-service','business-development','social-media','marketing','partnerships','restaurants','virality','legal','tech','branding'];
+
+  function route(){
+    let id=(location.hash||'#overview').slice(1); if(!order.includes(id)) id='overview';
+    document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+id));
+    document.querySelectorAll('[data-v]').forEach(a=>a.classList.toggle('active',a.dataset.v===id));
+    const view=$('v-'+id); document.title=view.dataset.title+' · Run Out';
+    const i=order.indexOf(id),p=order[i-1],n=order[i+1],t=k=>$('v-'+k).dataset.title;
+    $('pager').innerHTML=(p?'<a href="#'+p+'"><span>← Previous</span><b>'+t(p)+'</b></a>':'')+(n?'<a class="next" href="#'+n+'"><span>Next →</span><b>'+t(n)+'</b></a>':'');
+    window.scrollTo(0,0);
+    const m=document.querySelector('.mobile-nav a.active'); if(m) m.scrollIntoView({inline:'center',block:'nearest'});
+  }
+  addEventListener('hashchange',route);
+
+  const root=document.documentElement;
+  const isDark=()=>root.dataset.theme?root.dataset.theme==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+  function setIcon(){['theme','theme2'].forEach(k=>{$(k).innerHTML='<i data-lucide="'+(isDark()?'sun':'moon')+'"></i>';});if(window.lucide)lucide.createIcons();}
+  try{const t=localStorage.getItem('tc-theme');if(t)root.dataset.theme=t;}catch(e){}
+  ['theme','theme2'].forEach(k=>$(k).addEventListener('click',()=>{root.dataset.theme=isDark()?'light':'dark';try{localStorage.setItem('tc-theme',root.dataset.theme)}catch(e){}setIcon();}));
+
+  document.querySelectorAll('.tabs-list').forEach(l=>l.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>l.querySelectorAll('button').forEach(x=>{x.setAttribute('aria-selected',x===b);$(x.dataset.tab).hidden=x!==b;}))));
+
+  const restaurantAvailability=$('restaurant-availability');
+  if(restaurantAvailability){restaurantAvailability.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
+    const isOn=b.dataset.state==='on';
+    restaurantAvailability.querySelectorAll('button').forEach(x=>{x.classList.toggle('on',x===b);x.setAttribute('aria-pressed',x===b);});
+    const status=$('restaurant-availability-status');status.textContent=isOn?'Receiving customers':'Customer intake paused';status.className='badge '+(isOn?'green':'amber');
+  }));}
+
+  let projectionYear=1;
+  $('cur').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{CUR=b.dataset.c;$('cur').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));rev();}));
+  $('projection-year').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{projectionYear=+b.dataset.year;$('projection-year').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));rev();}));
+
+  function weighted(ids,values,fallback){let total=0,sum=0;ids.forEach((id,i)=>{const share=Math.max(0,+$(id).value||0);total+=share;sum+=share*values[i];});return total>0?sum/total:fallback;}
+  function avgMeal(){return weighted(['m100','m200','m300','m400'],[100,200,300,400],100);}
+  function avgParty(){return weighted(['p2','p3','p4'],[2,3,4],2);}
+
+  function rev(){
+    const perPerson=avgMeal(),party=avgParty(),mealTotal=perPerson*party,feePct=+$('r-fee').value;
+    const startUsers=+$('r-users').value,newUsers=+$('r-new').value,churn=+$('r-churn').value/100,freq=+$('r-freq').value;
+    const noShow=+$('r-ns').value/100,domestic=+$('r-dom').value/100,fee=mealTotal*feePct/100;
+    const stripeRate=(domestic*2.9+(1-domestic)*3.9)/100,stripePerReservation=fee*stripeRate+1;
+
+    $('o-avg').textContent='Avg '+money(perPerson,1)+' / person';$('o-party').textContent='Avg '+party.toFixed(2)+' people';
+    $('o-users').textContent=n0(startUsers);$('o-new').textContent=n0(newUsers);$('o-churn').textContent=(churn*100).toFixed(1).replace(/\.0$/,'')+'%';$('o-freq').textContent=freq.toFixed(1);
+    $('o-fee').textContent=feePct+'%';$('o-ns').textContent=Math.round(noShow*100)+'%';$('o-dom').textContent=Math.round(domestic*100)+'% domestic';
+    $('x-person').textContent=money(perPerson,1);$('x-party').textContent=party.toFixed(2)+' people';$('x-total').textContent=money(mealTotal,1);$('x-fee').textContent=money(fee,1);$('x-sfee').textContent=money(stripePerReservation,1);$('x-blend').textContent=(stripeRate*100).toFixed(2)+'% + '+money(1,1);$('x-users').textContent=n0(startUsers);$('x-frequency').textContent=freq.toFixed(1);$('x-noshow').textContent=Math.round(noShow*100)+'%';
+
+    let active=startUsers;const months=[];
+    for(let i=0;i<36;i++){
+      if(i>0)active=Math.max(0,active*(1-churn)+newUsers);
+      const reservations=active*freq,gross=reservations*fee,stripe=reservations*stripePerReservation,net=gross-stripe;
+      months.push({active,reservations,gross,stripe,net});
+    }
+    const first=(projectionYear-1)*12,selected=months.slice(first,first+12);
+    $('projection-title').textContent='Year '+projectionYear+' · Months 1–12';
+    $('projection').innerHTML=selected.map((m,index)=>'<tr><td><b>Month '+(index+1)+'</b></td><td class="num">'+n0(m.active)+'</td><td class="num">'+n0(m.reservations)+'</td><td class="num">'+money(perPerson)+'</td><td class="num">'+money(mealTotal)+'</td><td class="num">'+money(fee)+'</td><td class="num">'+money(m.gross)+'</td><td class="num">'+money(m.stripe)+'</td><td class="num"><b>'+money(m.net)+'</b></td></tr>').join('');
+    const totals=selected.reduce((sum,m)=>({reservations:sum.reservations+m.reservations,gross:sum.gross+m.gross,stripe:sum.stripe+m.stripe,net:sum.net+m.net}),{reservations:0,gross:0,stripe:0,net:0});
+    $('projection-total').textContent='Year '+projectionYear+' totals · '+n0(totals.reservations)+' reservations · '+money(totals.gross)+' company revenue · '+money(totals.stripe)+' Stripe · '+money(totals.net)+' net proceeds. Run Out keeps the reservation fee when a guest does not attend; nothing is paid to the restaurant.';
+  }
+  ['m100','m200','m300','m400','p2','p3','p4','r-fee','r-users','r-new','r-churn','r-freq','r-ns','r-dom'].forEach(id=>$(id).addEventListener('input',rev));
+
+  function camp(){
+    const w=+$('c-weeks').value,c=+$('c-cost').value,s=+$('c-spon').value/100,cv=+$('c-conv').value/100;
+    $('o-weeks').textContent=w+' weeks';$('o-cost').textContent=aed(c);$('o-spon').textContent=Math.round(s*100)+'%';$('o-conv').textContent=Math.round(cv*100)+'%';
+    const d=w*10,cost=d*c*(1-s),u=d*cv;
+    $('x-dates').textContent=n0(d);$('x-ccost').textContent=aed(cost);$('x-conv').textContent=n0(u);$('x-cpu').textContent=u>0?aed(cost/u):'—';
+  }
+  ['c-weeks','c-cost','c-spon','c-conv'].forEach(id=>$(id).addEventListener('input',camp));
+
+  let nsEl=0;
+  $('p-nsel').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{nsEl=+b.dataset.v;$('p-nsel').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));part();}));
+  function part(){
+    const r=+$('p-res').value,meal=+$('p-meal').value,fp=+$('p-fee').value,sh=+$('p-share').value/100,ns=+$('p-ns').value/100,cx=+$('p-cx').value/100;
+    const fee=meal*fp/100;
+    $('o-pres').textContent=n0(r);$('o-pmeal').textContent=aed(meal);$('o-pfee').textContent=fp+'% · AED '+fee.toFixed(2);$('o-pshare').textContent=Math.round(sh*100)+'%';$('o-pns').textContent=Math.round(ns*100)+'%';$('o-pcx').textContent=Math.round(cx*100)+'%';
+    const el=Math.max(0,r*(1-cx-(nsEl?0:ns))),rv=el*fee,pay=rv*sh;
+    $('x-pel').textContent=n0(el);$('x-prev').textContent=aed(rv);$('x-pmo').textContent=aed(pay);$('x-pyr').textContent=aed(pay*12);$('x-pkeep').textContent=aed(rv-pay);
+  }
+  ['p-res','p-meal','p-fee','p-share','p-ns','p-cx'].forEach(id=>$(id).addEventListener('input',part));
+
+  // next steps 1–20, empty, saved locally
+  const areas=['—','Business model','Financial model','Investment','User app','Restaurant app','Ops dashboard','Operations','Customer service','Business development','Social media','Marketing','Partnerships','Restaurants','Virality','Legal','Tech','Branding'];
+  let store={};try{store=JSON.parse(localStorage.getItem('tc-next')||'{}')}catch(e){}
+  const save=()=>{try{localStorage.setItem('tc-next',JSON.stringify(store))}catch(e){}};
+  const opt=(list,v)=>list.map(o=>'<option'+(o===v?' selected':'')+'>'+o+'</option>').join('');
+  function rowHtml(i,r){return '<tr><td class="n">'+i+'</td><td><input class="ns-input" data-i="'+i+'" data-k="t" placeholder="—" value="'+(r.t||'').replace(/"/g,'&quot;')+'"></td><td style="width:180px"><select class="ns-input" data-i="'+i+'" data-k="a">'+opt(areas,r.a||'—')+'</select></td><td class="pr"><select class="ns-input" data-i="'+i+'" data-k="p">'+opt(['—','High','Medium','Low'],r.p||'—')+'</select></td><td class="st"><select class="ns-input" data-i="'+i+'" data-k="s">'+opt(['—','Not started','In progress','Done'],r.s||'—')+'</select></td></tr>';}
+  function renderNs(){let a='',d='',dc=0;for(let i=1;i<=20;i++){const r=store[i]||{};if(r.s==='Done'){d+=rowHtml(i,r);dc++;}else a+=rowHtml(i,r);}
+    $('ns').innerHTML=a||'<tr><td colspan="5" class="muted" style="text-align:center">All tasks completed</td></tr>';$('ns-done').innerHTML=d;$('ns-done-count').textContent=dc;$('ns-done-empty').style.display=dc?'none':'block';}
+  renderNs();
+  ['ns','ns-done'].forEach(id=>{$(id).addEventListener('input',e=>{const el=e.target;if(!el.dataset.i)return;(store[el.dataset.i]=store[el.dataset.i]||{})[el.dataset.k]=el.value;save();});
+    $(id).addEventListener('change',e=>{if(e.target.dataset.k==='s')renderNs();});});
+
+  rev();camp();part();route();setIcon();
+})();
+</script>
+</body>
+</html>

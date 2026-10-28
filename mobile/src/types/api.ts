@@ -75,6 +75,8 @@ export type CreateReservationPayload = {
   allergyNotes: string | null;
   /** Only restaurants licensed to serve alcohol (21+). */
   licensedVenue: boolean;
+  /** Only restaurants that offer shisha. */
+  shishaVenue: boolean;
   locationLabel: string;
   partySize: number;
   budgetPerPerson: Money;
