@@ -6,6 +6,8 @@ import com.runout.restaurants.api.RestaurantSummary;
 import com.runout.restaurants.internal.infrastructure.persistence.entity.RestaurantEntity;
 import com.runout.restaurants.internal.infrastructure.persistence.entity.CityEntity;
 
+import java.util.List;
+
 final class RestaurantMapper {
 
     private RestaurantMapper() {
@@ -15,15 +17,19 @@ final class RestaurantMapper {
         return RestaurantSummary.builder()
                 .id(restaurant.getId())
                 .name(restaurant.getName())
+                .menuStatus(restaurant.getMenuStatus())
+                .pendingMenus(restaurant.getPendingMenus())
                 .phone(restaurant.getPhone())
                 .active(restaurant.isActive())
                 .cuisine(restaurant.getCuisine())
+                .categories(restaurant.getCategories())
                 .priceTier(restaurant.getPriceTier())
                 .description(restaurant.getDescription())
                 .openingHours(restaurant.getOpeningHours())
                 .tags(restaurant.getTags())
                 .googlePlaceId(restaurant.getGooglePlaceId())
                 .formattedAddress(restaurant.getFormattedAddress())
+                .parkingInstructions(restaurant.getParkingInstructions())
                 .cityId(restaurant.getCity().getId())
                 .cityName(restaurant.getCity().getName())
                 .area(restaurant.getArea())
@@ -36,6 +42,7 @@ final class RestaurantMapper {
                 .primaryType(restaurant.getPrimaryType())
                 .types(restaurant.getTypes())
                 .menus(restaurant.getMenus())
+                .ownerUserId(restaurant.getOwnerUserId())
                 .build();
     }
 
@@ -44,6 +51,7 @@ final class RestaurantMapper {
                 .name(command.name())
                 .phone(command.phone())
                 .cuisine(command.cuisine())
+                .categories(command.categories())
                 .priceTier(command.priceTier())
                 .description(command.description())
                 .openingHours(command.openingHours())
@@ -69,6 +77,7 @@ final class RestaurantMapper {
                 .name(candidate.name())
                 .phone(candidate.phone())
                 .cuisine(candidate.primaryType())
+                .categories(candidate.primaryType() == null ? List.of() : List.of(candidate.primaryType()))
                 .priceTier(null)
                 .description(null)
                 .openingHours(null)

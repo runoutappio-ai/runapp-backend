@@ -10,6 +10,7 @@ public record CreateRestaurantCommand(
         String name,
         String phone,
         String cuisine,
+        List<String> categories,
         Integer priceTier,
         String description,
         String openingHours,
@@ -29,6 +30,7 @@ public record CreateRestaurantCommand(
         List<RestaurantMenuSummary> menus
 ) {
     public CreateRestaurantCommand {
+        categories = categories == null ? List.of() : List.copyOf(categories);
         tags = tags == null ? List.of() : List.copyOf(tags);
         types = types == null ? List.of() : List.copyOf(types);
         menus = menus == null ? List.of() : List.copyOf(menus);

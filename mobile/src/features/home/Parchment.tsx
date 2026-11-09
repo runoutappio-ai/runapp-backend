@@ -35,7 +35,8 @@ function Corner({ style }: { style: object }) {
 
 /** A modern parchment card: restaurant name in script, menu set in classic serif. */
 export function Parchment({ restaurant, menu, menuSealed }: { restaurant: Restaurant; menu: RestaurantMenu[] | null; menuSealed: boolean }) {
-  const entries = (menu ?? []).flatMap((item) => Object.entries(item.entries));
+  const entries = (menu ?? []).flatMap((item) => Object.entries(item.sections)
+    .flatMap(([section, dishes]) => dishes.map((dish) => ({ section, name: dish.name, description: dish.description }))));
   return (
     <View style={styles.paper} accessibilityLabel={`${restaurant.name}. ${menuSealed ? 'Menu still sealed.' : `${entries.length} dishes on tonight's menu.`}`}>
       <View style={styles.sheen} />
@@ -52,9 +53,10 @@ export function Parchment({ restaurant, menu, menuSealed }: { restaurant: Restau
             <Text style={styles.sealedNote}>Still sealed — it will be written here when the time comes.</Text>
           ) : entries.length ? (
             <View style={styles.menu}>
-              {entries.map(([name, description], index) => (
+              {entries.map(({ section, name, description }, index) => (
                 <View key={`${name}-${index}`} style={styles.dish}>
                   {index > 0 ? <Text style={styles.dot}>·</Text> : null}
+                  {section && (index === 0 || entries[index - 1].section !== section) ? <Text style={styles.sectionName}>{section.toLowerCase()}</Text> : null}
                   <Text style={styles.dishName}>{name}</Text>
                   {description ? <Text style={styles.dishDescription}>{description}</Text> : null}
                 </View>
@@ -88,6 +90,7 @@ const styles = StyleSheet.create({
   menuHeading: { color: INK, fontFamily: FONTS.displayItalic, fontStyle: 'italic', fontSize: 22 },
   menu: { alignItems: 'center', gap: 4, marginTop: 4 },
   dish: { alignItems: 'center', gap: 3, paddingVertical: 4 },
+  sectionName: { color: '#8A6A3A', fontFamily: FONTS.body, fontSize: 9, fontWeight: '700', letterSpacing: 2.2, marginBottom: 2, textTransform: 'uppercase' },
   dot: { color: GOLD_LINE, fontSize: 18, lineHeight: 18, marginBottom: 4 },
   dishName: { color: INK, fontFamily: FONTS.display, fontSize: 14, letterSpacing: 1.6, textTransform: 'uppercase', textAlign: 'center' },
   dishDescription: { color: '#6A5845', fontFamily: FONTS.bodyItalic, fontStyle: 'italic', fontSize: 13.5, lineHeight: 19, textAlign: 'center' },

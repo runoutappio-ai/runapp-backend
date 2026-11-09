@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-restaurant-parking
+      author: runout
+      changes:
+        - addColumn:
+            tableName: restaurant
+            columns:
+              - column: { name: parking_instructions, type: varchar(1000) }

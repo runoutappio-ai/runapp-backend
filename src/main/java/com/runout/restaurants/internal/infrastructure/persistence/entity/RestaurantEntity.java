@@ -29,12 +29,15 @@ public class RestaurantEntity {
     private String phone;
     private boolean active;
     private String cuisine;
+    private String categories;
     private Integer priceTier;
     private String description;
     private String openingHours;
     private String tags;
     private String googlePlaceId;
     private String formattedAddress;
+    @jakarta.persistence.Column(length = 1000)
+    private String parkingInstructions;
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "city_id", nullable = false)
     private CityEntity city;
@@ -49,11 +52,37 @@ public class RestaurantEntity {
     private String types;
     @JdbcTypeCode(SqlTypes.JSON)
     private List<RestaurantMenuSummary> menus;
+    private UUID ownerUserId;
+    @JdbcTypeCode(SqlTypes.JSON)
+    private List<RestaurantMenuSummary> pendingMenus;
+    private String menuStatus;
+
+    public String getMenuStatus() { return menuStatus == null ? "DRAFT" : menuStatus; }
+    public List<RestaurantMenuSummary> getPendingMenus() { return copyMenus(pendingMenus); }
+    public void submitMenus(List<RestaurantMenuSummary> submission, Integer priceTier) {
+        requirePortalEditable();
+        this.pendingMenus = copyMenus(submission);
+        this.priceTier = priceTier;
+        this.menuStatus = "PENDING_APPROVAL";
+    }
+    public void reviewMenus(boolean approved) {
+        if (!"PENDING_APPROVAL".equals(getMenuStatus())) throw new IllegalArgumentException("No menu submission awaiting approval");
+        if (approved) this.menus = copyMenus(pendingMenus);
+        this.menuStatus = approved ? "APPROVED" : "REJECTED";
+    }
+
+    public void cancelMenuSubmission() {
+        if (!"PENDING_APPROVAL".equals(getMenuStatus())) {
+            throw new IllegalArgumentException("Only pending submissions can be cancelled");
+        }
+        this.menuStatus = "DRAFT";
+    }
 
     @Builder
     public RestaurantEntity(String name,
                             String phone,
                             String cuisine,
+                            List<String> categories,
                             Integer priceTier,
                             String description,
                             String openingHours,
@@ -76,6 +105,7 @@ public class RestaurantEntity {
         this.phone = phone;
         this.active = true;
         this.cuisine = cuisine;
+        this.categories = join(categories);
         this.priceTier = priceTier;
         this.description = description;
         this.openingHours = openingHours;
@@ -88,6 +118,7 @@ public class RestaurantEntity {
     public void update(String name,
                        String phone,
                        String cuisine,
+                       List<String> categories,
                        Integer priceTier,
                        String description,
                        String openingHours,
@@ -108,6 +139,7 @@ public class RestaurantEntity {
         this.name = name;
         this.phone = phone;
         this.cuisine = cuisine;
+        this.categories = join(categories);
         this.priceTier = priceTier;
         this.description = description;
         this.openingHours = openingHours;
@@ -133,8 +165,53 @@ public class RestaurantEntity {
         return split(tags);
     }
 
+    public List<String> getCategories() {
+        return split(categories);
+    }
+
     public List<RestaurantMenuSummary> getMenus() {
         return copyMenus(menus);
+    }
+
+    public void updatePortal(String name,
+                             String phone,
+                             String description,
+                             String openingHours,
+                             String formattedAddress,
+                             String area,
+                             String websiteUri,
+                             Integer priceTier,
+                             List<String> categories) {
+        requirePortalEditable();
+        this.name = name;
+        this.phone = phone;
+        this.description = description;
+        this.openingHours = openingHours;
+        this.formattedAddress = formattedAddress;
+        this.area = area;
+        this.websiteUri = websiteUri;
+        this.priceTier = priceTier;
+        this.categories = join(categories);
+        this.cuisine = categories == null || categories.isEmpty() ? null : categories.getFirst();
+    }
+
+    public void updateMenus(List<RestaurantMenuSummary> menus) {
+        this.menus = copyMenus(menus);
+    }
+
+    public void updateParkingInstructions(String instructions) {
+        requirePortalEditable();
+        this.parkingInstructions = instructions;
+    }
+
+    public void requirePortalEditable() {
+        if ("PENDING_APPROVAL".equals(getMenuStatus())) {
+            throw new IllegalArgumentException("Restaurant details and menus are locked until management approves or rejects the submission");
+        }
+    }
+
+    public void assignOwner(UUID ownerUserId) {
+        this.ownerUserId = ownerUserId;
     }
 
     private void updateGoogleMetadata(String googlePlaceId,

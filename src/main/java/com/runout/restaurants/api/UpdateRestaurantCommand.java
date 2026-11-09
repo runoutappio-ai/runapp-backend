@@ -11,6 +11,7 @@ public record UpdateRestaurantCommand(
         String name,
         String phone,
         String cuisine,
+        List<String> categories,
         Integer priceTier,
         String description,
         String openingHours,
@@ -30,6 +31,7 @@ public record UpdateRestaurantCommand(
         List<RestaurantMenuSummary> menus
 ) {
     public UpdateRestaurantCommand {
+        categories = categories == null ? List.of() : List.copyOf(categories);
         tags = tags == null ? List.of() : List.copyOf(tags);
         types = types == null ? List.of() : List.copyOf(types);
         menus = menus == null ? List.of() : List.copyOf(menus);

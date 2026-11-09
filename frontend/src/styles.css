@@ -732,6 +732,17 @@ tbody tr.selected {
 
 .restaurantEditorForm { order: 1; }
 .googlePlacesForm { order: 2; }
+.portalAccessForm, .portalAccessReady { order: 2; }
+.adminMenuSummary { order: 3; }
+.portalAccessForm { align-items: end; grid-template-columns: minmax(220px, 1.3fr) repeat(3, minmax(180px, 1fr)) auto; }
+.portalAccessReady .formTitle, .portalAccessForm .formTitle, .adminMenuSummary .formTitle { align-items: center; display: flex; gap: 8px; }
+.adminMenuGrid { display: grid; gap: 12px; grid-template-columns: repeat(5, minmax(160px, 1fr)); overflow-x: auto; }
+.adminMenuGrid article { background: #fff; border: 1px solid #d9e6f0; border-radius: 8px; min-width: 170px; overflow: hidden; }
+.adminMenuGrid header { align-items: center; background: #eff8ff; display: flex; justify-content: space-between; padding: 10px; }
+.adminMenuGrid header span { color: #0875c9; font-size: 11px; font-weight: 850; }
+.adminMenuSection { border-top: 1px solid #e2ebf3; display: grid; gap: 3px; padding: 8px 10px; }
+.adminMenuSection b { color: #5e7890; font-size: 10px; text-transform: uppercase; }
+.adminMenuSection span { font-size: 12px; line-height: 1.35; }
 
 .cityCreator {
   align-items: end;
@@ -948,6 +959,7 @@ tbody tr.selected {
   .restaurantListFilters { align-items: stretch; flex-direction: column; }
   .areaFilter { min-width: 0; }
   .cityCreator { align-items: stretch; grid-template-columns: 1fr; }
+  .portalAccessForm { align-items: stretch; grid-template-columns: 1fr; }
   .searchField, .searchField input { min-width: 0; width: 100%; }
   .formGrid, .detailGrid { grid-template-columns: 1fr; }
   .assignmentControl { align-items: stretch; grid-template-columns: 1fr; }

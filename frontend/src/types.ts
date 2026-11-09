@@ -32,11 +32,14 @@ export type Reservation = {
 };
 
 export type Restaurant = {
+  menuStatus: "DRAFT" | "PENDING_APPROVAL" | "APPROVED" | "REJECTED";
+  pendingMenus: RestaurantMenu[];
   id: string;
   name: string;
   phone: string | null;
   active: boolean;
   cuisine: string | null;
+  categories: string[];
   priceTier: number | null;
   description: string | null;
   openingHours: string | null;
@@ -55,6 +58,7 @@ export type Restaurant = {
   primaryType: string | null;
   types: string[];
   menus: RestaurantMenu[];
+  ownerUserId: string | null;
 };
 
 export type NearbyRestaurant = {
@@ -68,7 +72,16 @@ export type NearbyRestaurant = {
 
 export type RestaurantMenu = {
   id: number | null;
-  entries: Record<string, string>;
+  partySize: number;
+  discountPercentage: number;
+  priceBeforePerPerson: number;
+  priceAfterPerPerson: number;
+  sections: Record<string, RestaurantMenuItem[]>;
+};
+
+export type RestaurantMenuItem = {
+  name: string;
+  description: string | null;
 };
 
 export type GooglePlaceCandidate = {
@@ -119,7 +132,7 @@ export type UserProfileAddress = {
   longitude: number | null;
 };
 
-export type UserRole = "SUPER_ADMIN" | "MANAGER" | "WORKER" | "USER";
+export type UserRole = "SUPER_ADMIN" | "MANAGER" | "WORKER" | "RESTAURANT" | "USER";
 
 export type TokenResponse = {
   accessToken: string;

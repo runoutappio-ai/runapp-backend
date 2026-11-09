@@ -13,26 +13,40 @@ const STORAGE_KEY = 'runout.demo.v1';
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
+function menuSet(id: number, dishes: { starter: [string, string]; main: [string, string]; dessert: [string, string]; drink?: [string, string] }) {
+  return [2, 3, 4, 5, 6].map((partySize) => ({
+    id: id * 10 + partySize,
+    partySize,
+    discountPercentage: 20,
+    sections: {
+      STARTERS: [{ name: dishes.starter[0], description: dishes.starter[1] }],
+      MAINS: [{ name: dishes.main[0], description: dishes.main[1] }],
+      DESSERTS: [{ name: dishes.dessert[0], description: dishes.dessert[1] }],
+      DRINKS: [{ name: dishes.drink?.[0] ?? 'House refreshment', description: dishes.drink?.[1] ?? 'Selected for the table' }],
+    },
+  }));
+}
+
 const RESTAURANTS: Restaurant[] = [
   {
     id: 'demo-saffron', name: 'Saffron & Sumac', cuisine: 'MIDDLE_EASTERN_RESTAURANT', description: 'Wood-fired Levantine plates.',
     formattedAddress: 'Bay Avenue, Business Bay, Dubai', latitude: 25.1865, longitude: 55.2728, googleMapsUri: null, tags: ['Date Night'],
-    menus: [{ id: 1, entries: { 'Smoked Aubergine Mutabal': 'Charred aubergine, tahini, pomegranate molasses', 'Lamb Shoulder Ouzi': 'Twelve-hour lamb, spiced rice, toasted almonds', 'Knafeh': 'Warm Nabulsi cheese, orange-blossom syrup, pistachio' } }],
+    menus: menuSet(1, { starter: ['Smoked Aubergine Mutabal', 'Charred aubergine, tahini, pomegranate molasses'], main: ['Lamb Shoulder Ouzi', 'Twelve-hour lamb, spiced rice, toasted almonds'], dessert: ['Knafeh', 'Warm Nabulsi cheese, orange-blossom syrup, pistachio'] }),
   },
   {
     id: 'demo-lumiere', name: 'Maison Lumière', cuisine: 'FRENCH_RESTAURANT', description: 'A small modern bistro.',
     formattedAddress: 'Jumeirah Beach Road, Jumeirah, Dubai', latitude: 25.2048, longitude: 55.2398, googleMapsUri: null, tags: ['Dress to Impress'],
-    menus: [{ id: 2, entries: { 'Tuna Crudo': 'Citrus, fennel, brown butter crumb', 'Duck à l’Orange': 'Roasted breast, glazed endive, jus', 'Chocolate Soufflé': 'Salted caramel, crème fraîche' } }],
+    menus: menuSet(2, { starter: ['Tuna Crudo', 'Citrus, fennel, brown butter crumb'], main: ['Duck à l’Orange', 'Roasted breast, glazed endive, jus'], dessert: ['Chocolate Soufflé', 'Salted caramel, crème fraîche'] }),
   },
   {
     id: 'demo-koen', name: 'Kōen Robata', cuisine: 'JAPANESE_RESTAURANT', description: 'Charcoal grill and sake bar.',
     formattedAddress: 'Marina Walk, Dubai Marina, Dubai', latitude: 25.0805, longitude: 55.1403, googleMapsUri: null, tags: ['Casual'],
-    menus: [{ id: 3, entries: { 'Yellowtail Tataki': 'Ponzu, yuzu kosho, crispy shallot', 'Miso Black Cod': 'Saikyo miso, pickled ginger', 'Matcha Mochi': 'Red bean, black sesame' } }],
+    menus: menuSet(3, { starter: ['Yellowtail Tataki', 'Ponzu, yuzu kosho, crispy shallot'], main: ['Miso Black Cod', 'Saikyo miso, pickled ginger'], dessert: ['Matcha Mochi', 'Red bean, black sesame'] }),
   },
   {
     id: 'demo-nonna', name: 'Trattoria Nonna Vita', cuisine: 'ITALIAN_RESTAURANT', description: 'Family-style pasta kitchen.',
     formattedAddress: 'Alserkal Avenue, Al Quoz, Dubai', latitude: 25.1417, longitude: 55.2256, googleMapsUri: null, tags: ['Birthday'],
-    menus: [{ id: 4, entries: { 'Burrata Pugliese': 'Heritage tomatoes, basil oil', 'Cacio e Pepe': 'Hand-rolled tonnarelli, pecorino, black pepper', 'Tiramisù della Casa': 'Mascarpone, espresso, cocoa' } }],
+    menus: menuSet(4, { starter: ['Burrata Pugliese', 'Heritage tomatoes, basil oil'], main: ['Cacio e Pepe', 'Hand-rolled tonnarelli, pecorino, black pepper'], dessert: ['Tiramisù della Casa', 'Mascarpone, espresso, cocoa'] }),
   },
 ];
 

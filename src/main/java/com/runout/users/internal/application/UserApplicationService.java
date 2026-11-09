@@ -54,6 +54,11 @@ class UserApplicationService implements UserService {
         return register(command, role);
     }
 
+    @Override
+    public UserSummary createRestaurantAccount(RegisterUserCommand command) {
+        return register(command, UserRole.RESTAURANT);
+    }
+
     private UserSummary register(RegisterUserCommand command, UserRole role) {
         var normalizedCommand = UserMapper.normalize(command);
 
@@ -120,8 +125,8 @@ class UserApplicationService implements UserService {
     @Override
     public UserSummary updateRole(UUID userId, String role) {
         var userRole = UserRole.from(role);
-        if (userRole == UserRole.SUPER_ADMIN) {
-            throw new IllegalArgumentException("SUPER_ADMIN cannot be assigned from the administration panel");
+        if (userRole == UserRole.SUPER_ADMIN || userRole == UserRole.RESTAURANT) {
+            throw new IllegalArgumentException(userRole + " cannot be assigned from the general user administration panel");
         }
 
         var user = repository.findById(userId).orElseThrow();

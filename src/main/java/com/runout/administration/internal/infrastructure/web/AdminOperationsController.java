@@ -2,6 +2,7 @@ package com.runout.administration.internal.infrastructure.web;
 
 import com.runout.administration.internal.infrastructure.web.dto.request.ConfirmReservationRequest;
 import com.runout.administration.internal.infrastructure.web.dto.request.AssignReservationRequest;
+import com.runout.administration.internal.infrastructure.web.dto.request.CreateRestaurantPortalAccessRequest;
 import com.runout.administration.internal.infrastructure.web.dto.response.AdminReservationResponse;
 import com.runout.administration.internal.infrastructure.web.dto.response.IdResponse;
 import com.runout.administration.internal.infrastructure.web.dto.response.NearbyRestaurantResponse;
@@ -11,6 +12,7 @@ import com.runout.restaurants.api.RestaurantService;
 import com.runout.users.api.UserRole;
 import com.runout.users.api.UserService;
 import com.runout.users.api.UserSummary;
+import com.runout.users.api.RegisterUserCommand;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -147,6 +149,24 @@ class AdminOperationsController {
     void completeReservation(@PathVariable UUID id) {
         log.info("Admin completing reservation id={}", id);
         reservations.completeReservation(id);
+    }
+
+    @PostMapping("/restaurants/{id}/portal-access")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @ResponseStatus(HttpStatus.CREATED)
+    UserSummary createRestaurantPortalAccess(@PathVariable UUID id,
+                                             @Valid @RequestBody CreateRestaurantPortalAccessRequest request) {
+        var restaurant = restaurants.findById(id);
+        if (restaurant.ownerUserId() != null) {
+            throw new IllegalArgumentException("This restaurant already has a portal account");
+        }
+        var user = users.createRestaurantAccount(RegisterUserCommand.builder()
+                .displayName(request.displayName())
+                .email(request.email())
+                .password(request.password())
+                .build());
+        restaurants.assignOwner(id, user.id());
+        return user;
     }
 
     private void ensureWorkerCanAccessReservation(Authentication authentication,

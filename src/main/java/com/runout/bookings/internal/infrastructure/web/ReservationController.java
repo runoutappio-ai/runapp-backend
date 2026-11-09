@@ -63,7 +63,7 @@ class ReservationController {
                     .build();
         }
 
-        var restaurant = restaurants.findById(reservation.restaurantId());
+        var restaurant = restaurants.findById(reservation.restaurantId()).publicView();
         return ReservationRevealResponse.builder()
                 .available(true)
                 .status(reservation.status())

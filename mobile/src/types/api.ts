@@ -43,11 +43,18 @@ export type Reservation = {
   createdAt: string;
 };
 
-export type RestaurantMenu = { id: number; entries: Record<string, string> };
+export type RestaurantMenuItem = { name: string; description: string | null };
+export type RestaurantMenu = {
+  id: number;
+  partySize: number;
+  discountPercentage: number;
+  sections: Record<string, RestaurantMenuItem[]>;
+};
 export type Restaurant = {
   id: string;
   name: string;
   cuisine: string | null;
+  categories?: string[];
   description: string | null;
   formattedAddress: string | null;
   latitude: number | null;
@@ -55,6 +62,7 @@ export type Restaurant = {
   googleMapsUri: string | null;
   tags: string[];
   menus: RestaurantMenu[];
+  ownerUserId?: string | null;
 };
 
 export type ReservationReveal = {

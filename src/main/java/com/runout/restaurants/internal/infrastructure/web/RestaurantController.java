@@ -26,6 +26,14 @@ class RestaurantController {
 
     private final RestaurantService restaurants;
 
+    @PostMapping("/api/admin/restaurants/{id}/menu-review")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'MANAGER')")
+    RestaurantSummary reviewMenus(@PathVariable UUID id, @RequestBody MenuReviewRequest request) {
+        return restaurants.reviewMenus(id, request.approved());
+    }
+
+    record MenuReviewRequest(boolean approved) {}
+
     @GetMapping("/api/v1/restaurants")
     List<RestaurantSummary> findActiveRestaurants() {
         log.info("Listing active restaurants");

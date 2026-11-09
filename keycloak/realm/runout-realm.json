@@ -20,7 +20,8 @@
       { "name": "USER" },
       { "name": "SUPER_ADMIN" },
       { "name": "MANAGER" },
-      { "name": "WORKER" }
+      { "name": "WORKER" },
+      { "name": "RESTAURANT" }
     ]
   },
   "identityProviders": [

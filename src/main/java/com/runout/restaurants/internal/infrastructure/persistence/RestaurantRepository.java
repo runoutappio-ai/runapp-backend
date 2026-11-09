@@ -8,4 +8,6 @@ import java.util.UUID;
 
 public interface RestaurantRepository extends JpaRepository<RestaurantEntity, UUID> {
     Optional<RestaurantEntity> findByGooglePlaceId(String googlePlaceId);
+
+    Optional<RestaurantEntity> findByOwnerUserId(UUID ownerUserId);
 }

@@ -59,7 +59,7 @@ export default function ReservationDetailScreen() {
           <Card style={styles.facts}><View style={[styles.fact, styles.factDivider]}><View style={styles.factIcon}><CalendarClock color={colors.gold} size={16} strokeWidth={1.9} /></View><Text style={styles.factText}>{formatWhen(data.confirmedReservationAt ?? data.reservationAt)}</Text></View><View style={styles.fact}><View style={styles.factIcon}><Users color={colors.gold} size={16} strokeWidth={1.9} /></View><Text style={styles.factText}>Table for {data.partySize} · AED {data.totalBudget.amount} total</Text></View></Card>
           {revealed?.restaurant ? <>
             <SealedEnvelope key={revealStage} open letterTitle={revealStage === 'menu' ? 'YOUR MENU' : 'RESTAURANT'}>
-              <Parchment restaurant={revealed.restaurant} menu={revealed.menu} menuSealed={revealStage === 'restaurant'} />
+              <Parchment restaurant={revealed.restaurant} menu={revealed.menu?.filter((item) => item.partySize === data.partySize) ?? null} menuSealed={revealStage === 'restaurant'} />
               <Button onPress={() => void openMap()}><MapPinned size={16} color={colors.primaryText} /> Open in Google Maps</Button>
               {revealStage === 'restaurant' ? <Button variant="secondary" onPress={() => setDemoMenuRevealed(true)}><LockKeyhole size={15} color={colors.gold} /> Skip the menu wait · demo</Button> : null}
             </SealedEnvelope>

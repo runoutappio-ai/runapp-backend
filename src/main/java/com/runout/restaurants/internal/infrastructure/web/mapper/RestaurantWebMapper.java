@@ -22,6 +22,7 @@ public final class RestaurantWebMapper {
                 .name(request.name())
                 .phone(request.phone())
                 .cuisine(request.cuisine())
+                .categories(request.categories())
                 .priceTier(request.priceTier())
                 .description(request.description())
                 .openingHours(request.openingHours())
@@ -48,6 +49,7 @@ public final class RestaurantWebMapper {
                 .name(request.name())
                 .phone(request.phone())
                 .cuisine(request.cuisine())
+                .categories(request.categories())
                 .priceTier(request.priceTier())
                 .description(request.description())
                 .openingHours(request.openingHours())
@@ -102,7 +104,16 @@ public final class RestaurantWebMapper {
         return menus.stream()
                 .map(menu -> RestaurantMenuSummary.builder()
                         .id(menu.id())
-                        .entries(menu.entries())
+                        .partySize(menu.partySize())
+                        .priceBeforePerPerson(menu.priceBeforePerPerson())
+                        .priceAfterPerPerson(menu.priceAfterPerPerson())
+                        .discountPercentage(menu.discountPercentage())
+                        .sections(menu.sections() == null ? null : menu.sections().entrySet().stream().collect(java.util.stream.Collectors.toMap(
+                                java.util.Map.Entry::getKey,
+                                entry -> entry.getValue().stream()
+                                        .map(item -> new com.runout.restaurants.api.RestaurantMenuItemSummary(item.name(), item.description()))
+                                        .toList()
+                        )))
                         .build())
                 .toList();
     }
@@ -114,7 +125,16 @@ public final class RestaurantWebMapper {
         return menus.stream()
                 .map(menu -> RestaurantMenuSummary.builder()
                         .id(menu.id())
-                        .entries(menu.entries())
+                        .partySize(menu.partySize())
+                        .priceBeforePerPerson(menu.priceBeforePerPerson())
+                        .priceAfterPerPerson(menu.priceAfterPerPerson())
+                        .discountPercentage(menu.discountPercentage())
+                        .sections(menu.sections() == null ? null : menu.sections().entrySet().stream().collect(java.util.stream.Collectors.toMap(
+                                java.util.Map.Entry::getKey,
+                                entry -> entry.getValue().stream()
+                                        .map(item -> new com.runout.restaurants.api.RestaurantMenuItemSummary(item.name(), item.description()))
+                                        .toList()
+                        )))
                         .build())
                 .toList();
     }

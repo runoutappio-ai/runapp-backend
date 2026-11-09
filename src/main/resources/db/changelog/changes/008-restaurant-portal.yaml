@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-restaurant-portal
+      author: runout
+      comment: Links one portal account to each restaurant and stores customer-facing categories.
+      changes:
+        - addColumn:
+            tableName: restaurant
+            columns:
+              - column: { name: owner_user_id, type: uuid }
+              - column: { name: categories, type: text }
+        - addForeignKeyConstraint:
+            baseTableName: restaurant
+            baseColumnNames: owner_user_id
+            referencedTableName: app_user
+            referencedColumnNames: id
+            constraintName: fk_restaurant_owner_user
+        - addUniqueConstraint:
+            tableName: restaurant
+            columnNames: owner_user_id
+            constraintName: uk_restaurant_owner_user

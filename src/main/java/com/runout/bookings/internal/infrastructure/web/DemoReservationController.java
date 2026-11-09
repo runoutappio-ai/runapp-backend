@@ -4,6 +4,7 @@ import com.runout.bookings.api.ReservationService;
 import com.runout.bookings.internal.infrastructure.web.dto.response.ReservationRevealResponse;
 import com.runout.bookings.internal.infrastructure.web.mapper.ReservationMapper;
 import com.runout.restaurants.api.RestaurantMenuSummary;
+import com.runout.restaurants.api.RestaurantMenuItemSummary;
 import com.runout.restaurants.api.RestaurantService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -60,24 +61,27 @@ class DemoReservationController {
                 : restaurants.findById(reservation.restaurantId());
         var menu = restaurants.findMenu(restaurant.id());
         if (menu.isEmpty()) {
-            menu = demoMenu();
+            menu = demoMenu(reservation.partySize());
         }
         return ReservationRevealResponse.builder()
                 .available(true)
                 .status(reservation.status())
                 .reservation(ReservationMapper.toResponse(reservation))
-                .restaurant(restaurant)
+                .restaurant(restaurant.publicView())
                 .menu(menu)
                 .build();
     }
 
-    private List<RestaurantMenuSummary> demoMenu() {
+    private List<RestaurantMenuSummary> demoMenu(int partySize) {
         return List.of(RestaurantMenuSummary.builder()
                 .id(-1L)
-                .entries(Map.of(
-                        "Welcome bite", "A seasonal chef's welcome",
-                        "Mystery main", "The kitchen's signature plate",
-                        "Dessert", "A sweet finish selected for the table"
+                .partySize(partySize)
+                .discountPercentage(20)
+                .sections(Map.of(
+                        "STARTERS", List.of(new RestaurantMenuItemSummary("Welcome bite", "A seasonal chef's welcome")),
+                        "MAINS", List.of(new RestaurantMenuItemSummary("Mystery main", "The kitchen's signature plate")),
+                        "DESSERTS", List.of(new RestaurantMenuItemSummary("Dessert", "A sweet finish selected for the table")),
+                        "DRINKS", List.of(new RestaurantMenuItemSummary("House refreshment", "Selected for the table"))
                 ))
                 .build());
     }

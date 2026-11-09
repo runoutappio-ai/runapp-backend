@@ -13,3 +13,9 @@ databaseChangeLog:
       file: db/changelog/changes/006-reservation-feedback.yaml
   - include:
       file: db/changelog/changes/007-feedback-return-intent.yaml
+  - include:
+      file: db/changelog/changes/008-restaurant-portal.yaml
+  - include:
+      file: db/changelog/changes/009-restaurant-parking.yaml
+  - include:
+      file: db/changelog/changes/010-menu-approval.yaml

@@ -5,6 +5,8 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Gauge,
+  ChefHat,
+  KeyRound,
   List,
   Loader2,
   LogOut,
@@ -455,7 +457,7 @@ function UsersPanel({ config }: { config: ApiConfig }) {
       {error && <div className="error">{error}</div>}
       <div className="filtersBar">
         <div className="filterTabs">
-          {(["ALL", "SUPER_ADMIN", "MANAGER", "WORKER", "USER"] as const).map((role) => (
+          {(["ALL", "SUPER_ADMIN", "MANAGER", "WORKER", "RESTAURANT", "USER"] as const).map((role) => (
             <button key={role} className={roleFilter === role ? "active" : "secondary"} onClick={() => setRoleFilter(role)}>
               {role === "ALL" ? "All" : roleLabel(role)}
               <span className="count">{role === "ALL" ? users.length : users.filter((user) => user.role === role).length}</span>
@@ -470,8 +472,8 @@ function UsersPanel({ config }: { config: ApiConfig }) {
       <DataTable
         headers={["Name", "Email", "Role", "ID"]}
         rows={filteredUsers.map((user) => [user.displayName, user.email,
-          user.role === "SUPER_ADMIN"
-            ? <span className="roleLabel super_admin">Super admin</span>
+          user.role === "SUPER_ADMIN" || user.role === "RESTAURANT"
+            ? <span className={`roleLabel ${user.role.toLowerCase()}`}>{roleLabel(user.role)}</span>
             : <select className={`roleSelect ${user.role.toLowerCase()}`} value={user.role} onChange={(event) => void updateRole(user.id, event.target.value as UserRole)}>
                 <option value="MANAGER">Manager</option><option value="WORKER">Worker</option><option value="USER">User</option>
               </select>,
@@ -836,6 +838,8 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
   const [loading, setLoading] = useState(false);
   const [searchingPlaces, setSearchingPlaces] = useState(false);
   const [error, setError] = useState("");
+  const [portalForm, setPortalForm] = useState({ displayName: "", email: "", password: "" });
+  const [creatingPortal, setCreatingPortal] = useState(false);
   const editing = Boolean(form.id);
   const canManageRestaurants = role === "SUPER_ADMIN" || role === "MANAGER";
   const selectedFormCity = cities.find((city) => city.id === form.cityId);
@@ -957,6 +961,27 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
       setForm((current) => ({ ...current, cityId: city.id, area: "" }));
     } catch (err) {
       setError(errorMessage(err));
+    }
+  }
+
+  async function createPortalAccess(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!form.id) return;
+    setCreatingPortal(true);
+    setError("");
+    try {
+      await apiRequest<UserSummary>(config, `/api/admin/restaurants/${form.id}/portal-access`, {
+        method: "POST",
+        body: portalForm
+      });
+      setPortalForm({ displayName: "", email: "", password: "" });
+      await load();
+      const refreshed = restaurants.find((restaurant) => restaurant.id === form.id);
+      if (refreshed) setForm(restaurantToForm(refreshed));
+    } catch (err) {
+      setError(errorMessage(err));
+    } finally {
+      setCreatingPortal(false);
     }
   }
 
@@ -1083,7 +1108,8 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
             <input value={form.phone} onChange={(event) => setForm({ ...form, phone: event.target.value })} />
           </label>
           <label>Cuisine<input value={form.cuisine} placeholder="Mediterranean" onChange={(event) => setForm({ ...form, cuisine: event.target.value })} /></label>
-          <label>Price tier<select value={form.priceTier ?? ""} onChange={(event) => setForm({ ...form, priceTier: event.target.value ? Number(event.target.value) : null })}><option value="">Not specified</option><option value="1">€</option><option value="2">€€</option><option value="3">€€€</option><option value="4">€€€€</option></select></label>
+          <label>Price per guest<select value={form.priceTier ?? ""} onChange={(event) => setForm({ ...form, priceTier: event.target.value ? Number(event.target.value) : null })}><option value="">Not specified</option>{[50, 100, 150, 200, 250, 300, 350, 400].map((price, index) => <option key={price} value={index + 1}>AED {price} per guest</option>)}</select></label>
+          <label className="spanTwo">Restaurant categories (comma separated)<input value={form.categories.join(", ")} onChange={(event) => setForm({ ...form, categories: commaList(event.target.value) })} /></label>
           <label className="spanTwo">Description<textarea value={form.description} onChange={(event) => setForm({ ...form, description: event.target.value })} /></label>
           <label className="spanTwo">Opening hours<input value={form.openingHours} placeholder="Mon-Sun 13:00-00:00" onChange={(event) => setForm({ ...form, openingHours: event.target.value })} /></label>
           {selectedFormCity?.name === "Dubai" ? (
@@ -1108,7 +1134,7 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
           <label>Review count<input type="number" min="0" value={form.userRatingCount ?? ""} onChange={(event) => setForm({ ...form, userRatingCount: event.target.value ? Number(event.target.value) : null })} /></label>
           <label className="spanTwo">Web<input type="url" value={form.websiteUri} onChange={(event) => setForm({ ...form, websiteUri: event.target.value })} /></label>
           <label className="spanTwo">Google Maps URL<input type="url" value={form.googleMapsUri} onChange={(event) => setForm({ ...form, googleMapsUri: event.target.value })} /></label>
-          <label className="spanTwo">Menus JSON<textarea value={form.menusJson} placeholder={'[{ "id": 1, "entries": { "starter": "Hummus", "main": "Grilled fish" } }]'} onChange={(event) => setForm({ ...form, menusJson: event.target.value })} /></label>
+          <label className="spanTwo">Menus JSON<textarea value={form.menusJson} placeholder={'[{ "id": 2, "partySize": 2, "discountPercentage": 20, "sections": { "STARTERS": [], "MAINS": [], "DESSERTS": [], "DRINKS": [] } }]'} onChange={(event) => setForm({ ...form, menusJson: event.target.value })} /></label>
           </div>
           <div className="row">
             <button type="submit">
@@ -1121,6 +1147,34 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
             )}
           </div>
         </form>
+        {editing && role === "SUPER_ADMIN" && (
+          restaurants.find((restaurant) => restaurant.id === form.id)?.ownerUserId ? (
+            <div className="form elevated portalAccessReady">
+              <div className="formTitle"><KeyRound size={17} /> Restaurant portal access</div>
+              <div className="muted">A restaurant account is linked. The partner can sign in at <strong>http://localhost:5174</strong>.</div>
+            </div>
+          ) : (
+            <form className="form elevated portalAccessForm" onSubmit={createPortalAccess}>
+              <div><div className="formTitle"><KeyRound size={17} /> Create restaurant portal access</div><div className="muted">Creates one secure account and links it only to this restaurant.</div></div>
+              <label>Contact name<input value={portalForm.displayName} onChange={(event) => setPortalForm({ ...portalForm, displayName: event.target.value })} required /></label>
+              <label>Email<input type="email" value={portalForm.email} onChange={(event) => setPortalForm({ ...portalForm, email: event.target.value })} required /></label>
+              <label>Initial password<input type="password" minLength={12} value={portalForm.password} onChange={(event) => setPortalForm({ ...portalForm, password: event.target.value })} required /></label>
+              <button disabled={creatingPortal}>{creatingPortal ? <Loader2 className="spin" size={17} /> : <KeyRound size={17} />} Create access</button>
+            </form>
+          )
+        )}
+        {editing && <div className="form">
+          <strong>Menu status: {restaurants.find(item => item.id === form.id)?.menuStatus ?? "DRAFT"}</strong>
+          <RestaurantMenusSummary menus={restaurants.find(item => item.id === form.id)?.pendingMenus?.length ? restaurants.find(item => item.id === form.id)!.pendingMenus : restaurants.find(item => item.id === form.id)?.menus ?? []} />
+          {canManageRestaurants && restaurants.find(item => item.id === form.id)?.menuStatus === "PENDING_APPROVAL" && <div className="actions">
+            {[true, false].map(approved => <button type="button" key={String(approved)} disabled={loading} onClick={async () => {
+              setLoading(true);
+              try { const updated = await apiRequest<Restaurant>(config, `/api/admin/restaurants/${form.id}/menu-review`, { method: "POST", body: JSON.stringify({ approved }) }); setForm(restaurantToForm(updated)); await load(); }
+              catch (cause) { setError(errorMessage(cause)); }
+              finally { setLoading(false); }
+            }}>{approved ? "Approve menus" : "Reject menus"}</button>)}
+          </div>}
+        </div>}
       </div>}
 
       {view === "list" && <div className="restaurantTable">
@@ -1168,6 +1222,10 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
                 <th>City</th>
                 <th>Area</th>
                 <th>Phone</th>
+                <th>Categories</th>
+                <th>Price</th>
+                <th>Menus</th>
+                <th>Portal</th>
                 <th>Google</th>
                 <th>Rating</th>
                 <th>Active</th>
@@ -1184,6 +1242,10 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
                   <td>{restaurant.cityName}</td>
                   <td>{restaurantAreaFor(restaurant)}</td>
                   <td>{restaurant.phone ?? ""}</td>
+                  <td>{restaurant.categories.join(", ") || restaurant.cuisine || "—"}</td>
+                  <td>{priceRangeLabel(restaurant.priceTier)}</td>
+                  <td>{restaurant.menus.filter((menu) => menu.partySize != null).length}/5</td>
+                  <td>{restaurant.ownerUserId ? "Linked" : "Not linked"}</td>
                   <td>
                     {restaurant.googleMapsUri ? (
                       <a href={restaurant.googleMapsUri} target="_blank" rel="noreferrer">Open Maps</a>
@@ -1217,7 +1279,7 @@ function RestaurantsPanel({ config, role }: { config: ApiConfig; role: UserRole 
               ))}
               {restaurantsByArea.length === 0 && (
                 <tr>
-                  <td className="emptyTable" colSpan={canManageRestaurants ? 8 : 7}>
+                  <td className="emptyTable" colSpan={canManageRestaurants ? 12 : 11}>
                     No restaurants found in this area.
                   </td>
                 </tr>
@@ -1262,6 +1324,7 @@ type RestaurantForm = {
   name: string;
   phone: string;
   cuisine: string;
+  categories: string[];
   priceTier: number | null;
   description: string;
   openingHours: string;
@@ -1287,6 +1350,7 @@ function emptyRestaurantForm(cityId = ""): RestaurantForm {
     name: "",
     phone: "",
     cuisine: "",
+    categories: [],
     priceTier: null,
     description: "",
     openingHours: "",
@@ -1313,6 +1377,7 @@ function restaurantToForm(restaurant: Restaurant): RestaurantForm {
     name: restaurant.name,
     phone: restaurant.phone ?? "",
     cuisine: restaurant.cuisine ?? "",
+    categories: restaurant.categories ?? [],
     priceTier: restaurant.priceTier,
     description: restaurant.description ?? "",
     openingHours: restaurant.openingHours ?? "",
@@ -1339,6 +1404,7 @@ function restaurantPayload(form: RestaurantForm) {
     name: form.name,
     phone: form.phone || null,
     cuisine: form.cuisine || null,
+    categories: form.categories,
     priceTier: form.priceTier,
     description: form.description || null,
     openingHours: form.openingHours || null,
@@ -1369,18 +1435,59 @@ function parseMenus(value: string): RestaurantMenu[] {
     if (!menu || typeof menu !== "object") {
       throw new Error("Every menu must be an object");
     }
-    const candidate = menu as { id?: unknown; entries?: unknown };
+    const candidate = menu as { id?: unknown; partySize?: unknown; discountPercentage?: unknown; priceBeforePerPerson?: number; priceAfterPerPerson?: number; sections?: unknown };
     if (candidate.id !== null && candidate.id !== undefined && typeof candidate.id !== "number") {
       throw new Error("Menu id must be a number");
     }
-    if (!candidate.entries || typeof candidate.entries !== "object" || Array.isArray(candidate.entries)) {
-      throw new Error("Menu entries must be an object");
-    }
+    if (typeof candidate.partySize !== "number" || candidate.partySize < 2 || candidate.partySize > 6) throw new Error("Menu partySize must be between 2 and 6");
+    if (typeof candidate.discountPercentage !== "number" || candidate.discountPercentage < 0 || candidate.discountPercentage > 100) throw new Error("Menu discountPercentage must be between 0 and 100");
+    if (!candidate.sections || typeof candidate.sections !== "object" || Array.isArray(candidate.sections)) throw new Error("Menu sections must be an object");
+    const sections = candidate.sections && typeof candidate.sections === "object" && !Array.isArray(candidate.sections)
+      ? Object.fromEntries(Object.entries(candidate.sections).map(([key, items]) => {
+          if (!Array.isArray(items)) throw new Error(`Menu section ${key} must be an array`);
+          return [key, items.map((item) => {
+            if (!item || typeof item !== "object") throw new Error(`Invalid item in menu section ${key}`);
+            const dish = item as { name?: unknown; description?: unknown };
+            return { name: String(dish.name ?? ""), description: dish.description == null ? null : String(dish.description) };
+          })];
+        }))
+      : {};
     return {
       id: candidate.id ?? null,
-      entries: Object.fromEntries(Object.entries(candidate.entries).map(([key, entry]) => [key, String(entry)]))
+      partySize: candidate.partySize,
+      discountPercentage: candidate.discountPercentage,
+      priceBeforePerPerson: candidate.priceBeforePerPerson ?? 0,
+      priceAfterPerPerson: candidate.priceAfterPerPerson ?? 0,
+      sections
     };
   });
+}
+
+function RestaurantMenusSummary({ menus }: { menus: RestaurantMenu[] }) {
+  const structured = [...menus].sort((left, right) => left.partySize - right.partySize);
+  return (
+    <section className="form elevated adminMenuSummary">
+      <div>
+        <div className="formTitle"><ChefHat size={17} /> Partner menus</div>
+        <div className="muted">Menus saved by the restaurant portal are shown here automatically.</div>
+      </div>
+      {structured.length === 0 ? <div className="emptyTable">No structured partner menus yet.</div> : (
+        <div className="adminMenuGrid">{structured.map((menu) => (
+          <article key={menu.partySize}>
+            <header><strong>{menu.partySize} guests</strong><span>{menu.discountPercentage ?? 0}% off</span></header>
+            <p>AED {menu.priceBeforePerPerson} → {menu.priceAfterPerPerson} per guest · Total savings: AED {((menu.priceBeforePerPerson - menu.priceAfterPerPerson) * menu.partySize).toFixed(2)}</p>
+            {Object.entries(menu.sections ?? {}).map(([section, items]) => (
+              <div className="adminMenuSection" key={section}><b>{section.toLowerCase()}</b><span>{items.map((item) => item.name).filter(Boolean).join(", ") || "No items"}</span></div>
+            ))}
+          </article>
+        ))}</div>
+      )}
+    </section>
+  );
+}
+
+function priceRangeLabel(value: number | null) {
+  return value && value >= 1 && value <= 8 ? `AED ${value * 50}` : "—";
 }
 
 function NavButton({ active, icon, label, onClick }: { active: boolean; icon: ReactNode; label: string; onClick: () => void }) {
@@ -1500,6 +1607,7 @@ function roleLabel(role: UserRole) {
     SUPER_ADMIN: "Super admin",
     MANAGER: "Manager",
     WORKER: "Worker",
+    RESTAURANT: "Restaurant",
     USER: "User"
   }[role];
 }
@@ -1512,7 +1620,7 @@ function roleFromToken(token: string): UserRole | undefined {
       realm_access?: { roles?: string[] };
     };
     const roles = payload.realm_access?.roles ?? [];
-    return (["SUPER_ADMIN", "MANAGER", "WORKER", "USER"] as UserRole[]).find((role) => roles.includes(role));
+    return (["SUPER_ADMIN", "MANAGER", "WORKER", "RESTAURANT", "USER"] as UserRole[]).find((role) => roles.includes(role));
   } catch {
     return undefined;
   }

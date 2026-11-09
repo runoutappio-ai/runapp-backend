@@ -6,6 +6,7 @@ public enum UserRole {
     SUPER_ADMIN,
     MANAGER,
     WORKER,
+    RESTAURANT,
     USER;
 
     public static UserRole from(String value) {

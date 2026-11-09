@@ -65,7 +65,7 @@ public class SecurityConfiguration {
                 "http://localhost:5175",
                 "http://127.0.0.1:5175"
         ));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Idempotency-Key"));
         configuration.setExposedHeaders(List.of("Location"));
 

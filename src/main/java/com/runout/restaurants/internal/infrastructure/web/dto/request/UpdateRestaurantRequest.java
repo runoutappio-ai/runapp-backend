@@ -16,7 +16,8 @@ public record UpdateRestaurantRequest(
         @NotBlank @Size(max = 160) String name,
         @Size(max = 40) String phone,
         @Size(max = 80) String cuisine,
-        @Min(1) @Max(4) Integer priceTier,
+        @Size(max = 12) List<@NotBlank @Size(max = 80) String> categories,
+        @Min(1) @Max(8) Integer priceTier,
         @Size(max = 500) String description,
         @Size(max = 200) String openingHours,
         List<@Size(max = 80) String> tags,
@@ -37,7 +38,17 @@ public record UpdateRestaurantRequest(
     @Builder
     public record MenuRequest(
             Long id,
-            Map<@Size(max = 120) String, @Size(max = 500) String> entries
+            @Min(2) @Max(6) Integer partySize,
+            @Min(0) @Max(100) Integer discountPercentage,
+            @NotNull @jakarta.validation.constraints.DecimalMin("0.01") java.math.BigDecimal priceBeforePerPerson,
+            @NotNull @jakarta.validation.constraints.DecimalMin("0") java.math.BigDecimal priceAfterPerPerson,
+            Map<String, List<MenuItemRequest>> sections
+    ) {
+    }
+
+    public record MenuItemRequest(
+            @NotBlank @Size(max = 120) String name,
+            @Size(max = 500) String description
     ) {
     }
 }

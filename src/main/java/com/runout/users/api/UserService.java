@@ -13,6 +13,8 @@ public interface UserService {
 
     UserSummary createStaff(RegisterUserCommand command, UserRole role);
 
+    UserSummary createRestaurantAccount(RegisterUserCommand command);
+
     UserSummary provisionAuthenticatedUser(UUID userId, String email, String displayName, String username);
 
     UserSummary requireActive(UUID userId);

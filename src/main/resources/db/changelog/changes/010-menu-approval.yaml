@@ -1,0 +1,10 @@
+databaseChangeLog:
+  - changeSet:
+      id: 010-menu-approval
+      author: runout
+      changes:
+        - addColumn:
+            tableName: restaurant
+            columns:
+              - column: { name: pending_menus, type: jsonb }
+              - column: { name: menu_status, type: varchar(30), defaultValue: DRAFT }
