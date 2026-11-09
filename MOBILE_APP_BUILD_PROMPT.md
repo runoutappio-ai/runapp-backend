@@ -13,7 +13,7 @@ Do not build, replace, redesign, or port the administration panel. The existing 
 Before changing anything, inspect these files:
 
 1. `Claude outputs/run-out-index.html`: primary visual and interaction reference for the customer app.
-2. `public-frontend/index.html`: reference for API integration, authentication, recent customer flows, Dubai areas, delayed reveal, and completed-reservation feedback.
+2. `mobile/FLOWS.md`: reference for customer flows, authentication, delayed reveal, and completed-reservation feedback.
 3. `src/main/java/com/runout/**`: authoritative backend behavior and REST contracts.
 4. `src/main/resources/application.yml`: local service configuration.
 5. `keycloak/realm/runout-realm.json`: Keycloak client, roles, redirect URIs, PKCE, and Google identity provider.
@@ -244,7 +244,7 @@ Requirements:
 - Rating from 1 to 5 is required.
 - Comment is optional and limited to 1,000 characters.
 - Include the checkbox: `Would you come back to this restaurant for another surprise menu and keep exploring what it has to offer?`
-- Rotate the ten English trust-focused feedback prompts already defined in `public-frontend/index.html`.
+- Rotate English trust-focused feedback prompts.
 - After submission, replace the action with the saved rating, optional comment, and return intent.
 - Feedback can only be submitted once; show the backend business-rule error cleanly if a duplicate is attempted.
 

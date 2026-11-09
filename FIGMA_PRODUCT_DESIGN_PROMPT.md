@@ -67,7 +67,7 @@ Inspect these sources before designing:
 7. `src/main/java/com/runout/restaurants/**`
 8. `frontend/src/App.tsx`
 9. `mobile/FLOWS.md`
-10. `Claude outputs/run-out-index.html` and `public-frontend/index.html` only as visual references
+10. `Claude outputs/run-out-index.html` only as a visual reference
 
 When documentation and code conflict, current mobile and backend code define **As Is** behavior. New product ideas must be marked **Proposed**.
 

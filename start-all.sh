@@ -6,7 +6,6 @@ ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="${ROOT_DIR}/.run/logs"
 RESTAURANT_DEMO=false
 STOP_INFRA=false
-WITH_LEGACY=true
 PIDS=()
 LABELS=()
 
@@ -15,12 +14,11 @@ usage() {
 Usage: ./start-all.sh [options]
 
 Starts PostgreSQL, Keycloak, the Spring API, staff backoffice, restaurant
-portal, the complete demo hub on port 8000, and the legacy prototype.
+portal, and the demo hub on port 8000.
 
 Options:
   --restaurant-demo  Run the restaurant portal with the populated demo login
                      (demo@runout.local / RunOutDemo2026!) on an in-memory API.
-  --no-legacy        Do not start the historical public prototype on port 5175.
   --stop-infra       Stop PostgreSQL and Keycloak when this script exits.
   -h, --help         Show this help.
 
@@ -31,7 +29,6 @@ EOF
 while (($#)); do
   case "$1" in
     --restaurant-demo) RESTAURANT_DEMO=true ;;
-    --no-legacy) WITH_LEGACY=false ;;
     --stop-infra) STOP_INFRA=true ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1" >&2; usage >&2; exit 2 ;;
@@ -190,19 +187,9 @@ else
   start_process "integrated demo hub" "${LOG_DIR}/demo-hub.log" python3 -m http.server 8000 --bind 127.0.0.1 --directory "${ROOT_DIR}/mobile/runout-web-demo"
 fi
 
-if [[ "${WITH_LEGACY}" == true ]]; then
-  if url_is_ready "http://127.0.0.1:5175"; then
-    echo "  reusing legacy public prototype already running on port 5175"
-  else
-    check_port 5175
-    start_process "legacy public prototype" "${LOG_DIR}/legacy-public.log" python3 -m http.server 5175 --bind 127.0.0.1 --directory "${ROOT_DIR}/public-frontend"
-  fi
-fi
-
 wait_for_url "staff backoffice" "http://127.0.0.1:5173" 30
 wait_for_url "restaurant portal" "http://127.0.0.1:5174" 30
 wait_for_url "integrated demo hub" "http://127.0.0.1:8000" 30
-[[ "${WITH_LEGACY}" == true ]] && wait_for_url "legacy public prototype" "http://127.0.0.1:5175" 30
 
 echo ""
 echo "Run Out is ready"
@@ -212,7 +199,6 @@ echo "  Keycloak:           http://127.0.0.1:8081"
 echo "  Staff backoffice:   http://127.0.0.1:5173"
 echo "  Restaurant portal:  http://127.0.0.1:5174"
 echo "  Complete demo hub:  http://127.0.0.1:8000"
-[[ "${WITH_LEGACY}" == true ]] && echo "  Legacy prototype:   http://127.0.0.1:5175"
 if [[ "${RESTAURANT_DEMO}" == true ]]; then
   echo ""
   echo "Restaurant demo login"

@@ -46,8 +46,7 @@ The repository currently contains:
 - React 19 / Vite 7 staff backoffice;
 - React 19 / Vite 7 restaurant partner portal;
 - Expo SDK 57 / React Native customer app for iOS, Android, and web;
-- a legacy single-file public browser prototype;
-- a self-contained four-option demo hub with Desktop, App, Strategy hub, and Presentation;
+- a self-contained demo hub with Presentation and Strategy Hub;
 - Postman, JUnit, Jest, and Maestro test assets.
 
 Default local ports:
@@ -60,7 +59,6 @@ Default local ports:
 | Expo iOS Metro script | `8082` |
 | Staff backoffice | `5173` |
 | Restaurant portal | `5174` |
-| Legacy public prototype | `5175` |
 | Integrated static demo/hub | `8000` |
 
 ## Source-of-truth hierarchy
@@ -92,7 +90,6 @@ Never silently merge strategy and implementation. State the difference and decid
 | Mobile demo API | `mobile/src/demo/server.ts` |
 | Demo hub source | `mobile/web-demo/` |
 | Committed demo snapshot | `mobile/runout-web-demo/` |
-| Legacy browser prototype | `public-frontend/index.html` |
 | API collection | `postman/` |
 
 Prefer editing source rather than generated output. `mobile/scripts/build-web-demo.mjs` exports the Expo web app into `mobile/dist/app`, copies `mobile/web-demo` around it, scans for test-login secrets, and creates a zip. If a task explicitly requires the committed `mobile/runout-web-demo/` snapshot to work immediately, keep its relevant static files synchronized with `mobile/web-demo/` without overwriting unrelated user changes.
@@ -170,8 +167,6 @@ Real reveal requires:
 
 The implementation reveals at the confirmed time, not two hours before. The mock-only demo route can preview an active restaurant without persisting an assignment.
 
-The legacy `public-frontend` violates the real architecture by selecting from a hardcoded client catalogue after payment. Treat it as visual-only.
-
 ### Cancellation and feedback
 
 - Customer cancellation is allowed only for `PAYMENT_PENDING` or `PAID`.
@@ -214,7 +209,7 @@ All API endpoints except health, Swagger/OpenAPI, registration, login, and refre
 
 The backend validates issuer and `runout-api` audience. `AuthenticatedUserHeaderFilter` strips spoofed identity headers and injects trusted subject/email/username/display-name values from the JWT.
 
-Local CORS is limited to localhost/127.0.0.1 ports 5173–5175. Do not assume production origins work.
+Local CORS is limited to localhost/127.0.0.1 ports 5173 and 5174. Do not assume production origins work.
 
 Never expose or commit `.env`, Keycloak client secrets, Google OAuth JSON, Maps keys, tokens, signing files, or payment credentials. `EXPO_PUBLIC_*` values are public bundle content and may not contain secrets.
 
@@ -243,7 +238,6 @@ docker compose up -d
 mvn spring-boot:run
 ./start-frontend.sh
 ./start-restaurant-frontend.sh
-./start-public-frontend.sh
 python3 -m http.server 8000 --directory mobile/runout-web-demo
 ```
 

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Run Out — Mystery dinners in Dubai</title>
-<meta name="description" content="Explore Run Out through the desktop story, live app, Strategy Hub or complete interactive presentation.">
+<meta name="description" content="Explore Run Out through the interactive presentation and Strategy Hub.">
 <meta name="theme-color" content="#0D0B0C">
 <link rel="icon" href="logo.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -36,9 +36,9 @@
   h1 span{color:var(--gold)}
   .lede{margin-top:14px;font-size:clamp(15px,1.4vw,18px);line-height:1.55;color:var(--muted);max-width:520px}
   .ask{margin-top:34px;font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--muted)}
-  .choices{margin-top:14px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;width:100%;max-width:1180px}
+  .choices{margin-top:14px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;width:100%;max-width:760px}
   .choice{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:10px;padding:24px;border-radius:24px;text-decoration:none;background:var(--glass);border:1px solid var(--glass-border);-webkit-backdrop-filter:blur(22px) saturate(140%);backdrop-filter:blur(22px) saturate(140%);box-shadow:0 30px 70px -40px rgba(0,0,0,.85),inset 0 1px 0 rgba(255,255,255,.06);transition:transform .45s var(--ease),border-color .3s,box-shadow .45s var(--ease);opacity:0;animation:rise .9s var(--ease) both}
-  .choice:nth-child(1){animation-delay:.25s}.choice:nth-child(2){animation-delay:.35s}.choice:nth-child(3){animation-delay:.45s}.choice:nth-child(4){animation-delay:.55s}
+  .choice:nth-child(1){animation-delay:.25s}.choice:nth-child(2){animation-delay:.35s}
   .choice:hover{transform:translateY(-4px);border-color:var(--pick-border);box-shadow:0 40px 80px -40px rgba(0,0,0,.9),0 0 0 1px rgba(235,196,108,.2)}
   .choice.suggested{border-color:var(--pick-border);background:linear-gradient(145deg,rgba(235,196,108,.12),rgba(122,40,66,.32))}
   .device{height:82px;display:flex;align-items:flex-end;margin-bottom:6px;transform:scale(.9);transform-origin:left bottom}
@@ -48,28 +48,17 @@
   .suggested .go{background:var(--gold);color:#251316;border-color:var(--gold)}
   .badge{position:absolute;top:18px;right:18px;height:26px;padding:0 10px;border-radius:999px;display:none;align-items:center;font-size:11px;font-weight:800;background:var(--pick);border:1px solid var(--pick-border);color:var(--gold)}
   .suggested .badge{display:inline-flex}
-  .note{margin-top:22px;font-size:12px;color:var(--faint)}
-  .note a{color:var(--muted)}
 
   /* tiny device drawings */
   .hubicon{position:relative;width:84px;height:62px;border-radius:10px;border:2px solid rgba(255,255,255,.55);background:linear-gradient(135deg,rgba(122,40,66,.6),rgba(235,196,108,.25));overflow:hidden}
   .hubicon::before{content:"";position:absolute;left:0;top:0;bottom:0;width:22px;background:rgba(13,11,12,.55);border-right:1.5px solid rgba(255,255,255,.3)}
   .hubicon::after{content:"";position:absolute;left:30px;top:12px;width:40px;height:6px;border-radius:3px;background:rgba(255,255,255,.7);box-shadow:0 12px 0 -1px rgba(255,255,255,.45),0 24px 0 -1px var(--gold)}
-  .laptop{position:relative;width:132px;height:86px}
-  .laptop .scr{position:absolute;left:12px;right:12px;top:0;height:74px;border-radius:8px 8px 2px 2px;border:2px solid rgba(255,255,255,.55);background:linear-gradient(135deg,rgba(122,40,66,.6),rgba(235,196,108,.25));overflow:hidden}
-  .laptop .scr::after{content:"";position:absolute;right:12px;top:8px;width:22px;height:50px;border-radius:5px;border:1.5px solid var(--gold);background:rgba(13,11,12,.6)}
-  .laptop .scr::before{content:"";position:absolute;left:10px;top:14px;width:46px;height:6px;border-radius:3px;background:rgba(255,255,255,.7);box-shadow:0 10px 0 -1px rgba(255,255,255,.45),0 20px 0 -1px var(--gold)}
-  .laptop .base{position:absolute;left:0;right:0;bottom:0;height:10px;border-radius:2px 2px 8px 8px;background:rgba(255,255,255,.55)}
-  .phone{position:relative;width:52px;height:92px;border-radius:12px;border:2px solid rgba(255,255,255,.55);background:linear-gradient(160deg,rgba(122,40,66,.6),rgba(235,196,108,.25));overflow:hidden}
-  .phone::before{content:"";position:absolute;left:50%;top:5px;width:16px;height:5px;margin-left:-8px;border-radius:3px;background:rgba(0,0,0,.6)}
-  .phone::after{content:"";position:absolute;left:8px;right:8px;bottom:10px;height:14px;border-radius:7px;background:var(--gold)}
   .presenticon{position:relative;width:110px;height:76px;border:2px solid rgba(255,255,255,.55);border-radius:9px;background:linear-gradient(145deg,rgba(122,40,66,.65),rgba(13,11,12,.7));overflow:hidden}
   .presenticon::before{content:"";position:absolute;left:12px;right:12px;top:13px;height:7px;border-radius:4px;background:var(--gold);box-shadow:0 15px 0 rgba(255,255,255,.65),0 30px 0 rgba(255,255,255,.35)}
   .presenticon::after{content:"▶";position:absolute;right:10px;bottom:8px;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--gold);color:#251316;font-size:10px;padding-left:1px}
 
   @keyframes rise{from{opacity:0;transform:translateY(20px);filter:blur(6px)}to{opacity:1;transform:none;filter:none}}
   .fade{opacity:0;animation:rise .9s var(--ease) both}
-  @media (max-width:900px){.choices{grid-template-columns:repeat(2,minmax(0,1fr))}}
   @media (max-width:620px){.choices{grid-template-columns:1fr}.choice{padding:20px}.device{height:auto}}
   @media (prefers-reduced-motion: reduce){.ambient img,.choice,.fade{animation:none;opacity:1}}
 </style>
@@ -80,22 +69,15 @@
   <img class="logo fade" src="logo.png" alt="Run Out">
   <p class="eyebrow fade" style="animation-delay:.05s">Run Out · Dubai</p>
   <h1 class="fade" style="animation-delay:.1s">A mystery dinner,<br><span>sealed</span> until the night.</h1>
-  <p class="lede fade" style="animation-delay:.15s">Explore the idea, use the app, inspect the full strategy or present the complete concept.</p>
+  <p class="lede fade" style="animation-delay:.15s">Explore the Run Out concept in the interactive presentation or dig into the strategy.</p>
   <p class="ask fade" style="animation-delay:.2s">What would you like to open?</p>
   <div class="choices">
-    <a class="choice" id="laptop" href="laptop/">
-      <span class="badge">Best for this screen</span>
-      <span class="device" aria-hidden="true"><span class="laptop"><span class="scr"></span><span class="base"></span></span></span>
-      <strong>Desktop</strong>
-      <p>The original restaurant-and-guest story, followed by the app inside an interactive phone mockup.</p>
-      <span class="go">Open desktop story →</span>
-    </a>
-    <a class="choice" id="app" href="app/?view=laptop">
-      <span class="badge">Best for this screen</span>
-      <span class="device" aria-hidden="true"><span class="phone"></span></span>
-      <strong>App</strong>
-      <p>Use the Run Out guest app directly: request, pay, receive the invitation and reveal the menu.</p>
-      <span class="go">Open live app →</span>
+    <a class="choice suggested" id="presentation" href="presentation/">
+      <span class="badge">Recommended</span>
+      <span class="device" aria-hidden="true"><span class="presenticon"></span></span>
+      <strong>Presentation</strong>
+      <p>Present the complete idea as a guided, interactive story with product, growth, finance and roadmap.</p>
+      <span class="go">Start presentation →</span>
     </a>
     <a class="choice" id="hub" href="strategy-hub/">
       <span class="device" aria-hidden="true"><span class="hubicon"></span></span>
@@ -103,21 +85,7 @@
       <p>Vision, business and financial model, investment, operations and next steps — internal.</p>
       <span class="go">Open strategy hub →</span>
     </a>
-    <a class="choice" id="presentation" href="presentation/">
-      <span class="badge">Recommended</span>
-      <span class="device" aria-hidden="true"><span class="presenticon"></span></span>
-      <strong>Presentation</strong>
-      <p>Present the complete idea as a guided, interactive story with product, growth, finance and roadmap.</p>
-      <span class="go">Start presentation →</span>
-    </a>
   </div>
-  <p class="note fade" style="animation-delay:.5s">You can switch between versions at any time.</p>
 </main>
-<script>
-  // Suggest the version that suits this screen (the visitor still chooses).
-  var small = Math.min(window.innerWidth, window.innerHeight) < 600 || window.matchMedia('(pointer: coarse) and (max-width: 900px)').matches;
-  document.getElementById(small ? 'app' : 'presentation').classList.add('suggested');
-  if (small) document.querySelector('.choices').insertBefore(document.getElementById('app'), document.getElementById('laptop'));
-</script>
 </body>
 </html>

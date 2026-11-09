@@ -2,7 +2,7 @@
 
 Run Out is a Dubai-first mystery restaurant reservation product. A guest chooses the practical constraints of a night out—party size, date and time, location radius, budget, mood, cuisine exclusions, and dietary needs—then pays to seal the request. Run Out operations assigns and confirms a suitable restaurant. The restaurant and menu remain hidden until the backend authorizes the reveal.
 
-This repository contains the complete current prototype: the Spring Boot API, PostgreSQL schema, Keycloak realm, staff backoffice, Expo customer app, static browser prototypes, an interactive strategy/demo hub, and Postman/E2E test assets.
+This repository contains the Spring Boot API, PostgreSQL schema, Keycloak realm, staff backoffice, Expo customer app, an interactive presentation and strategy hub, and Postman/E2E test assets.
 
 > **Implementation status:** this is a development prototype, not a production payment or restaurant-booking system. Payments, Apple Pay, and Google Pay are simulated; restaurant assignment is a manual operations flow; notifications are local/log-only; several launch requirements are listed under [Known gaps and production blockers](#known-gaps-and-production-blockers).
 
@@ -28,8 +28,7 @@ This repository contains the complete current prototype: the Spring Boot API, Po
 
 ```text
 Customer
-  ├─ Expo app (iOS / Android / web)
-  └─ Legacy browser prototype
+  └─ Expo app (iOS / Android / web)
           │
           │ HTTPS + Bearer JWT
           ▼
@@ -63,8 +62,7 @@ Staff backoffice ──► API ──► manual assignment / restaurant confirma
 | PostgreSQL | `localhost:5432` | Application database |
 | React backoffice | `http://localhost:5173` | Staff operations and restaurant management |
 | Restaurant portal | `http://localhost:5174` | Partner profile, categories, price range, and menus |
-| Legacy public prototype | `http://localhost:5175` | Browser-only customer prototype |
-| Integrated demo hub | `http://localhost:8000` | Desktop story, app demo, strategy hub, and presentation |
+| Integrated demo hub | `http://localhost:8000` | Presentation and Strategy Hub |
 
 Only PostgreSQL and Keycloak run in Docker. The API and UIs are started separately during development.
 
@@ -85,17 +83,16 @@ Only PostgreSQL and Keycloak run in Docker. The API and UIs are started separate
 │   ├── src/features/               booking, reservation, profile, feedback UI
 │   ├── src/demo/server.ts          in-browser API used only by the static demo
 │   ├── e2e/                        Maestro journeys
-│   ├── web-demo/                   source for the four-option demo/presentation hub
+│   ├── web-demo/                   source for the presentation and strategy hub
 │   ├── runout-web-demo/            committed generated/static demo snapshot
 │   ├── scripts/build-web-demo.mjs  builds and packages the hosted demo
 │   ├── FLOWS.md                    detailed mobile product/QA roadmap
 │   └── README.md                   mobile-specific setup and release notes
-├── public-frontend/                legacy single-file browser prototype
 ├── keycloak/realm/                 importable local `runout` realm
 ├── postman/                        executable local API collection and environment
 ├── compose.yml                     PostgreSQL + Keycloak development stack
 ├── start-frontend.sh               starts the React backoffice
-└── start-public-frontend.sh        starts the legacy prototype
+└── start-all.sh                    starts the local stack
 ```
 
 `Claude outputs/`, the root design prompts, and some standalone HTML files are historical/design artifacts. They are not runtime dependencies. Generated directories such as `target/`, `frontend/dist/`, and `mobile/dist/` are build output, not source of truth.
@@ -110,7 +107,7 @@ From the repository root:
 ./start-all.sh
 ```
 
-This starts PostgreSQL, Keycloak, the Spring API, staff backoffice, restaurant portal, the complete port-8000 demo hub, and the legacy public prototype. Press `Ctrl+C` to stop the application processes; Docker infrastructure remains running so the next startup is faster.
+This starts PostgreSQL, Keycloak, the Spring API, staff backoffice, restaurant portal, and the demo hub on port 8000. Press `Ctrl+C` to stop the application processes. Docker infrastructure remains running for the next startup.
 
 To include the populated restaurant login instead of connecting that portal to the real backend:
 
@@ -118,7 +115,7 @@ To include the populated restaurant login instead of connecting that portal to t
 ./start-all.sh --restaurant-demo
 ```
 
-The demo credentials are `demo@runout.local` / `RunOutDemo2026!`. Run `./start-all.sh --help` for options including automatic Docker shutdown and excluding the legacy prototype. Logs are written under the ignored `.run/logs/` directory.
+The demo credentials are `demo@runout.local` / `RunOutDemo2026!`. Run `./start-all.sh --help` for options including automatic Docker shutdown. Logs are written under the ignored `.run/logs/` directory.
 
 ### Prerequisites
 
@@ -189,7 +186,7 @@ npm run web       # browser development view
 
 On a physical device, `localhost` refers to the phone. Set `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_KEYCLOAK_URL` to the development computer's LAN address and keep both devices on the same network.
 
-### 6. Open the complete four-option demo on port 8000
+### 6. Open the demo hub on port 8000
 
 To serve the committed snapshot:
 
@@ -199,10 +196,8 @@ python3 -m http.server 8000 --directory mobile/runout-web-demo
 
 Open `http://localhost:8000`. It links to:
 
-- **Desktop** — the desktop product story.
-- **App** — the Expo web app inside its phone/laptop presentation frame.
-- **Strategy hub** — business model, operations, financial model, and supporting strategy.
 - **Presentation** — the interactive pitch/story presentation.
+- **Strategy Hub** — business model, operations, financial model, and supporting strategy.
 
 To rebuild the self-contained static demo first:
 
@@ -213,14 +208,6 @@ python3 -m http.server 8000 --directory dist
 ```
 
 The build enables `EXPO_PUBLIC_DEMO_MODE=true`, embeds an in-browser mock API, removes development test-login values, scans the output for those values, and creates `mobile/runout-web-demo.zip`. The static demo does not need Spring Boot, PostgreSQL, or Keycloak.
-
-### Optional: legacy browser prototype
-
-```bash
-./start-public-frontend.sh
-```
-
-Open `http://localhost:5175`. This is a historical prototype with important behavioral differences; see [Browser prototypes and demo hub](#browser-prototypes-and-demo-hub).
 
 ### Local staff accounts
 
@@ -547,15 +534,9 @@ The Vite proxy also maps `/api` to port 8080, although the current application u
 
 ### Integrated static demo
 
-`mobile/web-demo/` is the editable source for the four-option landing page and its static stories. `npm run build:web-demo` exports the Expo app to `/app/`, copies the static hub around it, and produces a deployable zip.
+`mobile/web-demo/` is the editable source for the Presentation and Strategy Hub landing page. `npm run build:web-demo` exports the Expo app to `/app/` for the demo links inside Presentation, copies the static hub around it, and produces a deployable zip.
 
 In demo mode, every app API call is answered by `mobile/src/demo/server.ts`. It creates demo users and seeded reservations in browser `localStorage`, simulates network latency, captures mock payment, and permits the reveal animation. Demo data is isolated from the real backend.
-
-### Legacy public frontend
-
-`public-frontend/index.html` is an older single-file browser prototype. It can authenticate against Keycloak/backend, but its post-payment restaurant selection and reveal use a hardcoded client-side restaurant catalogue rather than the backend reveal contract. It stores tokens in browser `localStorage` and currently contains a non-local Keycloak tunnel URL.
-
-Treat it as a visual prototype only. It is not the authoritative customer client and must not be used to validate reveal privacy, real matching, or payments.
 
 ## Database and persistence
 
@@ -637,9 +618,9 @@ Every `EXPO_PUBLIC_*` value is embedded in the client bundle and must be treated
 
 ### CORS and redirect URIs
 
-The backend currently permits browser origins on localhost ports 5173, 5174, and 5175 only. Production origins require an explicit configuration change.
+The backend currently permits browser origins on localhost and 127.0.0.1 ports 5173 and 5174. Production origins require an explicit configuration change.
 
-The native Keycloak redirect is `runout://oauth/callback`. The imported `runout-mobile` client also includes local 5175 redirects for the legacy prototype. Production HTTPS origins, reverse-proxy headers, and Google broker callback URLs must be configured consistently in Keycloak and the identity provider console.
+The native Keycloak redirect is `runout://oauth/callback`. Production HTTPS origins, reverse-proxy headers, and Google broker callback URLs must be configured consistently in Keycloak and the identity provider console.
 
 ## Testing and verification
 
@@ -724,7 +705,7 @@ The distinction between UI intent and backend capability is important:
 8. **Notifications:** the app schedules local reminders and the backend listener logs; there is no APNs/FCM token registry, delivery tracking, email, SMS, or WhatsApp integration.
 9. **Authentication completeness:** server logout does not revoke tokens; Apple sign-in, account deletion, email-verification UX, and a complete reset-password UX are launch work.
 10. **Backoffice security:** tokens are in localStorage, the API URL is hardcoded, refresh is absent, staff MFA/audit history is absent, and CORS is local-only.
-11. **Restaurant privacy:** the Expo app follows the reveal endpoint; the legacy browser prototype does not and must remain a demo.
+11. **Restaurant privacy:** customer clients must use the reveal endpoint to determine when restaurant details become visible.
 12. **Experiences module:** persistence/domain code exists but has no active controller or customer journey.
 13. **Production infrastructure:** no production Compose/Kubernetes/cloud database setup, CI pipeline, secrets manager, observability stack, backups, rate limiting, or deployment runbook is included.
 14. **Legal/release:** publish privacy/terms, configure final store identifiers/signing, complete store disclosures, and review Apple login requirements.
@@ -762,7 +743,7 @@ Set `GOOGLE_MAPS_API_KEY` in the backend process, enable the required Places and
 
 For the real flow, operations must confirm an active restaurant and a confirmed time, then that time must arrive. For local animation testing, keep `PAYMENT_PROVIDER=mock`, leave `RUNOUT_DEMO_SKIP_WAIT_ENABLED=true`, and enable `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT=true` in the mobile development environment.
 
-### Port 8000 does not show all four options
+### Port 8000 does not show Presentation and Strategy Hub
 
 Serve the directory containing the hub `index.html`, not the repository root:
 

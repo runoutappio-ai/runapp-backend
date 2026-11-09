@@ -63,13 +63,7 @@
       "directAccessGrantsEnabled": false,
       "redirectUris": [
         "runout://oauth/callback",
-        "exp://127.0.0.1:*/*",
-        "http://localhost:5175/*",
-        "http://127.0.0.1:5175/*"
-      ],
-      "webOrigins": [
-        "http://localhost:5175",
-        "http://127.0.0.1:5175"
+        "exp://127.0.0.1:*/*"
       ],
       "protocolMappers": [
         {
