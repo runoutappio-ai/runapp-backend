@@ -8,11 +8,13 @@ import com.runout.restaurants.api.RestaurantService;
 import com.runout.users.api.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
@@ -22,7 +24,8 @@ class ReservationApplicationService implements ReservationService {
 
     private final UserService users;
     private final RestaurantService restaurants;
-    private final PaymentGateway paymentGateway;
+    private final Optional<PaymentGateway> paymentGateway;
+    private final ReservationPayments reservationPayments;
     private final ApplicationEventPublisher events;
     private final ReservationRepository reservationRepository;
 
@@ -86,11 +89,17 @@ class ReservationApplicationService implements ReservationService {
     @Override
     @Transactional(noRollbackFor = ResponseStatusException.class)
     public ReservationSummary pay(PayReservationCommand command) {
+        var gateway = paymentGateway.orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Use the configured checkout provider to pay this reservation"));
         users.findByUserId(command.userId());
-        var reservation = reservationRepository.findByIdAndUserId(command.reservationId(), command.userId()).orElseThrow();
+        var reservation = reservationRepository.lockForUser(command.reservationId(), command.userId()).orElseThrow();
+        if (reservation.getCheckoutProvider() != null
+                || reservation.getStatus() != ReservationStatus.PAYMENT_PENDING) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Reservation cannot be paid using this method");
+        }
 
         try {
-            var payment = paymentGateway.capture(ReservationApplicationMapper.toCapturePaymentCommand(reservation, command));
+            var payment = gateway.capture(ReservationApplicationMapper.toCapturePaymentCommand(reservation, command));
             reservation.markPaid(payment.reference(), payment.status());
         } catch (ResponseStatusException error) {
             reservation.markPaymentFailed(error.getStatusCode().toString());
@@ -103,7 +112,8 @@ class ReservationApplicationService implements ReservationService {
     @Override
     public void cancel(UUID reservationId, UUID userId) {
         users.findByUserId(userId);
-        var reservation = reservationRepository.findByIdAndUserId(reservationId, userId).orElseThrow();
+        var reservation = reservationRepository.lockForUser(reservationId, userId).orElseThrow();
+        reservationPayments.closePendingAttempts(reservation);
         reservation.cancel();
     }
 

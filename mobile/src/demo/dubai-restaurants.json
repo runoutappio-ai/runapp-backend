@@ -1,0 +1,92 @@
+{
+  "Downtown Dubai": {
+    "latitude": 25.1972, "longitude": 55.2744,
+    "restaurants": [
+      {"name":"Lantern & Lime","cuisine":"Thai","price":75,"tags":["Casual","Vegan","Dairy-free"]},
+      {"name":"Copper Fig","cuisine":"Middle Eastern","price":100,"tags":["Casual","Date Night","Halal","Shisha"]},
+      {"name":"Velvet Juniper","cuisine":"French","price":200,"tags":["Date Night","Dress to Impress","Licensed venue","Gluten-free"]},
+      {"name":"Mirage Table","cuisine":"Mediterranean","price":300,"tags":["Birthday","Dress to Impress","Licensed venue","Vegetarian"]}
+    ]
+  },
+  "DIFC": {
+    "latitude": 25.2118, "longitude": 55.2796,
+    "restaurants": [
+      {"name":"Cedar & Char","cuisine":"Steakhouse","price":250,"tags":["Guys’ Night","Dress to Impress","Licensed venue","Gluten-free"]},
+      {"name":"Paper Crane","cuisine":"Japanese","price":150,"tags":["Casual","Date Night","Licensed venue","Dairy-free"]},
+      {"name":"Olive Ledger","cuisine":"Greek","price":100,"tags":["Casual","Ladies’ Night","Vegetarian"]},
+      {"name":"Noon Garden","cuisine":"Vegan","price":125,"tags":["Casual","Ladies’ Night","Vegetarian","Vegan","Dairy-free","Nut-free"]}
+    ]
+  },
+  "Business Bay": {
+    "latitude": 25.186, "longitude": 55.263,
+    "restaurants": [
+      {"name":"Canal Ember","cuisine":"BBQ","price":100,"tags":["Casual","Guys’ Night","Halal","Shisha"]},
+      {"name":"Apricot Social","cuisine":"Indian","price":75,"tags":["Casual","Birthday","Halal","Vegetarian"]},
+      {"name":"Blue Salt","cuisine":"Seafood","price":200,"tags":["Date Night","Dress to Impress","Licensed venue","Gluten-free","Dairy-free"]},
+      {"name":"Mesa Moon","cuisine":"Mexican","price":125,"tags":["Casual","Birthday","Extreme","Licensed venue"]}
+    ]
+  },
+  "Dubai Marina": {
+    "latitude": 25.0805, "longitude": 55.1403,
+    "restaurants": [
+      {"name":"Pier & Pepper","cuisine":"Seafood","price":150,"tags":["Casual","Date Night","Licensed venue","Dairy-free"]},
+      {"name":"Saffron Sail","cuisine":"Indian","price":100,"tags":["Casual","Birthday","Halal","Vegetarian","Gluten-free"]},
+      {"name":"Golden Wake","cuisine":"Italian","price":175,"tags":["Date Night","Ladies’ Night","Licensed venue","Vegetarian"]},
+      {"name":"Marina Smokehouse","cuisine":"American","price":125,"tags":["Casual","Guys’ Night","Licensed venue","Nut-free"]}
+    ]
+  },
+  "JBR": {
+    "latitude": 25.078, "longitude": 55.133,
+    "restaurants": [
+      {"name":"Dune & Dill","cuisine":"Greek","price":75,"tags":["Casual","Ladies’ Night","Vegetarian","Dairy-free"]},
+      {"name":"Firewave","cuisine":"Korean","price":150,"tags":["Guys’ Night","Extreme","Licensed venue"]},
+      {"name":"Sunset Courtyard","cuisine":"Middle Eastern","price":100,"tags":["Casual","Date Night","Halal","Shisha"]},
+      {"name":"Coral Lattice","cuisine":"French","price":350,"tags":["Date Night","Dress to Impress","Licensed venue","Gluten-free"]}
+    ]
+  },
+  "Palm Jumeirah": {
+    "latitude": 25.1124, "longitude": 55.139,
+    "restaurants": [
+      {"name":"Tideglass","cuisine":"Seafood","price":400,"tags":["Date Night","Dress to Impress","Licensed venue","Gluten-free"]},
+      {"name":"Palm & Petal","cuisine":"Mediterranean","price":250,"tags":["Birthday","Ladies’ Night","Licensed venue","Vegan","Vegetarian"]},
+      {"name":"Atlas Smoke","cuisine":"Middle Eastern","price":175,"tags":["Date Night","Guys’ Night","Halal","Shisha","Gluten-free"]},
+      {"name":"Night Bloom","cuisine":"Japanese","price":300,"tags":["Extreme","Dress to Impress","Licensed venue","Dairy-free"]}
+    ]
+  },
+  "Jumeirah": {
+    "latitude": 25.2048, "longitude": 55.24,
+    "restaurants": [
+      {"name":"Seabreeze Kitchen","cuisine":"Vegan","price":75,"tags":["Casual","Vegan","Vegetarian","Dairy-free","Gluten-free"]},
+      {"name":"Lemon Veranda","cuisine":"Italian","price":100,"tags":["Casual","Date Night","Vegetarian"]},
+      {"name":"Clove Coast","cuisine":"Thai","price":125,"tags":["Casual","Extreme","Halal","Dairy-free"]},
+      {"name":"Silver Pavilion","cuisine":"Chinese","price":150,"tags":["Birthday","Dress to Impress","Licensed venue","Nut-free"]}
+    ]
+  },
+  "Dubai Hills": {
+    "latitude": 25.112, "longitude": 55.246,
+    "restaurants": [
+      {"name":"Honey & Hearth","cuisine":"American","price":50,"tags":["Casual","Birthday","Nut-free"]},
+      {"name":"Garden Kiln","cuisine":"Indian","price":75,"tags":["Casual","Vegetarian","Vegan","Halal"]},
+      {"name":"Cypress Room","cuisine":"Mediterranean","price":125,"tags":["Casual","Date Night","Halal","Shisha","Gluten-free"]},
+      {"name":"Maple Cut","cuisine":"Steakhouse","price":225,"tags":["Guys’ Night","Birthday","Licensed venue","Gluten-free"]}
+    ]
+  },
+  "Deira": {
+    "latitude": 25.2697, "longitude": 55.3095,
+    "restaurants": [
+      {"name":"Spice Weave","cuisine":"Indian","price":50,"tags":["Casual","Halal","Vegetarian","Vegan"]},
+      {"name":"Old Souk Skillet","cuisine":"Middle Eastern","price":75,"tags":["Casual","Guys’ Night","Halal","Shisha"]},
+      {"name":"Ginger Quay","cuisine":"Chinese","price":100,"tags":["Casual","Birthday","Dairy-free","Nut-free"]},
+      {"name":"Harbour Torch","cuisine":"BBQ","price":125,"tags":["Extreme","Guys’ Night","Halal","Gluten-free"]}
+    ]
+  },
+  "City Walk": {
+    "latitude": 25.207, "longitude": 55.262,
+    "restaurants": [
+      {"name":"Rose & Rye","cuisine":"French","price":150,"tags":["Date Night","Ladies’ Night","Licensed venue","Vegetarian"]},
+      {"name":"Basil Arcade","cuisine":"Italian","price":100,"tags":["Casual","Birthday","Halal","Vegetarian"]},
+      {"name":"Prickly Pear","cuisine":"Mexican","price":125,"tags":["Casual","Extreme","Licensed venue","Gluten-free","Dairy-free"]},
+      {"name":"Violet Room","cuisine":"Korean","price":175,"tags":["Ladies’ Night","Extreme","Licensed venue","Dairy-free"]}
+    ]
+  }
+}

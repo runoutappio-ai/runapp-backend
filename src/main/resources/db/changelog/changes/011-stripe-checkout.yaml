@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 011-stripe-checkout
+      author: runout
+      changes:
+        - addColumn:
+            tableName: reservation
+            columns:
+              - column: { name: stripe_checkout_session_id, type: varchar(255) }
+        - addUniqueConstraint:
+            tableName: reservation
+            columnNames: stripe_checkout_session_id
+            constraintName: uk_reservation_stripe_checkout_session

@@ -35,9 +35,13 @@ springdoc:
     operations-sorter: method
 runout:
   demo:
-    skip-wait-enabled: ${RUNOUT_DEMO_SKIP_WAIT_ENABLED:true}
+    skip-wait-enabled: ${RUNOUT_DEMO_SKIP_WAIT_ENABLED:auto}
   payments:
     provider: ${PAYMENT_PROVIDER:mock}
+    stripe:
+      secret-key: ${STRIPE_SECRET_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+      return-url: ${STRIPE_CHECKOUT_RETURN_URL:http://localhost:8080/api/v1/stripe/return}
   google:
     maps:
       base-url: ${GOOGLE_MAPS_BASE_URL:https://places.googleapis.com}

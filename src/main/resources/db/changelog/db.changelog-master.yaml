@@ -19,3 +19,9 @@ databaseChangeLog:
       file: db/changelog/changes/009-restaurant-parking.yaml
   - include:
       file: db/changelog/changes/010-menu-approval.yaml
+  - include:
+      file: db/changelog/changes/011-stripe-checkout.yaml
+  - include:
+      file: db/changelog/changes/012-stripe-payment-intent.yaml
+  - include:
+      file: db/changelog/changes/013-checkout-provider.yaml

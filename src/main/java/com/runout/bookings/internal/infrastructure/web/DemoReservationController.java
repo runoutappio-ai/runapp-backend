@@ -6,8 +6,9 @@ import com.runout.bookings.internal.infrastructure.web.mapper.ReservationMapper;
 import com.runout.restaurants.api.RestaurantMenuSummary;
 import com.runout.restaurants.api.RestaurantMenuItemSummary;
 import com.runout.restaurants.api.RestaurantService;
-import lombok.RequiredArgsConstructor;
+import com.runout.restaurants.api.RestaurantSummary;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,29 +27,59 @@ import static com.runout.shared.AuthenticatedUserHeaders.USER_ID;
 
 @RestController
 @RequestMapping("/api/v1/reservations")
-@ConditionalOnExpression("${runout.demo.skip-wait-enabled:false} and '${runout.payments.provider:mock}' == 'mock'")
-@RequiredArgsConstructor
+@ConditionalOnExpression("""
+        '${runout.demo.skip-wait-enabled:auto}' == 'true' or
+        ('${runout.demo.skip-wait-enabled:auto}' == 'auto' and '${runout.payments.provider:mock}' == 'mock')
+        """)
 @Slf4j
 class DemoReservationController {
 
     private static final Set<String> DEMO_REVEALABLE_STATUSES = Set.of(
             "PAID", "ASSIGNED", "IN_PROGRESS", "CONFIRMED", "COMPLETED"
     );
+    private static final RestaurantSummary STRIPE_DEMO_RESTAURANT = RestaurantSummary.builder()
+            .id(new UUID(0, 0))
+            .name("Run Out Demo Restaurant")
+            .active(true)
+            .cuisine("Contemporary")
+            .description("Sample restaurant for the reveal preview.")
+            .cityName("Dubai")
+            .build();
 
     private final ReservationService reservations;
     private final RestaurantService restaurants;
+    private final boolean mockPayments;
+
+    DemoReservationController(ReservationService reservations, RestaurantService restaurants,
+                              @Value("${runout.payments.provider:mock}") String provider) {
+        this.reservations = reservations;
+        this.restaurants = restaurants;
+        this.mockPayments = "mock".equals(provider);
+    }
 
     @PostMapping("/{id}/demo-reveal")
     ReservationRevealResponse revealNow(@RequestHeader(USER_ID) UUID userId, @PathVariable UUID id) {
         var reservation = reservations.findByIdForUser(id, userId);
-        if (!DEMO_REVEALABLE_STATUSES.contains(reservation.status())) {
+        if (!"CAPTURED".equals(reservation.paymentStatus()) || !DEMO_REVEALABLE_STATUSES.contains(reservation.status())) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Complete the demo payment before previewing the envelope reveal."
+                    "Complete the payment before previewing the envelope reveal."
             );
         }
 
         log.warn("Skipping reveal wait in demo mode for reservation id={} userId={}", id, userId);
+        var response = ReservationRevealResponse.builder().available(true).status(reservation.status());
+        var details = ReservationMapper.toResponse(reservation);
+        if (!mockPayments) {
+            return response
+                    .reservation(details.toBuilder()
+                            .restaurantId(null)
+                            .externalReference(null)
+                            .build())
+                    .restaurant(STRIPE_DEMO_RESTAURANT)
+                    .menu(demoMenu(reservation.partySize()))
+                    .build();
+        }
         var restaurant = reservation.restaurantId() == null
                 ? restaurants.findAllActive().stream()
                         .filter(candidate -> !candidate.menus().isEmpty())
@@ -63,10 +94,8 @@ class DemoReservationController {
         if (menu.isEmpty()) {
             menu = demoMenu(reservation.partySize());
         }
-        return ReservationRevealResponse.builder()
-                .available(true)
-                .status(reservation.status())
-                .reservation(ReservationMapper.toResponse(reservation))
+        return response
+                .reservation(details)
                 .restaurant(restaurant.publicView())
                 .menu(menu)
                 .build();

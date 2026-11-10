@@ -4,6 +4,13 @@ export type PaymentProvider = {
   createPaymentMethodToken: (method?: 'card' | 'apple-pay' | 'google-pay') => Promise<string>;
 };
 
+export const RESERVATION_FEE_PERCENT = 10;
+
+export function reservationFeeFor(tableBudget: number) {
+  const budgetInFils = Math.round(tableBudget * 100);
+  return Math.round(budgetInFils * RESERVATION_FEE_PERCENT / 100) / 100;
+}
+
 export const mockPaymentProvider: PaymentProvider = {
   name: 'Demo payment',
   isDemo: true,

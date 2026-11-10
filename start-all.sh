@@ -4,6 +4,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 LOG_DIR="${ROOT_DIR}/.run/logs"
+STRIPE_DIR="${ROOT_DIR}/.run/stripe"
+STRIPE_LISTENER_LOG=""
 RESTAURANT_DEMO=false
 STOP_INFRA=false
 PIDS=()
@@ -15,6 +17,7 @@ Usage: ./start-all.sh [options]
 
 Starts PostgreSQL, Keycloak, the Spring API, staff backoffice, restaurant
 portal, and the demo hub on port 8000.
+Uses Stripe sandbox for payments when .run/stripe/backend.key is configured.
 
 Options:
   --restaurant-demo  Run the restaurant portal with the populated demo login
@@ -83,6 +86,9 @@ cleanup() {
   else
     echo "  PostgreSQL and Keycloak remain running (use docker compose down to stop them)."
   fi
+  if [[ -n "${STRIPE_LISTENER_LOG}" ]]; then
+    rm -f -- "${STRIPE_LISTENER_LOG}"
+  fi
 }
 trap cleanup EXIT INT TERM
 
@@ -120,6 +126,44 @@ url_is_ready() {
   curl --silent --fail --max-time 2 "$1" >/dev/null 2>&1
 }
 
+configure_stripe() {
+  if [[ -z "${STRIPE_SECRET_KEY:-}" && -s "${STRIPE_DIR}/backend.key" ]]; then
+    STRIPE_SECRET_KEY="$(<"${STRIPE_DIR}/backend.key")"
+  fi
+  case "${STRIPE_SECRET_KEY:-}" in
+    sk_test_*|rk_test_*) ;;
+    *) echo "Error: Stripe requires a test key in .run/stripe/backend.key or STRIPE_SECRET_KEY." >&2; return 1 ;;
+  esac
+
+  if [[ -z "${STRIPE_CHECKOUT_RETURN_URL:-}" && -s "${STRIPE_DIR}/return-url" ]]; then
+    STRIPE_CHECKOUT_RETURN_URL="$(<"${STRIPE_DIR}/return-url")"
+  fi
+  if [[ -n "${STRIPE_WEBHOOK_SECRET:-}" ]]; then
+    return
+  fi
+
+  require_command stripe
+  mkdir -p "${STRIPE_DIR}"
+  STRIPE_LISTENER_LOG="$(mktemp "${STRIPE_DIR}/listener.XXXXXX")"
+  start_process "Stripe sandbox webhook" "${STRIPE_LISTENER_LOG}" stripe listen \
+    --events checkout.session.completed,checkout.session.async_payment_succeeded,payment_intent.succeeded \
+    --forward-to http://127.0.0.1:8080/api/v1/payments/stripe/webhook
+  local listener_pid="${PIDS[${#PIDS[@]}-1]}"
+  local attempt
+  for ((attempt=1; attempt<=30; attempt++)); do
+    if ! kill -0 "${listener_pid}" 2>/dev/null; then
+      break
+    fi
+    STRIPE_WEBHOOK_SECRET="$(sed -nE 's/.*(whsec_[[:alnum:]_]+).*/\1/p' "${STRIPE_LISTENER_LOG}" | head -n 1)"
+    if [[ -n "${STRIPE_WEBHOOK_SECRET}" ]]; then
+      return
+    fi
+    sleep 1
+  done
+  echo "Error: Stripe webhook did not start. Run stripe login and select the Run Out sandbox." >&2
+  return 1
+}
+
 mkdir -p "${LOG_DIR}"
 
 if ! docker info >/dev/null 2>&1; then
@@ -139,17 +183,38 @@ docker compose -f "${ROOT_DIR}/compose.yml" up -d
 wait_for_url "Keycloak" "http://127.0.0.1:8081/realms/runout/.well-known/openid-configuration" 120
 
 echo "Starting application services..."
+if [[ -z "${PAYMENT_PROVIDER:-}" ]]; then
+  PAYMENT_PROVIDER=mock
+  if [[ -s "${STRIPE_DIR}/backend.key" ]]; then
+    PAYMENT_PROVIDER=stripe
+  fi
+fi
+export PAYMENT_PROVIDER
+export RUNOUT_DEMO_SKIP_WAIT_ENABLED="${RUNOUT_DEMO_SKIP_WAIT_ENABLED:-true}"
+STRIPE_RETURN="http://127.0.0.1:8080/api/v1/stripe/return"
 if url_is_ready "http://127.0.0.1:8080/actuator/health"; then
+  if [[ "${PAYMENT_PROVIDER}" == stripe ]] && ! url_is_ready "${STRIPE_RETURN}"; then
+    echo "Error: port 8080 is running without Stripe. Stop that backend and run ./start-all.sh again." >&2
+    exit 1
+  fi
   echo "  reusing Spring API already running on port 8080"
 else
   check_port 8080
+  if [[ "${PAYMENT_PROVIDER}" == stripe ]]; then
+    configure_stripe
+    export STRIPE_CHECKOUT_RETURN_URL STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET
+  fi
   start_process "Spring API" "${LOG_DIR}/backend.log" bash -c "cd '${ROOT_DIR}' && exec mvn spring-boot:run"
   BACKEND_PID="${PIDS[${#PIDS[@]}-1]}"
   wait_for_url "Spring API" "http://127.0.0.1:8080/actuator/health" 120 "${BACKEND_PID}" || {
     tail -n 80 "${LOG_DIR}/backend.log" >&2
     exit 1
   }
+  if [[ "${PAYMENT_PROVIDER}" == stripe ]]; then
+    wait_for_url "Stripe return page" "${STRIPE_RETURN}" 10 "${BACKEND_PID}"
+  fi
 fi
+unset STRIPE_SECRET_KEY STRIPE_WEBHOOK_SECRET
 
 if url_is_ready "http://127.0.0.1:5173"; then
   echo "  reusing staff backoffice already running on port 5173"

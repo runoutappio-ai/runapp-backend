@@ -28,7 +28,7 @@ export function ReservationListRow({ item, last = false }: { item: Reservation; 
         <Text numberOfLines={1} style={[styles.meta, { color: themeColors.muted }]}>{detail}</Text>
       </View>
       <View style={styles.end}>
-        <Text style={[styles.amount, { color: themeColors.text }]}>AED {item.totalBudget.amount}</Text>
+        <Text style={[styles.amount, { color: themeColors.text }]}>AED {item.totalBudget.amount} budget</Text>
         {completed ? item.feedback ? (
           <View style={styles.rating}><Star fill={colors.gold} color={colors.gold} size={11} /><Text style={styles.ratingText}>{item.feedback.rating}/5 · Feedback submitted</Text></View>
         ) : <Text style={styles.action}>Leave feedback</Text> : (

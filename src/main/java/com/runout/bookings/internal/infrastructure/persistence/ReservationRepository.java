@@ -2,7 +2,9 @@ package com.runout.bookings.internal.infrastructure.persistence;
 
 import com.runout.bookings.internal.infrastructure.persistence.entity.ReservationEntity;
 import com.runout.bookings.internal.domain.ReservationStatus;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
@@ -14,6 +16,14 @@ public interface ReservationRepository extends JpaRepository<ReservationEntity, 
     Optional<ReservationEntity> findByUserIdAndIdempotencyKey(UUID userId, UUID idempotencyKey);
 
     Optional<ReservationEntity> findByIdAndUserId(UUID id, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from ReservationEntity r where r.id = :id and r.userId = :userId")
+    Optional<ReservationEntity> lockForUser(UUID id, UUID userId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select r from ReservationEntity r where r.id = :id")
+    Optional<ReservationEntity> lockById(UUID id);
 
     List<ReservationEntity> findAllByUserIdOrderByCreatedAtDesc(UUID userId);
 

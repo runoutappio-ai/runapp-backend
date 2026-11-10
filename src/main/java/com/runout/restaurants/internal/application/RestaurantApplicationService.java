@@ -43,6 +43,15 @@ class RestaurantApplicationService implements RestaurantService {
     }
 
     @Override
+    public long countMatches(RestaurantMatchCriteria criteria) {
+        return repository.findAll().stream()
+                .filter(RestaurantEntity::isActive)
+                .map(RestaurantMapper::toSummary)
+                .filter(restaurant -> RestaurantMatching.matches(restaurant, criteria))
+                .count();
+    }
+
+    @Override
     public RestaurantSummary findById(UUID restaurantId) {
         return RestaurantMapper.toSummary(repository.findById(restaurantId).orElseThrow());
     }

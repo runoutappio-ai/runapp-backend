@@ -66,10 +66,9 @@ Alternative terminal paths are `PAYMENT_FAILED`, `CANCELLED`, and `REJECTED`. Re
 ### 5. Reservation wizard
 
 - Step 1 — Your table: party size from 2 to 6, future date, and a one-hour time window in Dubai time.
-- Step 2 — Budget & mood: total AED budget, vibe, up to three cuisine exclusions, dietary preferences, and allergy notes.
-- Step 3 — Location: Dubai area or device location plus travel radius in kilometres.
-- Step 4 — Payment: choose card, Apple Pay, or Google Pay as a demo method, review the total, and seal the reservation.
-- Budget uses AED 50 steps with AED 50 minimum per person and AED 1,000 total maximum.
+- Step 2 — Budget & mood: per-person budget, vibe, up to three cuisine exclusions, dietary preferences, and allergy notes. Below the allergy fields, a live count shows how many restaurants fit the saved location and filterable criteria. New drafts can continue once the count is positive. Operations still confirms the selected date, table availability and allergy notes.
+- Step 3 — Payment: review the table budget and pay the 10% reservation fee to seal the reservation. The default demo uses mock payment. A configured iOS build offers separate Apple Pay and card controls, with Apple Pay shown on eligible devices. Other Stripe builds open hosted Checkout. The meal is paid at the restaurant.
+- Location and travel radius are part of Step 1. Budget uses AED 50 increments from AED 50 to 400 per person.
 
 ### 6. Location
 
@@ -86,8 +85,9 @@ Alternative terminal paths are `PAYMENT_FAILED`, `CANCELLED`, and `REJECTED`. Re
 - Create a reservation with a stable UUID idempotency key.
 - Preserve that key across retries of the same logical create operation.
 - Pay with a separate stable idempotency key.
-- Obtain the token through a replaceable `PaymentProvider` boundary.
-- Clearly identify the current provider as a demo; collect and store no card data.
+- The mock provider generates a demo token. On configured iOS builds, Run Out shows the fee and Stripe collects card details in embedded native fields. Other Stripe builds use hosted Checkout.
+- The native card screen and Apple Pay reuse a single linked PaymentIntent. The app checks capture with the backend after Stripe confirms the attempt.
+- The checkout strategy selects the hosted or native payment UI. The reservation keeps the provider of its first online attempt.
 - Advance only when payment status is exactly `CAPTURED`.
 - Keep failed or pending payments away from all restaurant data.
 - Schedule replaceable local reveal and reservation reminders after success.

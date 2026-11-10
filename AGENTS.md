@@ -105,7 +105,7 @@ Direct packages under `com.runout` are Spring Modulith modules:
 - `bookings`: reservation aggregate, lifecycle, reveal, cancellation, feedback;
 - `restaurants`: cities, catalogue, menus, Google Places import;
 - `administration`: operations queue, assignment, nearby restaurants, confirmation;
-- `payments`: payment contract and mock gateway;
+- `payments`: payment contracts, mock gateway and Stripe sandbox Checkout adapter;
 - `notifications`: integration listeners that currently log only;
 - `locations`: Google Places/geocoding integration;
 - `experiences`: dormant domain/persistence module with no current HTTP journey;
@@ -133,6 +133,8 @@ The current Expo flow has three screens:
 
 The UI uses 2–6 guests and AED 50–400 per person. The backend accepts 1–6 guests. Drafts live in AsyncStorage until successful payment.
 
+Budget & mood calls the guest-accessible `POST /api/v1/restaurants/match-count` after a short debounce. Only the count is returned. New drafts require a positive count to continue. Matching uses active restaurants, radius or Dubai scope, published menu price and party size, cuisine exclusions, and restaurant tags for vibe, dietary preferences, `Licensed venue` and `Shisha`. `Casual` includes restaurants without a vibe tag. Availability and free-text allergy notes require human confirmation.
+
 ### State machine
 
 ```text
@@ -144,7 +146,11 @@ Alternatives are `PAYMENT_FAILED`, `CANCELLED`, and `REJECTED`. `REJECTED` may t
 - Creation is idempotent by `(user_id, Idempotency-Key)`.
 - Payment requires a separate key and creates a deterministic mock reference, but successful replay is not implemented; a second pay call after `PAID` fails the state rule.
 - Mock tokens beginning `pm_fail` fail; other tokens capture immediately.
-- Apple Pay, Google Pay, card entry, and Stripe are demo/UI only—there is no real gateway.
+- Checkout and the payment command use a reservation fee of 10% of the saved table budget, rounded to the currency’s minor unit. The meal is paid at the restaurant.
+- `PAYMENT_PROVIDER=stripe` opts into hosted test Checkout. Stripe uses the sandbox’s payment method settings for cards, Apple Pay, and Google Pay, and shows wallets on compatible devices and browsers. Only a signed paid Session with the linked ID and expected AED amount can mark a reservation paid. The mock path and legacy demo wallet buttons are separate from the sandbox flow.
+- `./start-all.sh` defaults to Stripe when the ignored local test key exists at `.run/stripe/backend.key` and starts a sandbox webhook listener. An explicit `PAYMENT_PROVIDER=mock` overrides that default.
+- An iOS development build with the Stripe publishable test key uses a linked PaymentIntent for its card and Apple Pay controls. The card screen embeds Stripe’s native fields and Stripe handles bank authentication. Apple Pay additionally requires an Apple Merchant ID, matching certificate and app entitlement, and an eligible device. Switching between hosted and native payment closes the other active Stripe attempt before opening a new one.
+- The booking flow depends on the payments module’s `CheckoutGateway` contract for online payment. Each reservation keeps its provider and hosted or native attempt IDs. Stripe SDK calls and signature checks live in the Stripe adapter. New mobile builds use provider-neutral endpoints and a configured client strategy. The existing Stripe routes remain for older builds.
 
 ### Operations
 
@@ -165,7 +171,7 @@ Real reveal requires:
 - restaurant and confirmed time present;
 - current time at or after confirmed time.
 
-The implementation reveals at the confirmed time, not two hours before. The mock-only demo route can preview an active restaurant without persisting an assignment.
+The implementation reveals at the confirmed time. The property-gated demo route previews the envelope after captured payment without persisting an assignment. With Stripe sandbox it returns a sample restaurant and menu and leaves the actual assignment sealed. `start-all.sh` enables the preview by default.
 
 ### Cancellation and feedback
 
@@ -205,7 +211,7 @@ Realm roles: `USER`, `RESTAURANT`, `WORKER`, `MANAGER`, `SUPER_ADMIN`.
 - `RESTAURANT`: only the restaurant linked to its authenticated user; profile/category/price/menu access, no staff operations.
 - `USER`: customer endpoints only.
 
-All API endpoints except health, Swagger/OpenAPI, registration, login, and refresh require JWT authentication. `/api/v1/restaurants` is authenticated despite its customer-facing path.
+Health, Swagger/OpenAPI, registration, login, refresh and the guest restaurant match count are public. `GET /api/v1/restaurants` and restaurant details require JWT authentication.
 
 The backend validates issuer and `runout-api` audience. `AuthenticatedUserHeaderFilter` strips spoofed identity headers and injects trusted subject/email/username/display-name values from the JWT.
 
@@ -279,7 +285,7 @@ Do not attribute these pre-existing failures to a documentation-only change, and
 
 Before public launch the project still needs, at minimum:
 
-- real Stripe/payment intent/tokenization/webhook/refund/reconciliation flows;
+- Stripe live rollout, wallet testing, refunds and reconciliation;
 - production-grade payment idempotency;
 - server-side storage/use of alcohol and shisha preferences;
 - matching eligibility beyond radius;

@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: 012-stripe-payment-intent
+      author: runout
+      changes:
+        - addColumn:
+            tableName: reservation
+            columns:
+              - column: { name: stripe_payment_intent_id, type: varchar(255) }
+        - addUniqueConstraint:
+            tableName: reservation
+            columnNames: stripe_payment_intent_id
+            constraintName: uk_reservation_stripe_payment_intent

@@ -1,6 +1,6 @@
 import { CANCELLABLE_STATUSES, DUBAI_AREAS, initialDraft, kilometresToMetres, mayLeaveFeedback, toReservationPayload } from '../model';
 import { locationPatch } from '../location';
-import { requireCapturedPayment } from '../payment';
+import { requireCapturedPayment, reservationFeeFor } from '../payment';
 
 it('maps AED amounts, venue preferences, Dubai dates, and kilometres to backend fields', () => {
   const payload = toReservationPayload({ ...initialDraft, partySize: 4, totalBudget: 600, date: '2030-05-20', time: '20:15', locationLabel: 'DIFC, Dubai', latitude: 25.2118, longitude: 55.2796, radiusKm: 7, licensedVenue: true, shishaVenue: true });
@@ -21,4 +21,9 @@ it('gates payment, cancellation, and completed feedback correctly', () => {
   expect(requireCapturedPayment('CAPTURED')).toBe(true); expect(() => requireCapturedPayment('FAILED')).toThrow('failed');
   expect(CANCELLABLE_STATUSES).toEqual(['PAYMENT_PENDING', 'PAID']);
   expect(mayLeaveFeedback('COMPLETED', false)).toBe(true); expect(mayLeaveFeedback('COMPLETED', true)).toBe(false);
+});
+
+it('quotes the ten percent reservation fee in AED rounded to fils', () => {
+  expect(reservationFeeFor(600)).toBe(60);
+  expect(reservationFeeFor(123.45)).toBe(12.35);
 });

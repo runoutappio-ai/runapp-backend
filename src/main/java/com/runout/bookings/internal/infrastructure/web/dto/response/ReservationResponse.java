@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-@Builder
+@Builder(toBuilder = true)
 public record ReservationResponse(
         UUID id,
         String status,

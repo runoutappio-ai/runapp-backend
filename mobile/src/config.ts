@@ -22,6 +22,9 @@ export const config = {
   privacyUrl: process.env.EXPO_PUBLIC_PRIVACY_URL ?? extra.privacyUrl ?? '',
   termsUrl: process.env.EXPO_PUBLIC_TERMS_URL ?? extra.termsUrl ?? '',
   demoMode,
+  paymentProvider: demoMode ? 'mock' : process.env.EXPO_PUBLIC_PAYMENT_PROVIDER || 'mock',
+  stripePublishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '',
+  applePayMerchantId: process.env.EXPO_PUBLIC_APPLE_PAY_MERCHANT_ID ?? '',
   /** One-tap login: the shared demo account in demo builds, otherwise the dev-only test account from .env.local. */
   testLogin: demoMode
     ? { email: 'demo@runout.app', password: 'demo' }

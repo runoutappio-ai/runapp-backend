@@ -4,6 +4,7 @@ import com.runout.bookings.api.*;
 import com.runout.bookings.internal.infrastructure.persistence.entity.ReservationEntity;
 import com.runout.payments.api.CapturePaymentCommand;
 
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Currency;
 import java.util.UUID;
@@ -14,13 +15,20 @@ final class ReservationApplicationMapper {
     }
 
     static CapturePaymentCommand toCapturePaymentCommand(ReservationEntity reservation, PayReservationCommand command) {
+        var currency = Currency.getInstance(reservation.getCurrency());
         return CapturePaymentCommand.builder()
                 .userId(command.userId())
-                .amount(reservation.getTotalBudget())
-                .currency(Currency.getInstance(reservation.getCurrency()))
+                .amount(reservationFee(reservation))
+                .currency(currency)
                 .paymentMethodToken(command.paymentMethodToken())
                 .idempotencyKey(command.idempotencyKey())
                 .build();
+    }
+
+    static java.math.BigDecimal reservationFee(ReservationEntity reservation) {
+        var currency = Currency.getInstance(reservation.getCurrency());
+        return reservation.getTotalBudget().movePointLeft(1)
+                .setScale(Math.max(0, currency.getDefaultFractionDigits()), RoundingMode.HALF_UP);
     }
 
     static ReservationEntity toReservationEntity(UUID userId,

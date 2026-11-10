@@ -39,7 +39,7 @@ Only `EXPO_PUBLIC_*` values are embedded in the client. They must never contain 
 - `EXPO_PUBLIC_KEYCLOAK_URL`: Keycloak origin, without a trailing slash.
 - `EXPO_PUBLIC_PRIVACY_URL`: published privacy policy.
 - `EXPO_PUBLIC_TERMS_URL`: published terms.
-- `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT`: development-build-only UI flag for the two-stage demo reveal. **Skip the wait · demo** opens the envelope with the restaurant, then **Skip the menu wait · demo** replays the animation and reveals the menu. The backend route is available by default only while the payment provider is `mock`; set `RUNOUT_DEMO_SKIP_WAIT_ENABLED=false` to disable it explicitly. If the selected demo restaurant has no menu configured, this preview returns a temporary sample menu without changing the database.
+- `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT`: development-build-only UI flag for the two-stage demo reveal. **Skip the wait · demo** opens the envelope with a restaurant, then **Skip the menu wait · demo** reveals the menu. The local startup script enables the backend preview for mock payments and Stripe sandbox. Set `RUNOUT_DEMO_SKIP_WAIT_ENABLED=false` on the backend to disable it.
 
 ## Keycloak and identity providers
 
@@ -53,9 +53,13 @@ Apple identity provider setup is a release blocker: add Apple in Keycloak, imple
 
 Tokens live only in SecureStore. Refresh is single-flight, rotated token pairs are replaced, and failed refresh clears the session. Reservation creation and mock payment keep stable UUID idempotency keys across retries. Restaurant fields render only from `GET /api/v1/reservations/{id}/reveal` when `available` is `true`; at the confirmed reservation time, the sealed envelope animates open to reveal the restaurant and menu.
 
-For local animation testing, keep the default mock payment provider and set `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT=true` in `.env.local`. The authenticated demo route requires a paid reservation owned by the user. If operations have not assigned its restaurant yet, it uses an active restaurant as a non-persistent preview so the full envelope/menu animation remains testable immediately after payment. The route is not registered with a real payment provider.
+For local animation testing, set `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT=true` in `.env.local`. The authenticated demo route requires a paid reservation owned by the user. With Stripe sandbox it always returns a sample restaurant and menu, keeping the actual assignment sealed. For manual Stripe sandbox startup, set `RUNOUT_DEMO_SKIP_WAIT_ENABLED=true` on the backend.
 
-The local `PaymentProvider` returns the backend mock token and collects no card data. Replace it with the real provider SDK and server tokenization before launch; never store raw card details.
+The default payment flow uses the mock token. Set `EXPO_PUBLIC_PAYMENT_PROVIDER=stripe` to open hosted Stripe Checkout in the browser against the sandbox-enabled backend. Pay by card or use Apple Pay or Google Pay when the browser and Stripe sandbox support the wallet. After Checkout, return to the app and tap **Check payment**. See the [sandbox setup](../README.md#stripe-sandbox-checkout).
+
+In an iOS development build, `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` enables Run Out’s in-app card screen with Stripe’s native fields and bank authentication. To also display the Apple Pay button, configure `EXPO_PUBLIC_APPLE_PAY_MERCHANT_ID` with the Merchant ID linked to the Stripe iOS certificate, rebuild iOS, and use an eligible iPhone. See [native iPhone checkout](../README.md#native-iphone-checkout).
+
+The booking screen uses the configured strategy in `src/features/booking/checkoutStrategy.ts`. Hosted checkout and payment status use provider-neutral endpoints. The Stripe strategy owns its trusted URL and native SDK controls.
 
 ## Verification
 

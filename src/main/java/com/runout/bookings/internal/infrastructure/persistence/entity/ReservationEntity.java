@@ -58,6 +58,9 @@ public class ReservationEntity {
     private int radiusMeters;
     private String paymentReference;
     private String paymentStatus;
+    private String checkoutProvider;
+    private String hostedPaymentId;
+    private String nativePaymentId;
     private UUID idempotencyKey;
     private UUID assignedEmployeeId;
     private UUID restaurantId;
@@ -104,6 +107,18 @@ public class ReservationEntity {
         this.paymentStatus = ReservationStatus.PAYMENT_PENDING.name();
         this.status = ReservationStatus.PAYMENT_PENDING;
         this.createdAt = Instant.now();
+    }
+
+    public void linkHostedPayment(String provider, String attemptId) {
+        requireStatus(ReservationStatus.PAYMENT_PENDING, "Only payment-pending reservations can start checkout");
+        this.checkoutProvider = provider;
+        this.hostedPaymentId = attemptId;
+    }
+
+    public void linkNativePayment(String provider, String attemptId) {
+        requireStatus(ReservationStatus.PAYMENT_PENDING, "Only payment-pending reservations can start payment");
+        this.checkoutProvider = provider;
+        this.nativePaymentId = attemptId;
     }
 
     public void markPaid(String paymentReference, String paymentStatus) {

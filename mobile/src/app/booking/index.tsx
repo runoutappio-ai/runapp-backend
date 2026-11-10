@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  ActivityIndicator,
+  Linking,
   type AccessibilityActionEvent,
   type GestureResponderEvent,
   Platform,
@@ -25,6 +27,7 @@ import {
   Minus,
   Plus,
   Smartphone,
+  Utensils,
   WalletCards,
   X,
 } from 'lucide-react-native';
@@ -32,21 +35,26 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useAuth } from '@/auth/AuthProvider';
 import { api } from '@/api/client';
 import { queryClient } from '@/api/query';
+import { config } from '@/config';
 import { Button, Field, InlineError } from '@/components/ui';
 import { AmbientBackground, GlassSurface, useGlassBar, useGlassPill } from '@/components/Glass';
 import Animated, { ZoomIn } from 'react-native-reanimated';
 import { useBookingDraft } from '@/features/booking/BookingDraftProvider';
 import { locationPatch } from '@/features/booking/location';
-import { CUISINES, DIETARY, DUBAI_AREAS, VIBES, dubaiIso, randomBudgetLine, randomVibeLine, toReservationPayload } from '@/features/booking/model';
+import { checkoutStrategy, startHostedCheckout, startNativeCheckout, type NativePaymentLauncher } from '@/features/booking/checkoutStrategy';
+import { CUISINES, DIETARY, DUBAI_AREAS, VIBES, dubaiIso, kilometresToMetres, randomBudgetLine, randomVibeLine, toReservationPayload } from '@/features/booking/model';
+import { useRestaurantMatchCount } from '@/features/booking/restaurantMatches';
 import { scheduleReservationReminders } from '@/features/booking/notifications';
-import { mockPaymentProvider, requireCapturedPayment } from '@/features/booking/payment';
-import { createReservation, payReservation, reservationKeys } from '@/features/reservations/api';
+import { mockPaymentProvider, requireCapturedPayment, reservationFeeFor, RESERVATION_FEE_PERCENT } from '@/features/booking/payment';
+import { checkCheckoutPayment, createReservation, payReservation, reservationKeys, useReservation } from '@/features/reservations/api';
 import { colors, radius } from '@/theme/tokens';
-import type { LocationCandidate } from '@/types/api';
+import type { LocationCandidate, Reservation } from '@/types/api';
 import { useTheme } from '@/theme/ThemeProvider';
 
 /** Three steps: table & place → budget & mood → payment. */
 const STEPS = ['Your table & place', 'Budget & mood', 'Payment'];
+const NativePaymentButtons = checkoutStrategy?.nativeButtons?.();
+const isMockPayment = config.paymentProvider === 'mock';
 const DISTANCES = [1, 3, 5, 10, 25] as const;
 const PER_PERSON_MIN = 50;
 const PER_PERSON_MAX = 400;
@@ -173,6 +181,8 @@ export default function BookingScreen() {
   const [error, setError] = useState('');
   const [locationStatus, setLocationStatus] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [paymentStatus, setPaymentStatus] = useState('');
+  const paymentInFlight = useRef(false);
   const [showAreas, setShowAreas] = useState(false);
   const [pickingTastes, setPickingTastes] = useState(draft.excludedCuisineTypes.length > 0);
   const [dietaryOpen, setDietaryOpen] = useState(draft.dietaryPreferences.length > 0 || Boolean(draft.allergyNotes));
@@ -185,6 +195,27 @@ export default function BookingScreen() {
   const timeMinutes = Math.min(22 * 60, Math.max(7 * 60, selectedHours * 60 + selectedMinutes));
   // The budget is chosen per person (AED 50–400 in steps of 50); the table total follows the party size.
   const perPerson = Math.min(PER_PERSON_MAX, Math.max(PER_PERSON_MIN, Math.round(draft.totalBudget / draft.partySize / 50) * 50));
+  const existingCheckout = useReservation(step === 2 && user ? draft.reservationId ?? '' : '');
+  const checkoutReady = !draft.reservationId || !user || Boolean(existingCheckout.data);
+  const checkoutBudget = existingCheckout.data?.totalBudget.amount ?? draft.totalBudget;
+  const checkoutPerPerson = existingCheckout.data?.budgetPerPerson.amount ?? perPerson;
+  const checkoutPartySize = existingCheckout.data?.partySize ?? draft.partySize;
+  const feeAmount = reservationFeeFor(checkoutBudget);
+  const reservationFee = checkoutReady ? `AED ${feeAmount}` : '—';
+  const match = useRestaurantMatchCount((step === 1 || (step === 2 && !draft.reservationId)) && draft.latitude != null && draft.longitude != null ? {
+    latitude: draft.latitude,
+    longitude: draft.longitude,
+    radiusMeters: kilometresToMetres(draft.radiusKm),
+    anywhereInDubai: draft.anywhere,
+    partySize: draft.partySize,
+    budgetPerPerson: perPerson,
+    vibe: draft.vibe,
+    excludedCuisines: [...draft.excludedCuisineTypes].sort(),
+    dietaryPreferences: [...draft.dietaryPreferences].sort(),
+    licensedVenue: Boolean(draft.licensedVenue),
+    shishaVenue: Boolean(draft.shishaVenue),
+  } : null);
+  const hasMatch = (match.count ?? 0) > 0;
   const setPartySize = (partySize: number) => update({ partySize, totalBudget: perPerson * partySize });
   const [budgetLine, setBudgetLine] = useState(() => randomBudgetLine(perPerson));
   // AED 50–100 a person plus alcohol or shisha: a cheeky reality check.
@@ -212,6 +243,7 @@ export default function BookingScreen() {
   }, [draft.partySize, draft.totalBudget, perPerson, update]);
 
   const next = () => {
+    if (!canContinue) return;
     setError('');
     update({ step: Math.min(step + 1, STEPS.length - 1), ...(step === 0 && !draft.date ? { date: effectiveDate } : {}) });
     void Haptics.selectionAsync();
@@ -254,13 +286,47 @@ export default function BookingScreen() {
       setLocationStatus(cause instanceof Error ? cause.message : 'Could not identify the street. Choose a Dubai area.');
     }
   };
-  const confirm = async () => {
+  const finishPayment = async (paid: Reservation) => {
+    requireCapturedPayment(paid.payment?.status);
+    await queryClient.invalidateQueries({ queryKey: reservationKeys.all });
+    await scheduleReservationReminders(paid).catch(() => undefined);
+    reset();
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    router.replace(`/reservation/${paid.id}`);
+  };
+
+  const checkPayment = async () => {
+    if (!draft.reservationId || submitting) return;
+    setSubmitting(true);
     setError('');
+    setPaymentStatus('');
+    try {
+      const data = await checkCheckoutPayment(draft.reservationId);
+      if (data?.payment?.status === 'CAPTURED') {
+        await finishPayment(data);
+      } else {
+        setPaymentStatus('Payment is still pending. Finish paying or check again shortly.');
+      }
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not check payment status.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const confirm = async (launchNativePayment?: NativePaymentLauncher) => {
+    if (paymentInFlight.current) return;
+    setError('');
+    setPaymentStatus('');
+    if (!checkoutReady) return;
+    if (!draft.reservationId && !hasMatch) return;
     if (!user) {
       router.push('/(auth)/access?returnTo=/booking' as never);
       return;
     }
-    if (!draft.paymentMethod) { setError('Choose a demo payment method first.'); return; }
+    if (!checkoutStrategy && !isMockPayment) { setError('Checkout provider is unavailable.'); return; }
+    if (isMockPayment && !draft.paymentMethod) { setError('Choose a demo payment method first.'); return; }
+    paymentInFlight.current = true;
     setSubmitting(true);
     try {
       const createKey = draft.createIdempotencyKey ?? randomUUID();
@@ -272,17 +338,33 @@ export default function BookingScreen() {
         reservationId = created.id;
         update({ reservationId });
       }
-      const token = await mockPaymentProvider.createPaymentMethodToken(draft.paymentMethod);
-      const paid = await payReservation(reservationId, token, paymentKey);
-      requireCapturedPayment(paid.payment?.status);
-      await queryClient.invalidateQueries({ queryKey: reservationKeys.all });
-      await scheduleReservationReminders(paid).catch(() => undefined);
-      reset();
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      router.replace(`/reservation/${paid.id}`);
+      if (checkoutStrategy) {
+        if (existingCheckout.data?.payment?.status === 'CAPTURED') {
+          await finishPayment(existingCheckout.data);
+          return;
+        }
+        if (launchNativePayment) {
+          const payment = await startNativeCheckout(checkoutStrategy, reservationId);
+          if (!await launchNativePayment(payment)) return;
+          const paid = await checkCheckoutPayment(reservationId);
+          if (paid.payment?.status === 'CAPTURED') {
+            await finishPayment(paid);
+          } else {
+            setPaymentStatus('Your payment is being confirmed. Tap Check payment shortly.');
+          }
+          return;
+        }
+        const url = await startHostedCheckout(checkoutStrategy, reservationId);
+        await Linking.openURL(url);
+        setPaymentStatus('After Checkout, return here and tap Check payment.');
+        return;
+      }
+      const token = await mockPaymentProvider.createPaymentMethodToken(draft.paymentMethod ?? undefined);
+      await finishPayment(await payReservation(reservationId, token, paymentKey));
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Could not complete the reservation.');
     } finally {
+      paymentInFlight.current = false;
       setSubmitting(false);
     }
   };
@@ -291,9 +373,48 @@ export default function BookingScreen() {
   const canContinue = step === 0
     ? reservationInFuture && hasLocation
     : step === 1
-      ? draft.totalBudget === perPerson * draft.partySize
-      : Boolean(draft.paymentMethod);
+      ? reservationInFuture && draft.totalBudget === perPerson * draft.partySize && (Boolean(draft.reservationId) || hasMatch)
+      : (Boolean(checkoutStrategy) || (isMockPayment && Boolean(draft.paymentMethod))) && checkoutReady && (Boolean(draft.reservationId) || hasMatch);
+  const paymentLabel = !checkoutReady ? 'Waiting for reservation fee'
+    : checkoutStrategy ? (user ? `Continue to ${checkoutStrategy.label} · ${reservationFee}` : 'Create account to continue')
+    : !isMockPayment ? 'Checkout unavailable'
+    : !draft.paymentMethod ? 'Choose how to pay'
+    : user ? `Pay ${reservationFee} & seal envelope` : 'Create account to continue';
   const muted = { color: themeColors.glassText };
+  const matchTitle = match.failed
+    ? 'Could not check restaurants'
+    : match.count === undefined
+      ? 'Checking for restaurants…'
+      : match.count === 0
+        ? 'No restaurants match yet'
+        : `We found ${match.count} ${match.count === 1 ? 'restaurant' : 'restaurants'} matching your criteria`;
+  const matchDetail = match.failed
+    ? 'Try again to continue.'
+    : match.count === 0
+      ? 'Try a wider area, a higher budget, or a different mood.'
+      : hasMatch
+        ? (draft.allergyNotes.trim()
+          ? 'Table availability and allergy notes still need confirmation.'
+          : 'Table availability for your date and time still needs confirmation.')
+        : null;
+  const matchCard = (
+    <View style={[styles.matchCard, { backgroundColor: themeColors.glassPick, borderColor: themeColors.glassPickBorder }]}>
+      <View style={[styles.matchIcon, { backgroundColor: themeColors.glassActive }]}>
+        {match.count === undefined && !match.failed
+          ? <ActivityIndicator size="small" color={themeColors.gold} />
+          : <Utensils size={18} color={themeColors.gold} />}
+      </View>
+      <View style={styles.anywhereCopy}>
+        <Text accessibilityLiveRegion="polite" style={[styles.anywhereTitle, { color: themeColors.text }]}>{matchTitle}</Text>
+        {matchDetail ? <Text style={[styles.smallLabel, muted]}>{matchDetail}</Text> : null}
+        {match.failed ? (
+          <Pressable accessibilityRole="button" onPress={match.retry} hitSlop={8}>
+            <Text style={[styles.matchRetry, { color: themeColors.gold }]}>Try again</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    </View>
+  );
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: themeColors.background }]} edges={['top', 'left', 'right']}>
@@ -422,6 +543,7 @@ export default function BookingScreen() {
               </Pressable>
               {dietaryOpen ? <><View style={styles.chips}>{DIETARY.map((diet) => <Chip key={diet} small label={diet} selected={draft.dietaryPreferences.includes(diet)} onPress={() => toggle('dietaryPreferences', diet)} />)}</View><Field label="Allergy notes" value={draft.allergyNotes} onChangeText={(allergyNotes) => update({ allergyNotes })} multiline maxLength={500} placeholder="Tell us what the restaurant needs to know" /></> : null}
             </GlassSurface>
+            {matchCard}
           </>
         ) : null}
 
@@ -429,24 +551,29 @@ export default function BookingScreen() {
           <>
             <View style={styles.stepHeader}>
               <Text style={[styles.title, { color: themeColors.text }]}>Seal it with a payment.</Text>
-              <Text style={[styles.subtitle, muted]}>Demo checkout — nothing is charged.</Text>
+              <Text style={[styles.subtitle, muted]}>Pay the reservation fee now. Pay for your meal at the restaurant.</Text>
             </View>
+            {!draft.reservationId && !hasMatch ? matchCard : null}
 
             <GlassSurface radius={18} style={styles.card}>
-              <View style={styles.rowBetween}><Text style={[styles.summaryText, muted]}>Reservation service fee</Text><Text style={[styles.struck, muted]}>AED 0</Text></View>
+              <View style={styles.rowBetween}><Text style={[styles.summaryText, muted]}>Estimated table budget</Text><Text style={[styles.summaryText, { color: themeColors.text }]}>{checkoutReady ? `AED ${checkoutBudget}` : '—'}</Text></View>
+              <View style={styles.rowBetween}><Text style={[styles.summaryText, muted]}>Budget per person</Text><Text style={[styles.summaryText, { color: themeColors.text }]}>{checkoutReady ? `AED ${checkoutPerPerson} × ${checkoutPartySize}` : '—'}</Text></View>
               <View style={[styles.hairline, { backgroundColor: themeColors.glassDivider }]} />
-              <View style={styles.rowBetween}><Text style={[styles.summaryText, muted]}>Per person</Text><Text style={[styles.summaryText, { color: themeColors.text }]}>AED {perPerson} × {draft.partySize}</Text></View>
-              <View style={styles.rowBaseline}><Text style={[styles.summaryTotalLabel, { color: themeColors.text }]}>Total</Text><Text style={[styles.summaryTotal, { color: themeColors.text }]}>AED {draft.totalBudget}</Text></View>
-              <Text style={[styles.smallLabel, muted]}>Budget for your table of {draft.partySize}{draft.anywhere ? ' · anywhere in Dubai' : draft.locationLabel ? ` · near ${draft.locationLabel.split(',')[0]}` : ''}{draft.licensedVenue ? ' · licensed venue' : ''}{draft.shishaVenue ? ' · shisha' : ''}</Text>
+              <View style={styles.rowBetween}><Text style={[styles.summaryText, muted]}>Reservation fee ({RESERVATION_FEE_PERCENT}%)</Text><Text style={[styles.summaryText, { color: themeColors.text }]}>{reservationFee}</Text></View>
+              <View style={styles.rowBaseline}><Text style={[styles.summaryTotalLabel, { color: themeColors.text }]}>Due now</Text><Text style={[styles.summaryTotal, { color: themeColors.gold }]}>{reservationFee}</Text></View>
+              <Text style={[styles.smallLabel, muted]}>Budget for your table of {checkoutPartySize}{draft.anywhere ? ' · anywhere in Dubai' : draft.locationLabel ? ` · near ${draft.locationLabel.split(',')[0]}` : ''}{draft.licensedVenue ? ' · licensed venue' : ''}{draft.shishaVenue ? ' · shisha' : ''}</Text>
+              {!checkoutReady && (existingCheckout.isError
+                ? <Button variant="secondary" onPress={() => void existingCheckout.refetch()}>Retry loading reservation fee</Button>
+                : <Text accessibilityLiveRegion="polite" style={[styles.smallLabel, muted]}>Loading your reservation fee…</Text>)}
             </GlassSurface>
 
-            <View style={styles.paymentMethods}>{PAYMENT_METHODS.map(({ id, label, Icon }) => { const selected = draft.paymentMethod === id; return (
+            {isMockPayment && <View style={styles.paymentMethods}>{PAYMENT_METHODS.map(({ id, label, Icon }) => { const selected = draft.paymentMethod === id; return (
               <Pressable key={id} accessibilityRole="radio" accessibilityState={{ checked: selected }} onPress={() => update({ paymentMethod: id })} style={[styles.paymentMethod, glassPill, selected && { backgroundColor: themeColors.glassPick, borderColor: themeColors.glassPickBorder }]}>
                 <Icon color={selected ? themeColors.gold : themeColors.textSoft} size={22} strokeWidth={1.7} />
                 <Text style={[styles.paymentLabel, { color: themeColors.text }]}>{label}</Text>
                 {selected ? <View style={[styles.paymentCheck, { backgroundColor: themeColors.gold }]}><Check size={11} color={themeColors.primaryText} strokeWidth={3} /></View> : null}
               </Pressable>
-            ); })}</View>
+            ); })}</View>}
 
             {!user ? <GlassSurface radius={18} style={styles.card}><Text style={[styles.anywhereTitle, { color: themeColors.text }]}>Create your account to pay</Text><Text style={[styles.smallLabel, muted]}>Plan the whole mystery as a guest — we’ll only ask you to register when you’re ready to seal it.</Text></GlassSurface> : null}
 
@@ -454,7 +581,9 @@ export default function BookingScreen() {
               <View style={styles.miniEnvelope}><View style={styles.miniFlap} /><View style={styles.miniSeal} /></View>
               <Text style={[styles.promiseText, muted]}>After payment, the restaurant and menu go into a sealed envelope that opens at your reservation time.</Text>
             </GlassSurface>
-            <View style={styles.demoNote}><LockKeyhole size={13} color={themeColors.gold} /><Text style={[styles.smallLabel, muted]}>Demo checkout — nothing is charged.</Text></View>
+            <View style={styles.demoNote}><LockKeyhole size={13} color={themeColors.gold} /><Text style={[styles.smallLabel, muted]}>{NativePaymentButtons ? checkoutStrategy?.nativeDescription : checkoutStrategy?.hostedDescription ?? (isMockPayment ? 'Demo checkout — nothing is charged.' : 'Checkout provider is unavailable.')}</Text></View>
+            {paymentStatus ? <Text accessibilityLiveRegion="polite" style={[styles.smallLabel, muted]}>{paymentStatus}</Text> : null}
+            {checkoutStrategy && user && draft.reservationId && <Button variant="secondary" disabled={submitting} onPress={() => void checkPayment()}>Check payment</Button>}
             {error ? <InlineError message={error} /> : null}
           </>
         ) : null}
@@ -466,8 +595,13 @@ export default function BookingScreen() {
             <View style={styles.footerBack}><Button variant="secondary" onPress={back}>Back</Button></View>
             <View style={styles.footerNext}><Button disabled={!canContinue} onPress={next}>Next →</Button></View>
           </View>
+        ) : NativePaymentButtons && user ? (
+          <Suspense fallback={<ActivityIndicator color={themeColors.gold} />}>
+            <NativePaymentButtons onPay={confirm} disabled={!canContinue} busy={submitting}
+              feeInFils={Math.round(feeAmount * 100)} error={error} />
+          </Suspense>
         ) : (
-          <Button disabled={!draft.paymentMethod} loading={submitting} onPress={() => void confirm()}>{draft.paymentMethod ? (user ? `Pay AED ${draft.totalBudget} & seal envelope` : 'Create account to continue') : 'Choose how to pay'}</Button>
+          <Button disabled={!canContinue} loading={submitting} onPress={() => void confirm()}>{paymentLabel}</Button>
         )}
       </View>
       {boozePopup ? (
@@ -514,6 +648,9 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 12, lineHeight: 16 },
   card: { padding: 12, gap: 10 },
   cardLabel: { fontSize: 12, fontWeight: '700' },
+  matchCard: { flexDirection: 'row', alignItems: 'center', gap: 11, padding: 12, borderRadius: 16, borderWidth: 1 },
+  matchIcon: { width: 36, height: 36, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  matchRetry: { fontSize: 12, fontWeight: '800', marginTop: 5, alignSelf: 'flex-start' },
   smallLabel: { fontSize: 11.5, lineHeight: 16 },
   rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   rowBaseline: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: 8 },
@@ -564,7 +701,6 @@ const styles = StyleSheet.create({
   segment: { flex: 1, height: 30, borderRadius: radius.pill, borderWidth: 1, borderColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
   segmentText: { fontSize: 11.5, fontWeight: '700' },
   summaryText: { fontSize: 13 },
-  struck: { fontSize: 13, textDecorationLine: 'line-through' },
   hairline: { height: StyleSheet.hairlineWidth },
   summaryTotalLabel: { fontSize: 14, fontWeight: '700' },
   summaryTotal: { fontSize: 22, fontWeight: '800' },

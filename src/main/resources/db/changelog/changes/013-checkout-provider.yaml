@@ -1,0 +1,38 @@
+databaseChangeLog:
+  - changeSet:
+      id: 013-checkout-provider
+      author: runout
+      changes:
+        - addColumn:
+            tableName: reservation
+            columns:
+              - column: { name: checkout_provider, type: varchar(50) }
+        - update:
+            tableName: reservation
+            columns:
+              - column: { name: checkout_provider, value: stripe }
+            where: stripe_checkout_session_id IS NOT NULL OR stripe_payment_intent_id IS NOT NULL
+        - dropUniqueConstraint:
+            tableName: reservation
+            constraintName: uk_reservation_stripe_checkout_session
+        - dropUniqueConstraint:
+            tableName: reservation
+            constraintName: uk_reservation_stripe_payment_intent
+        - renameColumn:
+            tableName: reservation
+            oldColumnName: stripe_checkout_session_id
+            newColumnName: hosted_payment_id
+            columnDataType: varchar(255)
+        - renameColumn:
+            tableName: reservation
+            oldColumnName: stripe_payment_intent_id
+            newColumnName: native_payment_id
+            columnDataType: varchar(255)
+        - addUniqueConstraint:
+            tableName: reservation
+            columnNames: checkout_provider, hosted_payment_id
+            constraintName: uk_reservation_hosted_payment
+        - addUniqueConstraint:
+            tableName: reservation
+            columnNames: checkout_provider, native_payment_id
+            constraintName: uk_reservation_native_payment

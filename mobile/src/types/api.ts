@@ -11,7 +11,7 @@ export type ReservationStatus =
 
 export type Money = { amount: number; currency: 'AED' };
 export type SearchArea = { latitude: number; longitude: number; radiusMeters: number };
-export type Payment = { reference: string; status: string };
+export type Payment = { reference: string; status: string; amount?: Money };
 export type Feedback = {
   rating: number;
   comment: string | null;
@@ -48,6 +48,8 @@ export type RestaurantMenu = {
   id: number;
   partySize: number;
   discountPercentage: number;
+  priceBeforePerPerson?: number | null;
+  priceAfterPerPerson?: number | null;
   sections: Record<string, RestaurantMenuItem[]>;
 };
 export type Restaurant = {

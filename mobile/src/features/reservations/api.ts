@@ -63,6 +63,20 @@ export async function payReservation(id: string, paymentMethodToken: string, ide
   });
 }
 
+export function openHostedCheckout(id: string) {
+  return api<{ provider: string; url: string }>(`/api/v1/reservations/${id}/checkout`, { method: 'POST' });
+}
+
+export type NativeCheckout = { provider: string; credential: string; amountInMinorUnits: number };
+
+export function openNativeCheckout(id: string) {
+  return api<NativeCheckout>(`/api/v1/reservations/${id}/payment-session`, { method: 'POST' });
+}
+
+export function checkCheckoutPayment(id: string) {
+  return api<Reservation>(`/api/v1/reservations/${id}/payment-session/status`, { method: 'POST' });
+}
+
 export function useCancelReservation(id: string) {
   const client = useQueryClient();
   return useMutation({

@@ -8,6 +8,8 @@ public interface RestaurantService {
 
     List<RestaurantSummary> findAllActive();
 
+    long countMatches(RestaurantMatchCriteria criteria);
+
     RestaurantSummary findById(UUID restaurantId);
 
     RestaurantSummary findByOwnerUserId(UUID ownerUserId);

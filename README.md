@@ -1,10 +1,10 @@
 # Run Out
 
-Run Out is a Dubai-first mystery restaurant reservation product. A guest chooses the practical constraints of a night out—party size, date and time, location radius, budget, mood, cuisine exclusions, and dietary needs—then pays to seal the request. Run Out operations assigns and confirms a suitable restaurant. The restaurant and menu remain hidden until the backend authorizes the reveal.
+Run Out is a Dubai-first mystery restaurant reservation product. Guests set their party size, date and time, location, budget, mood, and food preferences. They see how many restaurants match, then pay a 10% reservation fee to seal the request. Run Out operations assigns and confirms a restaurant. Guests discover the restaurant and set menu at the backend-authorized reveal and pay for the meal at the venue.
 
-This repository contains the Spring Boot API, PostgreSQL schema, Keycloak realm, staff backoffice, Expo customer app, an interactive presentation and strategy hub, and Postman/E2E test assets.
+This repository contains the Spring Boot API, PostgreSQL schema, Keycloak realm, Expo customer app, staff backoffice, restaurant partner portal, interactive Presentation and Strategy Hub, and API and end-to-end test assets.
 
-> **Implementation status:** this is a development prototype, not a production payment or restaurant-booking system. Payments, Apple Pay, and Google Pay are simulated; restaurant assignment is a manual operations flow; notifications are local/log-only; several launch requirements are listed under [Known gaps and production blockers](#known-gaps-and-production-blockers).
+> **Development status.** Spring defaults to mock payments. With local test credentials, Run Out supports Stripe-hosted checkout and a custom in-app iPhone card screen. The native Apple Pay button requires merchant configuration. Operations still assigns restaurants manually. See [Known gaps and production blockers](#known-gaps-and-production-blockers).
 
 ## Contents
 
@@ -12,6 +12,8 @@ This repository contains the Spring Boot API, PostgreSQL schema, Keycloak realm,
 - [Repository map](#repository-map)
 - [Run everything locally](#run-everything-locally)
 - [Core product lifecycle](#core-product-lifecycle)
+- [Stripe sandbox checkout](#stripe-sandbox-checkout)
+- [Adding a payment provider](#adding-a-payment-provider)
 - [Identity, Keycloak, and authorization](#identity-keycloak-and-authorization)
 - [Backend architecture](#backend-architecture)
 - [API reference](#api-reference)
@@ -38,7 +40,7 @@ Spring Boot modular monolith ───────────────► Go
   ├─ bookings/reservations
   ├─ restaurants
   ├─ administration
-  ├─ payments (mock only)
+  ├─ payments (mock or provider adapter for hosted and native checkout)
   ├─ notifications (log-only integration listener)
   ├─ locations
   └─ experiences (domain module, no current HTTP flow)
@@ -49,6 +51,7 @@ Spring Boot modular monolith ───────────────► Go
   + Modulith events       Google identity broker
 
 Staff backoffice ──► API ──► manual assignment / restaurant confirmation
+Restaurant portal ──► API ──► partner details and menu submissions
 ```
 
 ### Default local services
@@ -63,8 +66,9 @@ Staff backoffice ──► API ──► manual assignment / restaurant confirma
 | React backoffice | `http://localhost:5173` | Staff operations and restaurant management |
 | Restaurant portal | `http://localhost:5174` | Partner profile, categories, price range, and menus |
 | Integrated demo hub | `http://localhost:8000` | Presentation and Strategy Hub |
+| Expo iOS Metro | `http://localhost:8082` | Bundle server for the customer development app |
 
-Only PostgreSQL and Keycloak run in Docker. The API and UIs are started separately during development.
+PostgreSQL and Keycloak run in Docker. The local launcher starts the Spring API, both Vite applications, and the static hub. Start Expo separately when working on the customer app.
 
 ## Repository map
 
@@ -82,6 +86,7 @@ Only PostgreSQL and Keycloak run in Docker. The API and UIs are started separate
 │   ├── src/app/                    Expo Router screens
 │   ├── src/features/               booking, reservation, profile, feedback UI
 │   ├── src/demo/server.ts          in-browser API used only by the static demo
+│   ├── src/demo/dubai-restaurants.json shared fictional restaurant catalogue
 │   ├── e2e/                        Maestro journeys
 │   ├── web-demo/                   source for the presentation and strategy hub
 │   ├── runout-web-demo/            committed generated/static demo snapshot
@@ -90,6 +95,7 @@ Only PostgreSQL and Keycloak run in Docker. The API and UIs are started separate
 │   └── README.md                   mobile-specific setup and release notes
 ├── keycloak/realm/                 importable local `runout` realm
 ├── postman/                        executable local API collection and environment
+├── scripts/                        local database seed for Dubai matching fixtures
 ├── compose.yml                     PostgreSQL + Keycloak development stack
 ├── start-frontend.sh               starts the React backoffice
 └── start-all.sh                    starts the local stack
@@ -107,7 +113,7 @@ From the repository root:
 ./start-all.sh
 ```
 
-This starts PostgreSQL, Keycloak, the Spring API, staff backoffice, restaurant portal, and the demo hub on port 8000. Press `Ctrl+C` to stop the application processes. Docker infrastructure remains running for the next startup.
+This starts PostgreSQL, Keycloak, the Spring API, staff backoffice, restaurant portal, and the demo hub on port 8000. Use [Stripe sandbox setup](#stripe-sandbox-checkout) if testing payments, or run `PAYMENT_PROVIDER=mock ./start-all.sh` to explicitly use mock payments. In the Expo app, select the same provider through `EXPO_PUBLIC_PAYMENT_PROVIDER`. Press `Ctrl+C` to stop the processes the script started. Docker infrastructure remains running for the next startup.
 
 To include the populated restaurant login instead of connecting that portal to the real backend:
 
@@ -117,14 +123,17 @@ To include the populated restaurant login instead of connecting that portal to t
 
 The demo credentials are `demo@runout.local` / `RunOutDemo2026!`. Run `./start-all.sh --help` for options including automatic Docker shutdown. Logs are written under the ignored `.run/logs/` directory.
 
+To populate the local Docker database for mobile matching tests, wait for the API to apply the migrations, then run `node scripts/seed-demo-restaurants.mjs` from the repository root. This adds 40 fictional restaurants across 10 Dubai areas, with menus for 2–6 guests and varied prices and preference tags. Rerunning the seed keeps existing rows. The web demo source uses the same fixtures.
+
 ### Prerequisites
 
 - Docker with Compose
 - JDK 25
 - Maven 3.6.3 or newer
 - Node.js 22.13 or newer and npm
-- Python 3 only if serving a static prototype/demo
+- Python 3 for `start-all.sh` and the static demo
 - Xcode for an iOS native build, or Android Studio for Android
+- Stripe CLI when using the sandbox webhook listener
 
 Expo Go is not sufficient for the complete native authentication flow; use a development build.
 
@@ -175,7 +184,7 @@ Open `http://localhost:5174`. A super admin must first edit a restaurant in the 
 
 ```bash
 cd mobile
-cp .env.example .env.local
+test -f .env.local || cp .env.example .env.local
 npm install
 npm run ios       # iOS development build
 # or
@@ -186,6 +195,8 @@ npm run web       # browser development view
 
 On a physical device, `localhost` refers to the phone. Set `EXPO_PUBLIC_API_URL` and `EXPO_PUBLIC_KEYCLOAK_URL` to the development computer's LAN address and keep both devices on the same network.
 
+For an installed iOS development build, run `npm start -- --port 8082` from `mobile/`, then open the project in Run Out on the device. Restart Metro after changing Expo environment variables. A build with a newly added native module or capability must be rebuilt.
+
 ### 6. Open the demo hub on port 8000
 
 To serve the committed snapshot:
@@ -194,10 +205,10 @@ To serve the committed snapshot:
 python3 -m http.server 8000 --directory mobile/runout-web-demo
 ```
 
-Open `http://localhost:8000`. It links to:
+Open the [demo hub](http://localhost:8000/). The two landing-page choices are:
 
-- **Presentation** — the interactive pitch/story presentation.
-- **Strategy Hub** — business model, operations, financial model, and supporting strategy.
+- **Presentation**, the interactive pitch and product walkthrough. [Open Presentation](http://localhost:8000/presentation/)
+- **Strategy Hub**, the business model, financial projections, restaurant acquisition, operations, and growth plans. [Open Strategy Hub](http://localhost:8000/strategy-hub/)
 
 To rebuild the self-contained static demo first:
 
@@ -250,7 +261,9 @@ The current Expo wizard has three screens:
 
 1. **Table and place** — 2–6 guests in the UI, future Dubai date/time, area/device location, and 1/3/5/10/25 km radius.
 2. **Budget and mood** — AED 50–400 per person, vibe, up to three cuisine exclusions, dietary needs, allergy notes, and optional licensed-venue/shisha preferences.
-3. **Payment** — choose a demo card, Apple Pay, or Google Pay method and review the total.
+3. **Payment** — review the table budget and pay the 10% reservation fee using the configured checkout. Sign-in is required to create the server reservation and pay.
+
+**Budget & mood** shows the match count below the allergy field. The app calls `POST /api/v1/restaurants/match-count` after a short debounce and requires at least one match before a new draft can proceed. The response contains only a count. See [Matching and assignment](#matching-and-assignment).
 
 The draft is stored locally in AsyncStorage until payment succeeds. Creation sends a stable `Idempotency-Key`; a retry of the same draft therefore returns the same reservation instead of creating a duplicate.
 
@@ -258,16 +271,81 @@ The backend contract accepts a party size of 1–6 even though the app enforces 
 
 ### 3. Payment
 
-The app creates the reservation first (`PAYMENT_PENDING`) and pays it through a separate endpoint with a separate stable idempotency key. The mock gateway derives a deterministic reference from that key, but the backend does not persist/replay the payment operation: retrying after the first request has already moved the reservation to `PAID` is rejected by the state machine. Creation is idempotent; payment retry semantics are not yet production-grade.
+Checkout charges a reservation fee equal to 10% of the saved table budget, rounded to the currency’s minor unit. For example, an AED 600 table budget shows AED 60 due at checkout. Guests pay for the meal at the restaurant.
 
-The only backend payment adapter is `MockPaymentGateway`:
+The app creates the reservation first in `PAYMENT_PENDING`, then opens checkout. Online checkout reuses a pending attempt for the same reservation and channel. Switching between hosted and native checkout closes the other attempt before starting a new one. The reservation reaches `PAID` only after the backend verifies that the provider, attempt, currency, and captured amount match.
+
+The default backend payment adapter is `MockPaymentGateway`.
 
 - tokens beginning with `pm_fail` produce `402 Payment Required` and `PAYMENT_FAILED`;
 - every other mock token is immediately `CAPTURED` and moves the reservation to `PAID`;
 - no card number is collected or stored;
-- the Apple Pay and Google Pay buttons are visual/demo choices only.
+- the demo card and wallet controls generate mock tokens. The separate mock payment command takes a UUID idempotency key and derives a deterministic reference. A retry after capture is rejected by the reservation state machine.
 
-No Stripe SDK, PaymentIntent, webhook, refund, Apple Pay merchant configuration, or Google Pay gateway integration exists yet.
+### Adding a payment provider
+
+The reservation module owns fee calculation, row locking, payment state, and capture checks. Online adapters own provider API calls and event verification. The mock provider uses the synchronous `PaymentGateway` contract.
+
+1. Implement [`CheckoutGateway`](src/main/java/com/runout/payments/api/CheckoutGateway.java) in the payments module and register the adapter under its provider ID. The adapter starts, retrieves, and closes attempts for its supported channels and authenticates incoming events. [Stripe adapter](src/main/java/com/runout/payments/internal/infrastructure/gateway/StripeCheckoutGateway.java)
+2. Register its mobile strategy in [`checkoutStrategy.ts`](mobile/src/features/booking/checkoutStrategy.ts). Set the trusted origin for hosted checkout and provide native controls if the integration uses an in-app SDK.
+3. Select the same provider ID with `PAYMENT_PROVIDER` on the backend and `EXPO_PUBLIC_PAYMENT_PROVIDER` in Expo. Send signed events to `POST /api/v1/payments/{provider}/webhook`.
+
+The app uses the same [checkout endpoints](#authenticated-customer-routes) across online providers. Once a reservation has an online attempt, it keeps that provider. Changing the default cannot start another provider’s charge for that reservation. Status checks and cancellation still require the adapter associated with an outstanding attempt. Migration 013 preserved existing Stripe references and set their provider to `stripe`.
+
+### Stripe sandbox checkout
+
+Stripe Payments collects the reservation fee on Run Out’s own account. Restaurants collect payment for the meal at the venue. This flow has no connected-account onboarding or payouts. The backend uses test credentials and computes the fee in AED from the saved table budget. Automatic tax is disabled in hosted sandbox Checkout.
+
+Guests pay through Stripe-hosted Checkout on web and Android, or through Run Out’s card screen on a configured iPhone. Stripe wallet availability depends on the account, device, browser, and wallet setup. The webhook verifies Stripe’s signature and retrieves the linked Checkout Session or PaymentIntent from Stripe. An authenticated **Check payment** request can also reconcile the attempt server-side.
+
+Enable Cards, Apple Pay, and Google Pay in the sandbox’s **Settings → Payment methods → Default**. Stripe Checkout shows available wallets based on the device, browser, and wallet setup. [Stripe payment settings](https://dashboard.stripe.com/test/settings/payment_methods) · [Stripe wallet testing](https://docs.stripe.com/testing/wallets)
+
+#### Start Stripe with the local launcher
+
+1. Run `stripe login` and select the Run Out sandbox. Store the sandbox secret or restricted test key in the Git-ignored file `.run/stripe/backend.key`. To enter it without displaying it, run the following from the repository root:
+
+   ```bash
+   umask 077
+   mkdir -p .run/stripe
+   read -rs runout_stripe_key && printf '%s\n' "$runout_stripe_key" > .run/stripe/backend.key
+   unset runout_stripe_key
+   ```
+
+2. For a physical phone, set `STRIPE_CHECKOUT_RETURN_URL` or save the full HTTP(S) return URL in `.run/stripe/return-url`. Use the Mac’s LAN address and the path `/api/v1/stripe/return`.
+3. Run `./start-all.sh`. With the test key configured, the launcher starts the sandbox listener, then the backend. Stop an existing mock API on port 8080 before starting Stripe mode.
+4. Set `EXPO_PUBLIC_PAYMENT_PROVIDER=stripe` in `mobile/.env.local`, then restart Metro. On the payment step, use **Continue to Stripe** or **Pay by card** when native checkout is configured. A successful test card is `4242 4242 4242 4242` with a future expiry and any three-digit CVC. After hosted checkout, return to Run Out and tap **Check payment**. [Stripe test cards](https://docs.stripe.com/testing)
+
+#### Start Stripe manually
+
+1. Start PostgreSQL and Keycloak with `docker compose up -d`. In a separate terminal, authenticate Stripe CLI against the Run Out test sandbox and start the webhook listener.
+
+   ```bash
+   stripe login
+   stripe listen --events checkout.session.completed,checkout.session.async_payment_succeeded,payment_intent.succeeded --forward-to http://127.0.0.1:8080/api/v1/payments/stripe/webhook
+   ```
+
+2. Stop the existing backend before starting it in Stripe mode. In the backend terminal, paste your rotated Stripe test secret into the first hidden prompt and the listener’s signing secret into the second. Keep the listener running.
+
+   ```bash
+   export PAYMENT_PROVIDER=stripe
+   read -rs STRIPE_SECRET_KEY
+   export STRIPE_SECRET_KEY
+   read -rs STRIPE_WEBHOOK_SECRET
+   export STRIPE_WEBHOOK_SECRET
+   mvn spring-boot:run
+   ```
+
+3. Configure Expo as in the launcher steps. The default return URL is `http://localhost:8080/api/v1/stripe/return`. For hosted wallet testing, open a fresh Checkout session in Safari on an iPhone with Apple Pay or Chrome on Android with Google Pay, with the wallet enabled in the Stripe sandbox. Hosted Checkout works without a publishable key in the app.
+
+#### Native iPhone checkout
+
+Set `EXPO_PUBLIC_PAYMENT_PROVIDER=stripe` and `EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY` to the publishable test key from the same sandbox in `mobile/.env.local`. In the iOS development build, **Pay by card** opens Run Out’s card screen with the reservation fee and Stripe’s native card fields. Stripe handles any bank authentication. Web, Android, and iOS builds missing the SDK or publishable test key use hosted Checkout.
+
+To show the native **Apple Pay** button, create an Apple Merchant ID, enable Apple Pay for the Run Out app identifier, and use Stripe’s iOS certificate setup to associate an Apple Pay payment-processing certificate with that Merchant ID. Set `EXPO_PUBLIC_APPLE_PAY_MERCHANT_ID` to the identifier and rebuild the iOS development app so Expo applies the entitlement. Test on an eligible iPhone with Apple Pay set up. [Stripe Apple Pay setup](https://docs.stripe.com/apple-pay?platform=react-native) · [Expo Stripe setup](https://docs.expo.dev/versions/v57.0.0/sdk/stripe/)
+
+For a local development build, run `npx expo prebuild --platform ios` from `mobile` to apply the config plugin, then run `npm run ios -- --device`.
+
+Both native buttons use the same server-calculated AED PaymentIntent. The custom card screen displays the fee and collects card details through Stripe’s native fields. A 3D Secure challenge returns to the app via `runout://safepay`. After confirmation, the app checks the backend and opens the reservation when the fee is captured. If verification is still pending, use **Check payment**.
 
 ### 4. Operations fulfils the request
 
@@ -279,7 +357,12 @@ Paid reservations appear in the staff queue. The current workflow is deliberatel
 4. Staff contacts/selects a restaurant and confirms it with an external reference and final reservation time (`CONFIRMED`).
 5. A super admin marks the visit `COMPLETED` after service.
 
-The nearby list currently filters and sorts by distance only. Cuisine exclusions, dietary needs, budget, capacity, opening hours, alcohol/shisha, and duplicate-visit rules remain human checks; they are not enforced by a matching engine.
+#### Matching and assignment
+
+- The guest’s count includes active restaurants with a published menu for the exact party size and a discounted per-person price within budget. It applies the selected radius or Dubai-wide scope, cuisine exclusions, vibe, and tags for dietary preferences, licensed venues, and shisha.
+- The count estimates catalogue fit. Availability for the requested date and time, seating capacity, and free-text allergy notes require staff confirmation.
+- The staff nearby list filters active restaurants by radius and sorts by distance. Staff chooses the restaurant and records its booking reference and confirmed time.
+- Licensed-venue and shisha preferences affect the live count. The reservation creation DTO does not persist those flags, so they are unavailable to the operations assignment flow. Other saved constraints include budget, location, party size, cuisine exclusions, dietary preferences, and allergy notes.
 
 ### 5. Sealed wait and reveal
 
@@ -293,33 +376,27 @@ The customer can see reservation metadata and status but must not receive restau
 
 The mobile app polls conservatively, refreshes when foregrounded, and renders the restaurant only when `available` is true. The current implementation reveals at the confirmed reservation time—not two hours before it.
 
-With the mock provider, the property-gated demo endpoint can exercise the envelope animation immediately. It may use the first active restaurant as a non-persistent preview when operations has not assigned one; it does not change the real reservation.
+The property-gated demo endpoint previews the envelope animation after a captured payment. With mock payments it can use an active restaurant as a preview. With Stripe sandbox it returns a sample restaurant and menu, keeping the actual assignment sealed. The preview leaves the reservation unchanged.
 
 ### 6. Cancellation and feedback
 
-- A customer may cancel only while the backend status is `PAYMENT_PENDING` or `PAID`.
-- There is currently no two-hour deadline calculation, refund, credit, or no-show compensation logic.
+- The customer can cancel a `PAYMENT_PENDING` reservation. If it has an online attempt, the backend closes that attempt first and rejects cancellation while the provider is confirming payment.
+- A mock-paid reservation can also be cancelled before assignment. Stripe-paid cancellation requires contacting Run Out. The two-hour policy, automated refunds or credits, and no-show compensation remain roadmap items.
 - After a super admin marks a reservation `COMPLETED`, the customer may submit one rating (1–5), an optional comment (maximum 1,000 characters), and whether they would return for another surprise menu.
 
 ### 7. Restaurant onboarding and catalogue
 
-Partners can cancel a pending menu submission with Cancel submission & edit (POST /api/restaurant-portal/me/menus/cancel-submission). The submission becomes DRAFT with menus preserved and edits unlocked; it must be resubmitted before management can approve it.
+A super admin creates one Keycloak `RESTAURANT` account from the restaurant editor. The portal resolves the linked restaurant from the authenticated user. The database enforces one owner account per restaurant.
 
-Menu review: price selection is now in Menus. New menus start empty. Submission requires saved restaurant contact, address, area, hours, parking and categories plus five menus with prices and all four courses. States are DRAFT, PENDING_APPROVAL, APPROVED and REJECTED. A manager or super admin approves/rejects all five menus from the restaurant editor via POST /api/admin/restaurants/{id}/menu-review. Pending submissions are stored separately; customers continue seeing only the published offer. Migration 010 adds the review fields.
+1. In **Restaurant details**, the partner saves contact information, address and area, opening hours, food categories, and explicit parking instructions. Parking can describe the entrance, valet, costs, and ticket validation.
+2. In **Menus**, the partner selects exactly one price tier from AED 50 to AED 400 per guest in AED 50 increments. They fill five menus, one for each party size from 2 through 6. New sections start empty. Each menu needs starters, mains, desserts, and drinks specified per person.
+3. The menu editor takes estimated table totals before and after the discount, displays total savings, and compares the discounted bill with the selected per-person tier. The API stores the corresponding per-person prices in the JSONB menu and derives the discount percentage.
+4. The live checklist validates saved profile details and every menu. **Submit for approval** sends all five menus together. The partner’s profile and menu edits are locked while the submission is `PENDING_APPROVAL`.
+5. A manager or super admin reviews the submission from the backoffice restaurant editor. Approval publishes the new menus and rejection unlocks editing. Partners can also use **Cancel submission & edit** to return to `DRAFT`, keep the submitted entries, and resubmit after edits.
 
-The first restaurant self-service portal is implemented. A super admin creates one `RESTAURANT` account from the restaurant editor; the database enforces one owner account per restaurant. The partner can:
+The review states are `DRAFT`, `PENDING_APPROVAL`, `APPROVED`, and `REJECTED`. The previous approved menus remain available to matching and reveal while a new submission is pending. The customer app displays the published menu for the reservation’s party size. Menus use the four structured sections in place of the historical `entries` field.
 
-- edit its own name, phone, description, opening hours, address, area, and website;
-- explain where and how guests can park, including entrance, valet, costs and ticket validation;
-- choose exactly one AED price range;
-- choose one or more food categories;
-- create exactly five menus: one each for 2, 3, 4, 5, and 6 guests;
-- add dishes under starters, mains, desserts, and drinks;
-- enter original and discounted prices per person on every menu; savings for the full table and the discount percentage are calculated automatically.
-
-The single price selection is AED 50, 100, 150, 200, 250, 300, 350, or 400 per guest (stored as tiers 1–8). Menu prices are stored inside the existing JSONB menu records.
-
-The portal resolves the restaurant from the authenticated user and never trusts a browser-supplied restaurant ID. Saved menus use only the new structured format; the previous `entries` format is intentionally unsupported. Changes are persisted in PostgreSQL JSONB and appear as structured summaries in the staff backoffice. The customer app selects the menu matching the reservation party size.
+In the populated portal demo, **Fill everything automatically** replaces the draft with sample details and five menus. The demo uses an in-memory API and resets when its process stops.
 
 Staff can also:
 
@@ -329,7 +406,7 @@ Staff can also:
 - activate/deactivate the restaurant;
 - assign it to a confirmed reservation.
 
-The Google API key stays in the backend. Restaurant directions, parking instructions, images, availability toggles, smart/automatic discounts, password recovery, multi-user restaurant teams, and restaurant payouts are not yet implemented data flows.
+The Google Places key stays in the backend. See [production blockers](#known-gaps-and-production-blockers) for partner features still on the roadmap.
 
 ## Identity, Keycloak, and authorization
 
@@ -349,7 +426,7 @@ Realm roles are `USER`, `RESTAURANT`, `WORKER`, `MANAGER`, and `SUPER_ADMIN`. Ke
 
 ### Backend security boundary
 
-The API is stateless and validates JWT signature, issuer, audience, and timestamps. Public routes are limited to health, Swagger/OpenAPI, email registration, login, and refresh. All other endpoints require a bearer token—including the `/api/v1/restaurants` catalogue.
+The API is stateless and validates JWT signature, issuer, audience, and timestamps. Public routes include health, Swagger/OpenAPI, email registration, login, refresh, the restaurant match count, and the hosted payment return page. Payment webhooks verify the provider signature. The restaurant catalogue and reservation routes require a bearer token.
 
 After JWT validation, `AuthenticatedUserHeaderFilter` removes any client-supplied identity headers and injects trusted values from the token:
 
@@ -393,27 +470,31 @@ Each direct package under `com.runout` is an application module. `package-info.j
 | `authentication` | Login, refresh, Keycloak token exchange | none |
 | `users` | Local users, profiles, registration, staff roles, Keycloak admin integration | none |
 | `bookings` | Reservation aggregate, lifecycle, payment handoff, reveal, feedback | users, restaurants, experiences, payments APIs |
-| `restaurants` | Cities, catalogue, menus, Google Places import | none |
+| `restaurants` | Cities, catalogue, matching, partner profile and menu review, Google Places import | none |
 | `administration` | Staff queue, assignment, confirmation, nearby search | experiences, bookings, restaurants, users APIs |
-| `payments` | Payment contract and mock gateway | none |
+| `payments` | Synchronous capture contract, online checkout contract, mock and Stripe adapters | none |
 | `notifications` | Event listeners for booking/payment notifications | bookings and payments APIs |
 | `locations` | Google place search/geocoding adapters | none |
 | `experiences` | Draft/publish experience domain | none; no current controller |
 | `shared` | Security, error mapping, configuration, HTTP helpers | open technical module |
 
-Spring Modulith verifies boundaries in tests and stores event publications in PostgreSQL. The current notification listener logs queued notifications; it does not send push, SMS, WhatsApp, or email. The `PaymentCaptured` event and payment table infrastructure exist, but the active mock reservation flow returns a receipt directly and does not constitute a production payment ledger.
+Spring Modulith verifies module boundaries in tests and stores event publications in PostgreSQL. The notification listener logs events. Reservations store capture status and linked online attempt IDs. The separate `payment` table and `PaymentCaptured` event are infrastructure, and Run Out still needs an operational payment ledger and reconciliation process.
 
 ## API reference
 
 Use Swagger for request/response schemas and validation details. The table below is the implemented route inventory.
 
-### Public authentication routes
+### Public and provider-authenticated routes
 
 | Method | Route | Purpose |
 | --- | --- | --- |
 | `POST` | `/api/v1/users/registrations` | Create Keycloak identity and local user |
 | `POST` | `/api/v1/auth/login` | Email/password login through Keycloak |
 | `POST` | `/api/v1/auth/refresh` | Rotate access and refresh tokens |
+| `POST` | `/api/v1/restaurants/match-count` | Guest-accessible estimate for booking criteria. Returns only `{ "count": N }` |
+| `POST` | `/api/v1/payments/{provider}/webhook` | Authenticate a payment event using that provider’s signature verification |
+| `POST` | `/api/v1/stripe/webhook` | Compatibility route for existing Stripe webhook configuration |
+| `GET` | `/api/v1/stripe/return` | Return page after Stripe-hosted checkout |
 
 ### Authenticated customer routes
 
@@ -431,10 +512,16 @@ Use Swagger for request/response schemas and validation details. The table below
 | `GET`, `POST` | `/api/v1/reservations` | List own reservations / create idempotently |
 | `GET` | `/api/v1/reservations/{id}` | Own reservation detail |
 | `POST` | `/api/v1/reservations/{id}/payments` | Mock capture; key required, but successful replay is not implemented |
-| `POST` | `/api/v1/reservations/{id}/cancellation` | Cancel pending/paid reservation |
+| `POST` | `/api/v1/reservations/{id}/cancellation` | Cancel pending or mock-paid reservations under the [cancellation rules](#6-cancellation-and-feedback) |
 | `GET` | `/api/v1/reservations/{id}/reveal` | Privacy-safe reveal contract |
 | `POST` | `/api/v1/reservations/{id}/feedback` | One completed-visit response |
-| `POST` | `/api/v1/reservations/{id}/demo-reveal` | Mock-provider development preview only |
+| `POST` | `/api/v1/reservations/{id}/demo-reveal` | Property-gated development preview for the guest’s paid reservation |
+| `POST` | `/api/v1/reservations/{id}/checkout` | Creates or reuses the configured provider’s hosted checkout |
+| `POST` | `/api/v1/reservations/{id}/payment-session` | Creates or reuses a native payment attempt and returns its provider, client credential and amount in minor units |
+| `POST` | `/api/v1/reservations/{id}/payment-session/status` | Checks the linked payment with its provider and returns the reservation |
+| `POST` | `/api/v1/reservations/{id}/stripe-checkout`, `/api/v1/reservations/{id}/stripe-payment`, `/api/v1/reservations/{id}/stripe-payment/status` | Compatibility routes with their original response shapes for existing Stripe clients |
+
+Reservation creation and mock capture each require a UUID `Idempotency-Key`. Online checkout creates or reuses an attempt under the reservation lock, and the provider adapter handles idempotency for its own create calls.
 
 ### Restaurant partner routes
 
@@ -444,9 +531,8 @@ All require `ROLE_RESTAURANT` and resolve ownership from the authenticated user.
 | --- | --- | --- |
 | `GET` | `/api/restaurant-portal/me` | Load the linked restaurant and its menus |
 | `PATCH` | `/api/restaurant-portal/me` | Update partner-editable details, categories, and price range |
-| `PUT` | `/api/restaurant-portal/me/menus` | Replace the complete five-menu set |
-
-Both reservation creation and payment require a UUID `Idempotency-Key` header.
+| `PUT` | `/api/restaurant-portal/me/menus` | Submit the complete five-menu set and selected price tier |
+| `POST` | `/api/restaurant-portal/me/menus/cancel-submission` | Return a pending submission to draft and unlock editing |
 
 ### Administration routes
 
@@ -463,6 +549,7 @@ Both reservation creation and payment require a UUID `Idempotency-Key` header.
 | `POST` | `/api/admin/reservations/{id}/confirmation` | Confirm restaurant/reference/time |
 | `POST` | `/api/admin/reservations/{id}/completion` | Super admin only |
 | `POST` | `/api/admin/restaurants/{id}/portal-access` | Super admin creates and links restaurant account |
+| `POST` | `/api/admin/restaurants/{id}/menu-review` | Super admin or manager approves or rejects the pending menu set |
 | `GET`, `POST` | `/api/admin/cities` | List cities / super admin creates city |
 | `GET`, `POST` | `/api/admin/restaurants` | List/create restaurants |
 | `GET`, `PATCH` | `/api/admin/restaurants/{id}` | Read/update restaurant |
@@ -491,7 +578,7 @@ Revealed menus are filtered by reservation party size. The supported menu contra
 | `/(auth)/register` | Customer registration |
 | `/(auth)/access` | Authentication gate before checkout |
 | `/(tabs)` | Home, Explore, Reservations, Profile |
-| `/booking` | Three-step local draft and mock checkout |
+| `/booking` | Three-step draft, match count, and configured checkout |
 | `/reservation/[id]` | Sealed status, reveal, cancellation, feedback |
 | `/invite/[id]` | Prepare/share guest invitations |
 
@@ -507,9 +594,7 @@ Guests can explore and prepare a draft, but authentication is required to create
 - Notifications: local scheduled reminders; there is no device-token backend.
 - Web desktop view: wrapped in an iPhone-style frame; phones use the full viewport.
 
-The mobile request type currently sends `licensedVenue` and `shishaVenue`, but the Java request DTO has no matching fields. Jackson ignores them, so the preferences are neither stored nor used by operations. This is an explicit contract gap, not a working filter.
-
-See `mobile/FLOWS.md` for the broader product/QA roadmap. Where it differs from executable code, this README describes the current code—for example, the current wizard is three steps and allows AED 400 per person.
+See [mobile setup](mobile/README.md) and the [mobile flows and QA matrix](mobile/FLOWS.md) for platform-specific instructions.
 
 ## Staff backoffice
 
@@ -523,7 +608,7 @@ See `mobile/FLOWS.md` for the broader product/QA roadmap. Where it differs from 
 - nearby restaurant lookup;
 - restaurant creation, Google Places import, editing, menu fields, and activation;
 - creation/linking of one restaurant portal account per restaurant;
-- structured read-only summaries of the five partner-managed menus;
+- pending and published summaries for the five partner-managed menus, with approval and rejection controls for management;
 - city creation for super admins.
 
 The API origin is currently hardcoded as `http://localhost:8080`. The access token is stored in `localStorage` under `runout.admin.token`; there is no admin refresh-token workflow. A `401` clears the local session. This is acceptable for the current local tool but must change before exposing it publicly.
@@ -537,6 +622,10 @@ The Vite proxy also maps `/api` to port 8080, although the current application u
 `mobile/web-demo/` is the editable source for the Presentation and Strategy Hub landing page. `npm run build:web-demo` exports the Expo app to `/app/` for the demo links inside Presentation, copies the static hub around it, and produces a deployable zip.
 
 In demo mode, every app API call is answered by `mobile/src/demo/server.ts`. It creates demo users and seeded reservations in browser `localStorage`, simulates network latency, captures mock payment, and permits the reveal animation. Demo data is isolated from the real backend.
+
+The committed `mobile/runout-web-demo/` snapshot and an Expo export are separate from the running backend. Use the source rebuild when you need the latest app and matching fixtures in the presentation. The backoffice also serves its own Strategy Hub copy under `/strategy-hub/`.
+
+The Strategy Hub documents the business plan, including a first cohort of 50 Dubai restaurants, direct outreach and visits, onboarding and test bookings, and referral and social growth. Those plans, the financial projection, and the interactive pitch are strategy artifacts. They do not control catalogue matching, payments, restaurant assignment, or reveal timing.
 
 ## Database and persistence
 
@@ -585,8 +674,11 @@ The reservation has a unique `(user_id, idempotency_key)` constraint. Restaurant
 | `GOOGLE_MAPS_API_KEY` | empty | Places and Geocoding API key |
 | `GOOGLE_MAPS_BASE_URL` | Google Places origin | Override for Places adapter/tests |
 | `GOOGLE_MAPS_GEOCODING_BASE_URL` | Google Maps origin | Override for geocoding adapter/tests |
-| `PAYMENT_PROVIDER` | `mock` | Only `mock` is implemented |
-| `RUNOUT_DEMO_SKIP_WAIT_ENABLED` | `true` | Registers development reveal endpoint with mock payments |
+| `PAYMENT_PROVIDER` | `mock` | `mock` or `stripe` for sandbox Checkout |
+| `STRIPE_SECRET_KEY` | empty | Stripe sandbox secret for the backend |
+| `STRIPE_WEBHOOK_SECRET` | empty | Signing secret for the Stripe webhook endpoint |
+| `STRIPE_CHECKOUT_RETURN_URL` | `http://localhost:8080/api/v1/stripe/return` | Browser landing page for Stripe Checkout |
+| `RUNOUT_DEMO_SKIP_WAIT_ENABLED` | `auto` | Enables the preview by default for mock payments. `true` also enables it for Stripe sandbox. `start-all.sh` defaults to `true` |
 
 Root `.env` is ignored by Git and is read automatically by Docker Compose. Spring Boot does not automatically load that file; export backend variables in the shell or configure them in the IDE/run environment.
 
@@ -695,7 +787,7 @@ These are existing code/test-configuration issues, not README failures.
 
 The distinction between UI intent and backend capability is important:
 
-1. **Real payments:** only mock capture exists. Successful payment retries are not fully idempotent. Stripe, PaymentIntents, Apple Pay, Google Pay, 3-D Secure, webhooks, receipts, refunds, reconciliation, and chargebacks are absent.
+1. **Real payments:** Stripe Checkout and signed fulfillment are implemented for sandbox testing. Live rollout, wallet validation, refunds, reconciliation, and chargebacks still need work.
 2. **Restaurant money flow:** the backend does not pay restaurants or track restaurant compensation. It also has no commission/reservation-fee ledger separate from the mock total capture.
 3. **Matching:** operations selects manually; the server's candidate list enforces only active status and radius.
 4. **Alcohol and shisha:** the Expo UI sends both preferences, but the backend silently ignores them because its DTO/schema has no fields.
@@ -741,7 +833,7 @@ Set `GOOGLE_MAPS_API_KEY` in the backend process, enable the required Places and
 
 ### The envelope never opens
 
-For the real flow, operations must confirm an active restaurant and a confirmed time, then that time must arrive. For local animation testing, keep `PAYMENT_PROVIDER=mock`, leave `RUNOUT_DEMO_SKIP_WAIT_ENABLED=true`, and enable `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT=true` in the mobile development environment.
+For the real flow, operations must confirm an active restaurant and a confirmed time, then that time must arrive. For local animation testing, use `./start-all.sh` or start the API with `RUNOUT_DEMO_SKIP_WAIT_ENABLED=true`. Set `EXPO_PUBLIC_ENABLE_DEMO_SKIP_WAIT=true` in the mobile development environment, then use **Skip the wait · demo** on a paid reservation.
 
 ### Port 8000 does not show Presentation and Strategy Hub
 

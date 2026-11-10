@@ -29,6 +29,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-secure-store',
     [
+      '@stripe/stripe-react-native',
+      { merchantIdentifier: process.env.EXPO_PUBLIC_APPLE_PAY_MERCHANT_ID },
+    ],
+    [
       'expo-build-properties',
       {
         ios: {

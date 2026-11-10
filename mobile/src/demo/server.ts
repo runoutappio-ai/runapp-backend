@@ -5,6 +5,9 @@
  * State lives in localStorage (web) or memory, and is seeded relative to "now".
  */
 import type { Reservation, ReservationReveal, Restaurant, User, UserProfile } from '@/types/api';
+import type { RestaurantMatchCriteria } from '@/features/booking/restaurantMatches';
+import { restaurantFixtures } from './restaurantFixtures';
+import { reservationFeeFor } from '@/features/booking/payment';
 
 type DemoState = { version: 1; users: Record<string, User>; reservations: Record<string, Reservation[]>; revealed: string[] };
 type Json = unknown;
@@ -13,11 +16,13 @@ const STORAGE_KEY = 'runout.demo.v1';
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
 
-function menuSet(id: number, dishes: { starter: [string, string]; main: [string, string]; dessert: [string, string]; drink?: [string, string] }) {
+function menuSet(id: number, priceAfterPerPerson: number, dishes: { starter: [string, string]; main: [string, string]; dessert: [string, string]; drink?: [string, string] }) {
   return [2, 3, 4, 5, 6].map((partySize) => ({
     id: id * 10 + partySize,
     partySize,
     discountPercentage: 20,
+    priceBeforePerPerson: priceAfterPerPerson * 1.25,
+    priceAfterPerPerson,
     sections: {
       STARTERS: [{ name: dishes.starter[0], description: dishes.starter[1] }],
       MAINS: [{ name: dishes.main[0], description: dishes.main[1] }],
@@ -30,25 +35,48 @@ function menuSet(id: number, dishes: { starter: [string, string]; main: [string,
 const RESTAURANTS: Restaurant[] = [
   {
     id: 'demo-saffron', name: 'Saffron & Sumac', cuisine: 'MIDDLE_EASTERN_RESTAURANT', description: 'Wood-fired Levantine plates.',
-    formattedAddress: 'Bay Avenue, Business Bay, Dubai', latitude: 25.1865, longitude: 55.2728, googleMapsUri: null, tags: ['Date Night'],
-    menus: menuSet(1, { starter: ['Smoked Aubergine Mutabal', 'Charred aubergine, tahini, pomegranate molasses'], main: ['Lamb Shoulder Ouzi', 'Twelve-hour lamb, spiced rice, toasted almonds'], dessert: ['Knafeh', 'Warm Nabulsi cheese, orange-blossom syrup, pistachio'] }),
+    formattedAddress: 'Bay Avenue, Business Bay, Dubai', latitude: 25.1865, longitude: 55.2728, googleMapsUri: null, tags: ['Casual', 'Date Night', 'Halal', 'Shisha'],
+    menus: menuSet(1, 90, { starter: ['Smoked Aubergine Mutabal', 'Charred aubergine, tahini, pomegranate molasses'], main: ['Lamb Shoulder Ouzi', 'Twelve-hour lamb, spiced rice, toasted almonds'], dessert: ['Knafeh', 'Warm Nabulsi cheese, orange-blossom syrup, pistachio'] }),
   },
   {
     id: 'demo-lumiere', name: 'Maison Lumière', cuisine: 'FRENCH_RESTAURANT', description: 'A small modern bistro.',
-    formattedAddress: 'Jumeirah Beach Road, Jumeirah, Dubai', latitude: 25.2048, longitude: 55.2398, googleMapsUri: null, tags: ['Dress to Impress'],
-    menus: menuSet(2, { starter: ['Tuna Crudo', 'Citrus, fennel, brown butter crumb'], main: ['Duck à l’Orange', 'Roasted breast, glazed endive, jus'], dessert: ['Chocolate Soufflé', 'Salted caramel, crème fraîche'] }),
+    formattedAddress: 'Jumeirah Beach Road, Jumeirah, Dubai', latitude: 25.2048, longitude: 55.2398, googleMapsUri: null, tags: ['Date Night', 'Ladies’ Night', 'Dress to Impress', 'Licensed venue'],
+    menus: menuSet(2, 150, { starter: ['Tuna Crudo', 'Citrus, fennel, brown butter crumb'], main: ['Duck à l’Orange', 'Roasted breast, glazed endive, jus'], dessert: ['Chocolate Soufflé', 'Salted caramel, crème fraîche'] }),
   },
   {
     id: 'demo-koen', name: 'Kōen Robata', cuisine: 'JAPANESE_RESTAURANT', description: 'Charcoal grill and sake bar.',
-    formattedAddress: 'Marina Walk, Dubai Marina, Dubai', latitude: 25.0805, longitude: 55.1403, googleMapsUri: null, tags: ['Casual'],
-    menus: menuSet(3, { starter: ['Yellowtail Tataki', 'Ponzu, yuzu kosho, crispy shallot'], main: ['Miso Black Cod', 'Saikyo miso, pickled ginger'], dessert: ['Matcha Mochi', 'Red bean, black sesame'] }),
+    formattedAddress: 'Marina Walk, Dubai Marina, Dubai', latitude: 25.0805, longitude: 55.1403, googleMapsUri: null, tags: ['Casual', 'Guys’ Night', 'Extreme', 'Licensed venue'],
+    menus: menuSet(3, 100, { starter: ['Yellowtail Tataki', 'Ponzu, yuzu kosho, crispy shallot'], main: ['Miso Black Cod', 'Saikyo miso, pickled ginger'], dessert: ['Matcha Mochi', 'Red bean, black sesame'] }),
   },
   {
     id: 'demo-nonna', name: 'Trattoria Nonna Vita', cuisine: 'ITALIAN_RESTAURANT', description: 'Family-style pasta kitchen.',
-    formattedAddress: 'Alserkal Avenue, Al Quoz, Dubai', latitude: 25.1417, longitude: 55.2256, googleMapsUri: null, tags: ['Birthday'],
-    menus: menuSet(4, { starter: ['Burrata Pugliese', 'Heritage tomatoes, basil oil'], main: ['Cacio e Pepe', 'Hand-rolled tonnarelli, pecorino, black pepper'], dessert: ['Tiramisù della Casa', 'Mascarpone, espresso, cocoa'] }),
+    formattedAddress: 'Alserkal Avenue, Al Quoz, Dubai', latitude: 25.1417, longitude: 55.2256, googleMapsUri: null, tags: ['Casual', 'Birthday', 'Vegetarian'],
+    menus: menuSet(4, 80, { starter: ['Burrata Pugliese', 'Heritage tomatoes, basil oil'], main: ['Cacio e Pepe', 'Hand-rolled tonnarelli, pecorino, black pepper'], dessert: ['Tiramisù della Casa', 'Mascarpone, espresso, cocoa'] }),
   },
 ];
+
+function countMatchingRestaurants(criteria: RestaurantMatchCriteria) {
+  const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/restaurant$/, '');
+  const excluded = new Set(criteria.excludedCuisines.map(normalize));
+  const radians = (degrees: number) => degrees * Math.PI / 180;
+  return [...RESTAURANTS, ...restaurantFixtures].filter((restaurant) => {
+    const tags = new Set(restaurant.tags.map(normalize));
+    if (excluded.has(normalize(restaurant.cuisine ?? ''))) return false;
+    if (!tags.has(normalize(criteria.vibe))) return false;
+    if (!criteria.dietaryPreferences.every((diet) => tags.has(normalize(diet)))) return false;
+    if (criteria.licensedVenue && !tags.has('licensedvenue')) return false;
+    if (criteria.shishaVenue && !tags.has('shisha')) return false;
+    if (!criteria.anywhereInDubai) {
+      if (restaurant.latitude === null || restaurant.longitude === null) return false;
+      const haversine = Math.sin(radians(restaurant.latitude - criteria.latitude) / 2) ** 2
+        + Math.cos(radians(restaurant.latitude)) * Math.cos(radians(criteria.latitude))
+        * Math.sin(radians(restaurant.longitude - criteria.longitude) / 2) ** 2;
+      if (12_742_000 * Math.asin(Math.sqrt(Math.min(1, haversine))) > criteria.radiusMeters) return false;
+    }
+    return restaurant.menus.some((menu) => menu.partySize === criteria.partySize
+      && menu.priceAfterPerPerson != null && menu.priceAfterPerPerson <= criteria.budgetPerPerson);
+  }).length;
+}
 
 const EMPTY_PROFILE: UserProfile = {
   phone: null, birthDate: null, dietaryPreferences: [], allergyNotes: null,
@@ -177,6 +205,9 @@ export async function demoFetch(url: string, init: RequestInit = {}): Promise<Re
   const state = load();
 
   // Public endpoints
+  if (pathname === '/api/v1/restaurants/match-count' && method === 'POST') {
+    return respond(200, { count: countMatchingRestaurants(body as RestaurantMatchCriteria) });
+  }
   if (pathname === '/api/v1/auth/login' && method === 'POST') {
     const email = String(body.email ?? '').trim();
     if (!email || !String(body.password ?? '')) return problem(400, 'Enter your email and password.');
@@ -246,7 +277,11 @@ export async function demoFetch(url: string, init: RequestInit = {}): Promise<Re
     }
     if (action === 'payments' && method === 'POST') {
       reservation.status = 'CONFIRMED';
-      reservation.payment = { reference: `demo-pay-${reservation.id}`, status: 'CAPTURED' };
+      reservation.payment = {
+        reference: `demo-pay-${reservation.id}`,
+        status: 'CAPTURED',
+        amount: { amount: reservationFeeFor(reservation.totalBudget.amount), currency: reservation.totalBudget.currency },
+      };
       reservation.confirmedReservationAt = reservation.reservationAt;
       save();
       return respond(200, reservation);
